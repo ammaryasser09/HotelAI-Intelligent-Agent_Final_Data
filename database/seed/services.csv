@@ -1,0 +1,17 @@
+service_id,service_name,category,description,price,unit,is_available
+S001,Breakfast,Food & Beverage,"Daily breakfast buffet, adult (7:00-10:30)",1200.00,per_person,true
+S002,Room Service,Food & Beverage,Delivery charge per order; dishes are priced on the menu (menu_items),300.00,per_order,true
+S003,Airport Transfer,Transportation,"Private sedan, up to 3 guests; book 24 h ahead",2500.00,per_trip,true
+S004,Laundry,Housekeeping,Laundry and dry cleaning; same day if collected before 10:00,500.00,per_kg,true
+S005,Spa,Wellness,60-minute massage or treatment,3500.00,per_session,true
+S006,Gym,Fitness,"Complimentary for hotel guests, 24/7",0.00,per_day,true
+S007,Extra Bed,Room Service,Additional bed; does not raise room capacity,2500.00,per_night,true
+S008,Late Checkout,Room Service,Late check-out until 4:00 PM,1500.00,per_request,true
+S009,Breakfast Child,Food & Beverage,"Breakfast buffet, child aged 6-11 (under 6 free)",600.00,per_person,true
+S010,Airport Transfer Minivan,Transportation,"Private minivan, up to 6 guests; book 24 h ahead",4000.00,per_trip,true
+S011,Spa 90 Minutes,Wellness,90-minute massage,4800.00,per_session,true
+S012,Facial Treatment,Wellness,60-minute facial,3000.00,per_session,true
+S013,Oriental Hammam,Wellness,Traditional hammam,2800.00,per_session,true
+S014,Room Decoration,Special Requests,"Birthday, anniversary or honeymoon decoration",3000.00,per_request,true
+S015,Celebration Cake,Special Requests,"Celebration cake, from; order 24 h ahead",1500.00,per_item,true
+S016,Guaranteed Nile View,Room Service,Guaranteed Nile-view room,2000.00,per_night,true

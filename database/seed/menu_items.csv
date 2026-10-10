@@ -1,0 +1,24 @@
+item_id,name_en,name_ar,category,price,dietary,night_menu
+M01,Hummus and baba ghanoush with warm bread,حمص وبابا غنوج بالعيش,Starters,350.00,"V,G",false
+M02,Fattoush salad,سلطة فتوش,Starters,320.00,"V,G",false
+M03,Chicken Caesar salad,سلطة سيزر بالفراخ,Starters,550.00,"G,D,E",false
+M04,Lentil soup,شوربة عدس,Starters,280.00,V,true
+M05,Vegetable club sandwich,كلوب ساندوتش خضار,Sandwiches,600.00,"V,G,E",true
+M06,Chicken shawarma wrap,شاورما فراخ,Sandwiches,850.00,G,true
+M07,Beef burger,برجر لحمة,Sandwiches,1150.00,"G,D",true
+M08,Grilled halloumi panini,بانيني حلوم مشوي,Sandwiches,650.00,"V,G,D",false
+M09,Grilled kofta with rice and tahini,كفتة مشوية بالرز والطحينة,Main courses,950.00,,false
+M10,Mixed grill,مشويات مشكلة,Main courses,1800.00,,false
+M11,Chicken escalope with mashed potatoes,إسكالوب فراخ ببيوريه البطاطس,Main courses,900.00,"G,D,E",false
+M12,Grilled sea bass fillet with vegetables,فيليه قاروص مشوي بالخضار,Main courses,1600.00,F,false
+M13,Beef tenderloin 180 g,ستيك فيليه 180 جرام,Main courses,2400.00,D,false
+M14,Penne arrabbiata,بيني أرابياتا,Main courses,550.00,"V,G",true
+M15,Koshary,كشري,Main courses,350.00,"V,G",false
+M16,Kids chicken nuggets with fries,ناجتس فراخ للأطفال,Children,450.00,"G,E",false
+M17,Om Ali,أم علي,Desserts,350.00,"D,G,N",true
+M18,Chocolate fondant with ice cream,فوندان شوكولاتة بالآيس كريم,Desserts,450.00,"D,G,E",false
+M19,"Mineral water, large",مياه معدنية كبيرة,Drinks,90.00,,true
+M20,Tea,شاي,Drinks,120.00,,true
+M21,Soft drink,مياه غازية,Drinks,120.00,,true
+M22,Turkish coffee,قهوة تركي,Drinks,150.00,,true
+M23,Fresh orange juice,عصير برتقال فريش,Drinks,220.00,,true

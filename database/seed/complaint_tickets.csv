@@ -1,0 +1,69 @@
+ticket_id,customer_id,booking_id,complaint_type,priority,description,status,created_at,resolved_at
+CMP00001,C001223,B007441,Billing Issue,Low,Charged for a room-service order that never arrived,Closed,2026-06-21 15:25:58,2026-09-09 15:25:58
+CMP00002,C009112,B001636,Billing Issue,Low,Charged for a room-service order that never arrived,In Progress,2026-07-14 15:25:58,
+CMP00003,C003233,B007387,Room Issue,Low,Room not cleaned on arrival,Resolved,2026-07-18 15:25:58,2026-08-27 15:25:58
+CMP00004,C005354,,Booking Issue,Medium,Nile view requested but city view given,Closed,2026-07-01 15:25:58,2026-09-01 15:25:58
+CMP00005,C000296,,Facility Issue,Low,Gym equipment broken,Resolved,2026-06-26 15:25:58,2026-08-25 15:25:58
+CMP00006,C007299,,Room Issue,High,No hot water in the bathroom,Open,2026-09-03 15:25:58,
+CMP00007,C005913,B018987,Booking Issue,Medium,Dates differ from the confirmation,Open,2026-08-02 15:25:58,
+CMP00008,C001411,,Service Issue,High,Rude behaviour from a staff member,Resolved,2026-09-11 15:25:58,2026-09-16 15:25:58
+CMP00009,C009621,,Service Issue,High,Rude behaviour from a staff member,In Progress,2026-08-17 15:25:58,
+CMP00010,C008362,,Room Issue,High,Noise from the neighbouring room,In Progress,2026-08-04 15:25:58,
+CMP00011,C001072,B006891,Billing Issue,Medium,Duplicate charge on the card,Closed,2026-09-11 15:25:58,2026-09-14 15:25:58
+CMP00012,C006484,,Room Issue,High,No hot water in the bathroom,Resolved,2026-07-08 15:25:58,2026-09-12 15:25:58
+CMP00013,C008933,,Room Issue,Low,No hot water in the bathroom,Closed,2026-08-31 15:25:58,2026-09-01 15:25:58
+CMP00014,C007563,,Room Issue,High,Air conditioning not working,Open,2026-09-14 15:25:58,
+CMP00015,C008175,B003951,Booking Issue,Medium,Booked room type not available on arrival,Open,2026-08-06 15:25:58,
+CMP00016,C000415,,Room Issue,High,Air conditioning not working,Resolved,2026-08-04 15:25:58,2026-09-06 15:25:58
+CMP00017,C002557,B006873,Billing Issue,Critical,Charged for a room-service order that never arrived,In Progress,2026-06-21 15:25:58,
+CMP00018,C002604,,Service Issue,Critical,Housekeeping did not come,In Progress,2026-08-23 15:25:58,
+CMP00019,C006322,B008789,Room Issue,Low,Air conditioning not working,Open,2026-06-30 15:25:58,
+CMP00020,C008927,,Room Issue,Low,Room not cleaned on arrival,Resolved,2026-06-25 15:25:58,2026-09-17 15:25:58
+CMP00021,C003842,B003136,Billing Issue,Low,Deposit not released after check-out,In Progress,2026-06-21 15:25:58,
+CMP00023,C008697,,Facility Issue,Medium,Pool closed without notice,Open,2026-06-27 15:25:58,
+CMP00024,C006060,B002040,Booking Issue,Critical,Nile view requested but city view given,In Progress,2026-08-15 15:25:58,
+CMP00025,C006815,,Service Issue,High,Request ignored by reception,In Progress,2026-08-05 15:25:58,
+CMP00026,C008766,B000305,Booking Issue,Critical,Booked room type not available on arrival,Closed,2026-07-26 15:25:58,2026-09-05 15:25:58
+CMP00028,C006298,B017192,Facility Issue,Low,Pool closed without notice,In Progress,2026-09-16 15:25:58,
+CMP00029,C000052,B006002,Billing Issue,Critical,Cancellation fee disputed,Open,2026-08-10 15:25:58,
+CMP00030,C005292,,Room Issue,Medium,Room not cleaned on arrival,Closed,2026-08-20 15:25:58,2026-09-09 15:25:58
+CMP00031,C003809,B006724,Service Issue,Critical,Room service order arrived very late,Resolved,2026-08-21 15:25:58,2026-09-10 15:25:58
+CMP00032,C000230,B012322,Billing Issue,Low,Deposit not released after check-out,Resolved,2026-06-29 15:25:58,2026-08-26 15:25:58
+CMP00033,C001986,B016489,Room Issue,Low,No hot water in the bathroom,Resolved,2026-09-03 15:25:58,2026-09-04 15:25:58
+CMP00034,C008394,,Service Issue,Low,Room service order arrived very late,Resolved,2026-09-05 15:25:58,2026-09-14 15:25:58
+CMP00035,C003211,B008329,Room Issue,High,No hot water in the bathroom,Open,2026-09-10 15:25:58,
+CMP00036,C003654,B008091,Service Issue,Medium,Request ignored by reception,In Progress,2026-09-05 15:25:58,
+CMP00037,C006579,,Room Issue,Low,Air conditioning not working,In Progress,2026-08-14 15:25:58,
+CMP00038,C004101,,Facility Issue,Low,Pool closed without notice,Closed,2026-07-20 15:25:58,2026-09-01 15:25:58
+CMP00039,C007864,,Facility Issue,Medium,Pool closed without notice,Resolved,2026-08-08 15:25:58,2026-08-21 15:25:58
+CMP00040,C005374,,Billing Issue,High,Cancellation fee disputed,In Progress,2026-08-06 15:25:58,
+CMP00041,C007449,B006131,Facility Issue,Medium,Wi-Fi keeps disconnecting,Open,2026-08-04 15:25:58,
+CMP00043,C000893,,Service Issue,Critical,Rude behaviour from a staff member,Open,2026-07-22 15:25:58,
+CMP00044,C009157,,Room Issue,Low,Room not cleaned on arrival,Closed,2026-07-01 15:25:58,2026-09-13 15:25:58
+CMP00045,C006645,B016544,Service Issue,Low,Request ignored by reception,In Progress,2026-09-12 15:25:58,
+CMP00046,C000329,B009609,Booking Issue,Critical,Dates differ from the confirmation,Open,2026-08-20 15:25:58,
+CMP00047,C009464,B011797,Booking Issue,Critical,Booked room type not available on arrival,Open,2026-08-23 15:25:58,
+CMP00048,C009816,B011819,Booking Issue,Low,Confirmation email not received,Closed,2026-08-20 15:25:58,2026-08-22 15:25:58
+CMP00049,C007917,,Facility Issue,Critical,Elevator out of service,In Progress,2026-09-08 15:25:58,
+CMP00050,C007092,B001437,Billing Issue,Medium,Deposit not released after check-out,Open,2026-08-10 15:25:58,
+CMP00051,C003868,,Service Issue,Medium,Housekeeping did not come,Open,2026-08-31 15:25:58,
+CMP00052,C003022,B006530,Billing Issue,Critical,Deposit not released after check-out,Closed,2026-09-15 15:25:58,2026-09-19 15:25:58
+CMP00053,C002558,B018612,Service Issue,Critical,Rude behaviour from a staff member,In Progress,2026-06-26 15:25:58,
+CMP00054,C002528,B001065,Billing Issue,Low,Deposit not released after check-out,Open,2026-08-08 15:25:58,
+CMP00055,C008714,B013134,Billing Issue,Critical,Cancellation fee disputed,Open,2026-06-22 15:25:58,
+CMP00056,C002709,B009829,Facility Issue,Low,Wi-Fi keeps disconnecting,Closed,2026-08-21 15:25:58,2026-08-30 15:25:58
+CMP00058,C009770,,Service Issue,Low,Housekeeping did not come,Resolved,2026-08-05 15:25:58,2026-08-23 15:25:58
+CMP00059,C001743,,Room Issue,Low,Air conditioning not working,Closed,2026-06-21 15:25:58,2026-08-31 15:25:58
+CMP00061,C001894,B006960,Billing Issue,Critical,Deposit not released after check-out,Open,2026-07-21 15:25:58,
+CMP00062,C006717,B017647,Billing Issue,Low,Deposit not released after check-out,Open,2026-07-26 15:25:58,
+CMP00063,C002642,,Service Issue,Medium,Request ignored by reception,Resolved,2026-08-24 15:25:58,2026-08-27 15:25:58
+CMP00064,C007399,B018103,Billing Issue,Critical,Charged for a room-service order that never arrived,Open,2026-07-13 15:25:58,
+CMP00065,C004333,,Facility Issue,Low,Elevator out of service,In Progress,2026-09-12 15:25:58,
+CMP00066,C008010,,Room Issue,Critical,Air conditioning not working,Resolved,2026-06-25 15:25:58,2026-08-22 15:25:58
+CMP00068,C000033,B010520,Booking Issue,Critical,Confirmation email not received,Resolved,2026-06-30 15:25:58,2026-09-03 15:25:58
+CMP00069,C002171,,Service Issue,Critical,Housekeeping did not come,Resolved,2026-08-07 15:25:58,2026-09-08 15:25:58
+CMP00071,C000439,,Booking Issue,Medium,Dates differ from the confirmation,In Progress,2026-06-24 15:25:58,
+CMP00072,C007837,B006332,Billing Issue,Critical,Duplicate charge on the card,Resolved,2026-07-12 15:25:58,2026-09-01 15:25:58
+CMP00073,C001310,B019646,Service Issue,Medium,Request ignored by reception,Resolved,2026-08-30 15:25:58,2026-09-08 15:25:58
+CMP00074,C002262,B001667,Booking Issue,High,Nile view requested but city view given,Resolved,2026-08-30 15:25:58,2026-09-16 15:25:58
+CMP00075,C008772,B007204,Billing Issue,High,Duplicate charge on the card,Resolved,2026-06-25 15:25:58,2026-09-16 15:25:58

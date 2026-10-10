@@ -1,0 +1,30 @@
+NILE PEARL HOTEL
+BOOKING PROCESS
+
+1. Select Dates
+
+The guest chooses the check-in and check-out dates.
+
+2. Select Room
+
+The guest chooses a room type that fits the number of guests, and a rate plan: Flexible or Non-refundable.
+
+3. Provide Guest Information
+
+The guest gives full name, number of adults and children, phone number and email address.
+
+4. Review Reservation
+
+The guest checks the dates, room type, number of guests, rate plan and total price.
+
+5. Payment
+
+Flexible: a card is taken as a guarantee and the stay is paid at the hotel. Non-refundable: the full amount is paid at booking.
+
+6. Confirmation
+
+The confirmation with the booking reference is sent immediately by email and SMS.
+
+7. Changes After Booking
+
+Changes and cancellations are handled by customer service according to the Booking Modification and Cancellation policies.

@@ -1,0 +1,13 @@
+case_id,what,room_type,check_in,check_out,guests,expected_free_count,must_include,must_exclude,expected_error
+AV01,Suites free for 3 nights (count),Suite,2026-10-03,2026-10-06,1,2,,,
+AV02,Double fully booked over Christmas,Double,2026-12-24,2026-12-27,1,0,,,
+AV03,back-to-back: B000006 checks out 2027-06-09; the same room is free from that day,Twin,2027-06-09,2027-06-10,1,,804,,
+AV04,overlap: one night before B000006 checks out,Twin,2027-06-08,2027-06-10,1,,,804,
+AV05,Cancelled booking B000102 does not block its room,Suite,2027-05-12,2027-05-13,1,,1510,,
+AV06,No-show booking B003077 does not block its room,Single,2026-06-25,2026-06-26,1,,309,,
+AV07,room 210 is in maintenance,Single,2027-08-20,2027-08-22,1,,,210,
+AV08,3 guests in a Double,Double,2026-11-10,2026-11-12,3,,,,CAPACITY_EXCEEDED
+AV09,2 adults + 1 child in a Double (children count),Double,2026-11-10,2026-11-12,3,,,,CAPACITY_EXCEEDED
+AV10,check-out not after check-in,Twin,2026-11-10,2026-11-10,2,,,,CHECK_OUT_NOT_AFTER_CHECK_IN
+AV11,check-in before system_date,Twin,2026-09-01,2026-09-03,2,,,,CHECK_IN_IN_THE_PAST
+AV12,unknown room type,Penthouse,2026-11-10,2026-11-12,2,,,,UNKNOWN_ROOM_TYPE

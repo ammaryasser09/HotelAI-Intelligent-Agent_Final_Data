@@ -1,0 +1,11 @@
+fee_id,fee_name,amount,unit,rule
+F001,Incidentals deposit,3000,EGP_per_night,"taken at check-in, released at check-out"
+F002,Smoking cleaning fee,7500,EGP_per_incident,smoking in a guest room
+F003,Early check-in before 12:00,50,percent_of_nightly_rate,subject to availability
+F004,Late check-out until 18:00,50,percent_of_nightly_rate,until 16:00 see service S008
+F005,Late check-out after 18:00,100,percent_of_nightly_rate,a full night
+F006,"Late cancellation, Flexible rate",1,nights,cancelled less than 48 h before arrival
+F007,"No-show, Flexible rate",1,nights,remaining nights released
+F008,Early departure without notice,1,nights,not declared at check-in
+F009,Express laundry surcharge,50,percent,returned within 4 hours
+F010,Non-refundable rate discount,15,percent_off_flexible,paid in full at booking

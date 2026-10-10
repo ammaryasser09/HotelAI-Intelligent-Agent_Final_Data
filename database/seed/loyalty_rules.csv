@@ -1,0 +1,8 @@
+rule,value,unit,note
+earn_rate,10,EGP_per_point,1 point for every 10 EGP spent on rooms and hotel services
+redeem_points,1000,points,points needed for one redemption
+redeem_value,500,EGP,discount given by one redemption
+points_expiry,24,months,after 24 months without earning or using points
+referral_bonus,1000,points,when a referred new guest completes a first stay
+member_rate_discount,15,percent,"Loyalty Member rate, off the Flexible rate"
+transferable,0,boolean,points cannot be transferred

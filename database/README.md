@@ -1,0 +1,78 @@
+# الداتابيز — PostgreSQL
+
+داتابيز الفندق كاملة: 18 جدول فيهم داتا، و4 جداول فاضية للداشبورد والمكالمات. الداتا محمّلة ومتفحوصة على PostgreSQL 16.
+
+| الملف | فيه إيه |
+|---|---|
+| `schema.sql` | الجداول، والعلاقات، والقيود، والـ indexes، والـ functions، والـ views. **تشغيله بيمسح الجداول ويعملها من الأول** |
+| `seed/*.csv` | الداتا نفسها، ملف لكل جدول |
+| `load_data.sql` | بيحمّل ملفات `seed/` في الجداول |
+| `docker-compose.yml` | PostgreSQL جاهز بالداتا بأمر واحد |
+| `queries.sql` | الاستعلامات اللي الـ API محتاجها: المتاح، والبحث عن حجز مع التحقق، وحساب الإلغاء، والحجز الجديد، وتسجيل المكالمات، والداشبورد |
+| `tests/run_checks.sql` | 23 فحص على الداتا بعد التحميل |
+| `tests/constraint_checks.sql` | بيتأكد إن الداتابيز بترفض الداتا الغلط (من غير ما يغيّر حاجة) |
+| `tests/availability_cases.csv` | 12 حالة اختبار للمتاح، تستخدمها في اختبار الـ endpoint |
+| `ERD.png` و`ERD.md` | رسمة الجداول وعلاقاتها |
+| `DATA_DICTIONARY.md` | كل جدول وكل عمود: النوع، والقواعد، والمعنى |
+
+## التشغيل
+
+**الطريقة الأولى: Docker (الأسهل)**
+```bash
+cd database
+docker compose up -d
+```
+أول مرة بيعمل الجداول ويحمّل الداتا لوحده. الاتصال:
+`postgresql://hotelai:hotelai@localhost:5432/hotelai`
+
+ولو عايز تمسح وتبدأ من الأول: `docker compose down -v && docker compose up -d`
+
+**الطريقة التانية: PostgreSQL متسطب على الجهاز (13 أو أحدث)**
+```bash
+createdb hotelai
+cd database                      # لازم تشغّل من جوه الفولدر ده
+psql -d hotelai -f schema.sql -f load_data.sql
+```
+
+**الطريقة التالتة: pgAdmin**
+اعمل database اسمها `hotelai`، وافتح Query Tool، وشغّل `schema.sql`. بعد كده افتح PSQL Tool من نفس الـ database، واكتب `\cd` لمسار فولدر `database`، وبعدين `\i load_data.sql`.
+
+**اتأكد إن كله تمام:**
+```bash
+psql -d hotelai -f tests/run_checks.sql           # كل السطور لازم تقول PASS
+psql -d hotelai -f tests/constraint_checks.sql    # 7 سطور PASS
+```
+
+## الربط بـ FastAPI
+
+```python
+# pip install sqlalchemy "psycopg[binary]"
+from sqlalchemy import create_engine, text
+engine = create_engine("postgresql+psycopg://hotelai:hotelai@localhost:5432/hotelai")
+
+with engine.connect() as db:
+    rooms = db.execute(text("SELECT * FROM free_rooms(:t, :ci, :co)"),
+                       {"t": "Double", "ci": "2026-11-05", "co": "2026-11-08"}).all()
+```
+كل الاستعلامات في `queries.sql` مكتوبة بالشكل ده (`:name`)، فتنقلها زي ما هي.
+
+## الداتابيز بتعمل إيه لوحدها
+
+- **مستحيل حجزين على نفس الأوضة في نفس الليلة** (`no_double_booking`). الحجوزات الملغية وعدم الحضور مش بتشغل أوضة. ولو حد حجز الأوضة قبلك بثانية، الـ insert هيترفض، فلازم الـ API يعرض أوضة تانية.
+- **عدد الأفراد مايزيدش عن سعة الأوضة**، والأطفال بيتحسبوا (`trg_booking_capacity`).
+- **نوع الأوضة لازم يطابق الأوضة** المحجوزة.
+- **`nights` و`total_amount` بيتحسبوا لوحدهم.** متبعتهمش في الـ insert.
+- **الأرقام الجديدة بتطلع لوحدها بنفس الشكل:** أول حجز جديد B020001، وأول دفعة P020001، وأول عميل C010001...
+- **"النهارده"** = `hotel_today()` = 19 سبتمبر 2026. استخدمها بدل `now()::date`، وإلا حالات الحجوزات هتبان غلط.
+- **التوقيت:** القاهرة (`Africa/Cairo`).
+
+## جداول الداشبورد (فاضية، والـ API هو اللي يملاها)
+
+| الجدول | فيه إيه |
+|---|---|
+| `calls` | مكالمة لكل صف: اللغة، والحالة، واتحولت لموظف ولا لأ، واتأكد من الهوية ولا لأ |
+| `call_messages` | كل كلمة اتقالت في المكالمة، من الضيف ومن نور، ومعاها وقت الرد |
+| `call_actions` | كل tool نور شغّلته (متاح، حجز، إلغاء...) والنتيجة |
+| `staff_users` | موظفين الفندق اللي بيدخلوا الداشبورد |
+
+الـ view `v_call_overview` جاهز لصفحة المكالمات في الداشبورد.

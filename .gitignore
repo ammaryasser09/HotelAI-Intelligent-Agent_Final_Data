@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+.env.*
+app/rag/index/
+prototype_results.csv
+prototype_languages.csv
+.ipynb_checkpoints/
+.DS_Store

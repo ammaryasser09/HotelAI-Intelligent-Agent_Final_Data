@@ -1,0 +1,22 @@
+# PostgreSQL 16 with the schema and demo data loaded on first start:
+#     docker compose up -d
+# Connection: postgresql://hotelai:hotelai@localhost:5432/hotelai
+# Start again from scratch: docker compose down -v && docker compose up -d
+services:
+  db:
+    image: postgres:16
+    container_name: hotelai-db
+    environment:
+      POSTGRES_DB: hotelai
+      POSTGRES_USER: hotelai
+      POSTGRES_PASSWORD: hotelai
+      TZ: Africa/Cairo
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+      - ./docker/02_load_seed.sql:/docker-entrypoint-initdb.d/02_load_seed.sql:ro
+      - ./seed:/seed:ro
+      - hotelai_data:/var/lib/postgresql/data
+volumes:
+  hotelai_data:

@@ -1,0 +1,18 @@
+NILE PEARL HOTEL
+BOOKING CONFIRMATION
+
+1. Confirmation
+
+A reservation is confirmed as soon as the booking is completed. The confirmation is sent immediately by email and by SMS.
+
+2. Booking Reference
+
+Every reservation has a booking reference made of the letter B followed by six digits, for example B013193. Guests should keep it; customer service asks for it when a booking is changed, cancelled or checked.
+
+3. Confirmation Details
+
+The confirmation shows the guest name, number of guests, check-in and check-out dates, room type, rate plan, total price and the cancellation terms.
+
+4. Missing Confirmation
+
+If the confirmation does not arrive within one hour, check the spam folder, then contact customer service with the guest name and dates so the booking can be found and the confirmation resent.

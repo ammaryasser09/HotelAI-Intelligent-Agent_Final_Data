@@ -1,0 +1,26 @@
+NILE PEARL HOTEL
+NO-SHOW POLICY
+
+1. Definition
+
+A reservation is recorded as a no-show when the guest does not arrive by the end of the check-in grace period.
+
+2. Grace Period
+
+A confirmed reservation is held until 23:59 on the scheduled check-in date. After that time, if the guest has not arrived and has not contacted the hotel, the reservation status changes from Confirmed to No-show.
+
+3. Effect on the Room
+
+Once a reservation becomes a no-show, the room is released back into availability for the remaining nights. The reservation itself is retained in the booking history and is not deleted.
+
+4. Difference from Cancellation
+
+A cancellation is a reservation the guest withdrew before arrival. A no-show is a reservation the guest neither used nor withdrew. The two are recorded as separate statuses.
+
+5. Avoiding a No-show
+
+Guests who expect to arrive after 23:59 on the check-in date should inform the hotel in advance; the booking is then held. Reception operates 24 hours a day. Guests who no longer need the reservation should cancel it, because a Flexible booking cancelled at least 48 hours ahead is free.
+
+6. Charges
+
+Flexible rate: a no-show is charged the first night; the remaining nights are released and not charged. Non-refundable rate: the full amount is kept.

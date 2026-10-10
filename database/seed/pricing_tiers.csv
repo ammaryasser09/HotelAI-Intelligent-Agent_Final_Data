@@ -1,0 +1,11 @@
+pricing_tier_id,tier_name,description,rate_multiplier,status
+PT001,Standard Rate,Standard price for walk-in bookings,1.0,Active
+PT002,Early Booking,Discount for bookings made 30+ days in advance,0.85,Active
+PT003,Extended Stay,Discount for stays of 7+ nights,0.88,Active
+PT004,Low Season,Discount during low-season periods,0.8,Active
+PT005,Group Rate,Special rate for group bookings (10+ rooms),0.82,Active
+PT006,Corporate Rate,Business rate for corporate bookings,0.87,Active
+PT007,Last Minute,Discount for bookings within 7 days,0.75,Active
+PT008,Winter Peak,Premium rate during winter holidays,1.25,Active
+PT009,Summer Special,Family package rate during summer,0.9,Active
+PT010,Loyalty Member,Exclusive rate for loyalty program members,0.85,Active

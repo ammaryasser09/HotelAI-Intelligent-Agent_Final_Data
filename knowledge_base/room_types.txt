@@ -1,0 +1,58 @@
+NILE PEARL HOTEL
+ROOM TYPES
+
+1. Single Room
+
+Room type: Single Room
+Size: 28 m²
+Bed: one bed
+Maximum capacity: 1 guest
+Rate: 6,000 EGP per night
+
+2. Double Room
+
+Room type: Double Room
+Size: 34 m²
+Bed: one double bed
+Maximum capacity: 2 guests
+Rate: 8,000 EGP per night
+
+3. Twin Room
+
+Room type: Twin Room
+Size: 34 m²
+Beds: two separate beds
+Maximum capacity: 2 guests
+Rate: 8,500 EGP per night
+
+4. Deluxe Room
+
+Room type: Deluxe Room
+Size: 45 m²
+Spacious room with premium facilities and upgraded furnishings.
+Maximum capacity: 3 guests
+Rate: 12,000 EGP per night
+
+5. Family Room
+
+Room type: Family Room
+Size: 60 m²
+Large room with extra sleeping space, suitable for families with children.
+Maximum capacity: 4 guests
+Rate: 14,000 EGP per night
+
+6. Suite
+
+Room type: Suite
+Size: 85 m²
+Separate living area, premium furnishings and a Nile view.
+Maximum capacity: 4 guests
+Rate: 20,000 EGP per night
+
+7. Views
+
+Rooms face either the Nile or the city. A Nile view can be requested free of charge, subject to availability at check-in. A guaranteed Nile view costs 2,000 EGP per night. All Suites face the Nile.
+
+8. Rates
+
+Rates are per room per night, room only (breakfast not included), and follow the Flexible rate. All prices are in Egyptian Pounds (EGP) and include the 12% service charge, 14% VAT and 1% city tax.

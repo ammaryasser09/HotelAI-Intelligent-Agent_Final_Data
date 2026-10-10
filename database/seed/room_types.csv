@@ -1,0 +1,7 @@
+room_type_id,room_type_name,description,capacity,base_price,size_sqm
+RT001,Single,Comfortable room suitable for one guest,1,6000.00,28
+RT002,Double,Comfortable room with one double bed for two guests,2,8000.00,34
+RT003,Twin,Room with two separate beds,2,8500.00,34
+RT004,Deluxe,Spacious room with premium facilities,3,12000.00,45
+RT005,Family,Large room suitable for families,4,14000.00,60
+RT006,Suite,Luxury suite with separate living area and Nile view,4,20000.00,85

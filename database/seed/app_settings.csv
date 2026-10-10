@@ -1,0 +1,10 @@
+key,value,description
+system_date,2026-09-19,"Frozen ""today"" of the demo data; use it instead of the machine clock"
+timezone,Africa/Cairo,Hotel time zone
+hotel_name,Nile Pearl Hotel,Hotel name
+check_in_time,15:00,Standard check-in time
+check_out_time,12:00,Standard check-out time
+free_cancellation_hours,48,Flexible rate: free cancellation until this many hours before 3 PM on arrival day
+currency,EGP,"All prices are in Egyptian Pounds, taxes included"
+reception_phone,+20 2 2794 5500,"Reception, 24/7"
+reservations_phone,+20 2 2794 5501,Reservations line

@@ -1,0 +1,5 @@
+tier,min_nights_per_year,points_bonus_pct,late_checkout_until,benefits
+Standard,0,0,,Member rate 15% off the Flexible rate
+Silver,10,20,13:00,Member rate; late check-out until 1:00 PM
+Gold,25,50,14:00,Member rate; late check-out until 2:00 PM; room upgrade on arrival; 10% off spa
+Platinum,50,100,16:00,Member rate; late check-out until 4:00 PM; free breakfast for two; priority upgrades including Suites; 15% off spa
