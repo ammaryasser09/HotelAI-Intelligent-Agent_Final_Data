@@ -3,15 +3,15 @@ BOOKING MODIFICATION POLICY
 
 1. Reservation Changes
 
-Guests can change a Flexible reservation free of charge until 48 hours before arrival, subject to availability and to any difference in rate. Non-refundable reservations cannot be changed.
+A Flexible reservation can be changed free of charge until 48 hours before arrival, as long as a suitable room is free. Non-refundable reservations cannot be changed. If no suitable room is free, the reservation stays exactly as it is.
 
 2. Changes to Check-in or Check-out Dates
 
-New dates are subject to availability and are charged at the rate for those dates. A date change made less than 48 hours before arrival is treated as a late cancellation of the original dates, and the first night is charged.
+New dates need a free room of the same type for every night. The agreed nightly rate is kept. A date change made less than 48 hours before arrival is treated as a late cancellation of the original dates, and the first night is charged.
 
 3. Changes to Room Type
 
-A room type change is subject to availability; the new room type's rate applies from the date of the change.
+A room type change needs a free room of the new type for the whole stay. The new room type's standard rate applies to the whole stay.
 
 4. Changes to Number of Guests
 
@@ -19,16 +19,20 @@ The room must hold the new number of guests; children count toward capacity. If 
 
 5. Extending or Shortening a Stay
 
-Extra nights are subject to availability. A stay shortened after check-in without notice at check-in is charged one extra night as an early departure fee.
+Extra nights need the same room to be free, so the guest does not have to change rooms; they are charged at the agreed nightly rate. A stay can be shortened free of charge until 48 hours before arrival. A stay shortened after check-in without notice at check-in is charged one extra night as an early departure fee.
 
-6. Guest Name Changes
+6. Payment After a Change
+
+The first-night deposit already paid stays as it is. Any difference in the total is added to, or taken from, the balance paid at the hotel.
+
+7. Guest Name Changes
 
 The guest name can be changed free of charge until 48 hours before arrival. The new guest must present valid identification at check-in.
 
-7. Bookings Made Through Booking Platforms
+8. Bookings Made Through Booking Platforms
 
 Reservations made through a booking platform must be changed or cancelled through that platform, under its terms.
 
-8. How to Request a Change
+9. How to Make a Change
 
-Contact customer service by phone on +20 2 2794 5501, by email to reservations@nilepearlhotel.example, or through the hotel website. Have the booking reference ready; the identity check in Reservation Security applies.
+Log in on the hotel website and ask the voice agent: it checks availability, tells you the new total, and makes the change as soon as you agree. Customer service can also make changes by phone on +20 2 2794 5501 or by email to reservations@nilepearlhotel.example, after the identity check in Reservation Security. Every change is confirmed by email.

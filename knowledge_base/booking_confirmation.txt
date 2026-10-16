@@ -3,7 +3,7 @@ BOOKING CONFIRMATION
 
 1. Confirmation
 
-A reservation is confirmed as soon as the booking is completed. The confirmation is sent immediately by email and by SMS.
+A reservation is confirmed as soon as its payment link is paid: the first-night deposit on the Flexible rate, or the full amount on the Non-refundable rate. Until then the room is held for 24 hours, or for 2 hours if arrival is less than 24 hours away. If the link is not paid in time, the reservation is cancelled automatically and the room is released. The confirmation is sent by email as soon as the payment is received.
 
 2. Booking Reference
 
@@ -11,7 +11,7 @@ Every reservation has a booking reference made of the letter B followed by six d
 
 3. Confirmation Details
 
-The confirmation shows the guest name, number of guests, check-in and check-out dates, room type, rate plan, total price and the cancellation terms.
+The confirmation shows the guest name, number of guests, check-in and check-out dates, room type, rate plan, total price and the cancellation terms. For the Flexible rate it also shows the first-night deposit and the payment link.
 
 4. Missing Confirmation
 

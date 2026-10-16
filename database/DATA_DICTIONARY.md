@@ -5,7 +5,7 @@ Every table and column of `schema.sql`. The same descriptions are stored in the 
 
 | Table | Group | Rows (demo data) | What it holds |
 |---|---|---|---|
-| [`app_settings`](#app_settings) | Hotel settings | 9 | Hotel-wide settings. system_date is the frozen "today" of the dataset; the API must use it instead of the machine clock while the demo data is in use. |
+| [`app_settings`](#app_settings) | Hotel settings | 11 | Hotel-wide settings. system_date is the frozen "today" of the dataset; the API must use it instead of the machine clock while the demo data is in use. |
 | [`room_types`](#room_types) | Rooms | 6 | The six room categories, their capacity and standard nightly rate (EGP, taxes included, room only). |
 | [`rooms`](#rooms) | Rooms | 150 | 150 rooms on floors 2-16. room_number = floor x 100 + n; rooms 1-5 of a floor and every Suite face the Nile. |
 | [`customers`](#customers) | Guests | 10,000 | Guests. Arab guests also carry the Arabic spelling of their name, so a caller who gives an Arabic name is found. |
@@ -17,13 +17,14 @@ Every table and column of `schema.sql`. The same descriptions are stored in the 
 | [`services`](#services) | Services | 16 | Priced hotel services (breakfast, transfers, spa, laundry, extra bed, late check-out...). |
 | [`fees`](#fees) | Services | 10 | Fees and percentages from the hotel policies: deposit, smoking fee, early/late check-out, cancellation. |
 | [`menu_items`](#menu_items) | Services | 23 | In-room dining and restaurant menu. Room service adds the delivery charge of service S002 per order. |
-| [`bookings`](#bookings) | Reservations | 16,532 | Reservations. Every Confirmed or Completed booking occupies its room; the database refuses two of them on the same room and nights. |
+| [`bookings`](#bookings) | Reservations | 16,532 | Reservations. Every Pending, Confirmed or Completed booking occupies its room; the database refuses two of them on the same room and nights. |
 | [`payments`](#payments) | Reservations | 16,532 | One payment record per booking: what was collected and refunded. |
 | [`customer_requests`](#customer_requests) | Guest service | 13,573 | Service requests (room service, housekeeping, transfers, changes...). In-stay requests are dated inside the stay; requests without a stay have no booking. |
 | [`complaint_tickets`](#complaint_tickets) | Guest service | 68 | Complaints. Room, service and facility complaints belong to a stay that happened; billing and booking complaints may have no booking. |
 | [`special_requests`](#special_requests) | Guest service | 103 | Special requests attached to a booking (celebrations, dietary needs, accessibility, room preferences...). |
 | [`customer_feedback`](#customer_feedback) | Guest service | 4,001 | Reviews of finished stays: one per booking. |
-| [`staff_users`](#staff_users) | Dashboard | 0 | Hotel staff who sign in to the dashboard and take escalated calls. Empty: the API creates users. |
+| [`user_accounts`](#user_accounts) | Accounts | 5,594 | One login for everyone: guests (linked to a customer), hotel staff and admins. |
+| [`booking_links`](#booking_links) | Accounts | 20 | Bookings made elsewhere that a guest added to the account after the reference check. |
 | [`calls`](#calls) | Dashboard | 0 | One row per conversation with the voice agent (voice or text). Filled by the API; shown on the dashboard. |
 | [`call_messages`](#call_messages) | Dashboard | 0 | Every turn of every call: what the guest said (after speech-to-text) and what the agent answered. |
 | [`call_actions`](#call_actions) | Dashboard | 0 | What the agent did during a call: each tool it ran (availability check, booking lookup, cancellation...) and the result. |
@@ -32,7 +33,7 @@ Every table and column of `schema.sql`. The same descriptions are stored in the 
 
 Hotel-wide settings. system_date is the frozen "today" of the dataset; the API must use it instead of the machine clock while the demo data is in use.
 
-Rows in the demo data: **9**
+Rows in the demo data: **11**
 
 | Column | Type | Rules | Description |
 |---|---|---|---|
@@ -54,6 +55,8 @@ Rows in the demo data: **6**
 | `capacity` | SMALLINT | required, capacity BETWEEN 1 AND 4 | Maximum guests, adults and children together |
 | `base_price` | NUMERIC(10,2) | required, base_price > 0 | Standard Flexible rate per night, EGP |
 | `size_sqm` | SMALLINT | required, size_sqm > 0 | Room size in square metres |
+| `image_nile` | VARCHAR(80) | required | Photo of the room type with a Nile view (path under static/) |
+| `image_city` | VARCHAR(80) | optional | Photo with a city view; NULL for the Suite (every Suite faces the Nile) |
 
 ## rooms
 
@@ -87,8 +90,8 @@ Rows in the demo data: **10,000**
 | `last_name_ar` | VARCHAR(40) | optional | Last name in Arabic, Arab guests only |
 | `email` | VARCHAR(120) | required, unique | Email |
 | `phone` | VARCHAR(20) | required, unique | Phone in international format; its last 4 digits are used for the identity check |
-| `nationality` | VARCHAR(30) | required | Nationality |
-| `date_of_birth` | DATE | required | Date of birth |
+| `nationality` | VARCHAR(30) | optional | Nationality (optional at sign-up) |
+| `date_of_birth` | DATE | optional | Date of birth (asked before the first booking: the guest must be 18+) |
 | `created_at` | TIMESTAMPTZ | required, default now() | Account creation time (Cairo time) |
 
 ## loyalty_tiers
@@ -234,18 +237,20 @@ Rows in the demo data: **16,532**
 | `nights` | INTEGER | computed | Computed: check_out - check_in |
 | `adults` | SMALLINT | required, adults >= 1 | Adults |
 | `children` | SMALLINT | required, children >= 0, default 0 | Children (count toward capacity) |
-| `booking_status` | VARCHAR(10) | required, one of: Confirmed, Completed, Cancelled, No-show | Confirmed, Completed, Cancelled, No-show |
+| `booking_status` | VARCHAR(10) | required, one of: Pending, Confirmed, Completed, Cancelled, No-show | Pending (waiting for the payment link, room held), Confirmed, Completed, Cancelled, No-show |
 | `booking_channel` | VARCHAR(20) | required, one of: Website, Booking Platform, Mobile App, Phone, Travel Agent, Voice Agent | Where it was booked; bookings made by the voice agent use "Voice Agent" |
-| `rate_plan` | VARCHAR(14) | required, one of: Flexible, Non-refundable | Flexible: free cancellation until 48 h before arrival. Non-refundable: 15% cheaper, prepaid, no refund |
+| `rate_plan` | VARCHAR(14) | required, one of: Flexible, Non-refundable | Flexible: first night paid online as a deposit, the rest at the hotel; free cancellation until 48 h before arrival. Non-refundable: 15% cheaper, prepaid, no refund |
 | `price_per_night` | NUMERIC(10,2) | required, price_per_night > 0 | Agreed nightly rate, EGP |
 | `total_amount` | NUMERIC(12,2) | computed | Computed: price_per_night x nights |
 | `created_at` | TIMESTAMPTZ | optional | When the booking was made (set by the API for new bookings; empty in the demo data) |
 | `cancelled_at` | TIMESTAMPTZ | optional | When it was cancelled (set by the API) |
+| `checked_in_at` | TIMESTAMPTZ | optional | Arrival recorded by staff on the dashboard (empty in the demo data) |
+| `checked_out_at` | TIMESTAMPTZ | optional | Departure recorded by staff, with the balance paid at the hotel (empty in the demo data) |
 
 Table rules:
 - `CHECK (check_out > check_in)`
 - `FOREIGN KEY (room_number, room_type_id) REFERENCES rooms (room_number, room_type_id)`
-- `CONSTRAINT no_double_booking EXCLUDE USING gist (room_number WITH =, daterange(check_in, check_out, '[)') WITH &&) WHERE (booking_status IN ('Confirmed', 'Completed'))`
+- `CONSTRAINT no_double_booking EXCLUDE USING gist (room_number WITH =, daterange(check_in, check_out, '[)') WITH &&) WHERE (booking_status IN ('Pending', 'Confirmed', 'Completed'))`
 
 ## payments
 
@@ -258,10 +263,11 @@ Rows in the demo data: **16,532**
 | `payment_id` | VARCHAR(7) | PK, required, auto: next reference | P + 6 digits |
 | `booking_id` | VARCHAR(7) | FK → bookings, required, unique | The booking |
 | `payment_method` | VARCHAR(20) | required, one of: Credit Card, Debit Card, Cash, Digital Wallet, Bank Transfer | Method |
-| `amount_paid` | NUMERIC(12,2) | required, amount_paid >= 0, default 0 | Collected, EGP (0 when Pending or Failed) |
-| `payment_status` | VARCHAR(20) | required, one of: Pending, Paid, Failed, Refunded, Partially Refunded | Status |
+| `amount_paid` | NUMERIC(12,2) | required, amount_paid >= 0, default 0 | Collected, EGP: Flexible = the first-night deposit until the stay is completed, then the total; Non-refundable = the total (0 when Pending or Failed) |
+| `payment_status` | VARCHAR(20) | required, one of: Pending, Paid, Failed, Expired, Refunded, Partially Refunded | Expired = the link was not paid in time and the booking was cancelled |
 | `refund_amount` | NUMERIC(12,2) | required, refund_amount >= 0, default 0 | Refunded, EGP |
 | `transaction_reference` | UUID | required, unique, default gen_random_uuid() | Gateway reference |
+| `payment_due_at` | TIMESTAMPTZ | optional | Deadline to pay the link of a Pending booking (24 h, or 2 h when arrival is less than 24 h away) |
 | `created_at` | TIMESTAMPTZ | optional | When it was recorded (set by the API) |
 
 Table rules:
@@ -278,9 +284,10 @@ Rows in the demo data: **13,573**
 | `request_id` | VARCHAR(9) | PK, required, auto: next reference | REQ + 6 digits |
 | `customer_id` | VARCHAR(7) | FK → customers, required | Guest |
 | `booking_id` | VARCHAR(7) | FK → bookings, optional | Related booking (optional) |
-| `request_type` | VARCHAR(25) | required, one of: Room Service, Booking Inquiry, Housekeeping, Late Checkout, Modification Request, Airport Transfer, General Inquiry, Cancellation Request, Complaint, Extra Bed, Early Check-in, Payment Inquiry | Type |
+| `request_type` | VARCHAR(25) | required, one of: Room Service, Booking Inquiry, Housekeeping, Late Checkout, Modification Request, Airport Transfer, General Inquiry, Cancellation Request, Complaint, Extra Bed, Early Check-in, Payment Inquiry, Discount Request, Staff Callback, Emergency | Type; a Discount Request is decided by the admin (approved: a promotional code is emailed); Staff Callback = the guest asked for a person and no one was free; Emergency = raised by the agent during an emergency |
 | `request_text` | TEXT | required | What the guest asked |
 | `request_status` | VARCHAR(12) | required, one of: Open, In Progress, Resolved, Closed | Status |
+| `priority` | VARCHAR(8) | required, one of: Normal, Urgent, Critical, default 'Normal' | Urgent = Staff Callback; Critical = Emergency (shown first on the staff dashboard) |
 | `created_at` | TIMESTAMPTZ | required, default now() | When it was made |
 
 ## complaint_tickets
@@ -347,21 +354,39 @@ Rows in the demo data: **4,001**
 Table rules:
 - `CHECK ((rating >= 4 AND sentiment = 'Positive') OR (rating = 3 AND sentiment = 'Neutral') OR (rating <= 2 AND sentiment = 'Negative'))`
 
-## staff_users
+## user_accounts
 
-Hotel staff who sign in to the dashboard and take escalated calls. Empty: the API creates users.
+One login for everyone: guests (linked to a customer), hotel staff and admins. The demo data has 1 admin, 4 staff and an account for every customer who booked on the website, the app or with the voice agent; the demo password of all of them is `NilePearl@2026`.
 
-Rows in the demo data: **0**
+Rows in the demo data: **5,594**
 
 | Column | Type | Rules | Description |
 |---|---|---|---|
-| `staff_id` | SERIAL | PK, required | Staff id |
+| `account_id` | SERIAL | PK, required | Account id |
+| `role` | VARCHAR(5) | required, one of: Guest, Staff, Admin | Guest, Staff or Admin |
+| `customer_id` | VARCHAR(7) | FK → customers, unique, optional | The guest's customer record (Guest accounts only) |
 | `full_name` | VARCHAR(80) | required | Name |
-| `email` | VARCHAR(120) | required, unique | Sign-in email |
-| `role` | VARCHAR(12) | required, one of: agent, supervisor, admin, default 'agent' | Dashboard role |
-| `password_hash` | TEXT | required | Password hash (never the password itself) |
+| `email` | VARCHAR(120) | required, unique | Sign-in email; codes and confirmations are sent here |
+| `password_hash` | TEXT | required | bcrypt hash (never the password itself) |
+| `email_verified` | BOOLEAN | required, default false | Email confirmed with the code sent at sign-up |
 | `is_active` | BOOLEAN | required, default true | Can sign in |
 | `created_at` | TIMESTAMPTZ | required, default now() | Created |
+| `last_login_at` | TIMESTAMPTZ | optional | Last sign-in |
+
+Table rules:
+- `CHECK ((role = 'Guest') = (customer_id IS NOT NULL))`
+
+## booking_links
+
+Bookings made elsewhere (phone, agency, booking platform) that a guest added to the account after the reference check.
+
+Rows in the demo data: **20**
+
+| Column | Type | Rules | Description |
+|---|---|---|---|
+| `account_id` | INTEGER | PK, FK → user_accounts, required | Guest account |
+| `booking_id` | VARCHAR(7) | PK, FK → bookings, required | Booking added |
+| `linked_at` | TIMESTAMPTZ | required, default now() | When it was added |
 
 ## calls
 
@@ -376,10 +401,10 @@ Rows in the demo data: **0**
 | `language` | VARCHAR(16) | optional, one of: Arabic-Egyptian, Arabic, English, French, Russian | Caller's language |
 | `customer_id` | VARCHAR(7) | FK → customers, optional | Caller, once identified |
 | `booking_id` | VARCHAR(7) | FK → bookings, optional | Booking discussed, once verified |
-| `identity_verified` | BOOLEAN | required, default false | Booking reference + last name or phone digits matched |
+| `identity_verified` | BOOLEAN | required, default false | The guest was logged in (or passed the reference check to link a booking) |
 | `status` | VARCHAR(10) | required, one of: active, completed, escalated, abandoned, default 'active' | Call status |
 | `escalation_reason` | TEXT | optional | Why it was handed to a person |
-| `assigned_staff_id` | INTEGER | FK → staff_users, optional | Staff member who took the escalated call |
+| `assigned_staff_id` | INTEGER | FK → user_accounts, optional | Staff account that took the escalated call |
 | `summary` | TEXT | optional | Short summary for the dashboard |
 | `started_at` | TIMESTAMPTZ | required, default now() | Start |
 | `ended_at` | TIMESTAMPTZ | optional | End |

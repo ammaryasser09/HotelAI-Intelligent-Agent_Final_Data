@@ -1,18 +1,26 @@
 NILE PEARL HOTEL
 RESERVATION SECURITY
 
-1. Identity Check
+1. Your Account
 
-Before discussing, changing or cancelling an existing reservation, customer service asks for the booking reference and one of: the last name on the booking, or the last four digits of the phone number on the booking. Details are shared only when both match.
+Guests who are logged in to their account on the hotel website can see and manage the bookings in their account without further questions. Visitors who are not logged in can ask general questions; making or managing a booking and making requests need a login.
 
-2. What the Hotel Never Asks For
+2. Adding a Booking Made Elsewhere
+
+A booking made by phone, by email, at reception, through a travel agent or through a booking platform can be added to the account once, with the booking reference and one of: the last name on the booking, or the last four digits of the phone number on the booking. It is added only when both match.
+
+3. Identity Check by Phone or Email
+
+Before discussing, changing or cancelling a reservation by phone or email, customer service asks for the booking reference and the last name on the booking or the last four digits of its phone number.
+
+4. What the Hotel Never Asks For
 
 The hotel never asks for full card numbers, card security codes or passwords by phone, chat, WhatsApp or email.
 
-3. Confirmation of Changes
+5. Confirmation of Changes
 
 Every change or cancellation is confirmed by email to the address on the booking.
 
-4. Suspicious Contact
+6. Suspicious Contact
 
 Guests who receive a suspicious message claiming to be from the hotel should contact reception on +20 2 2794 5500.

@@ -50,7 +50,11 @@ Hotel Management:
 Handles escalated complaints and matters requiring a management decision.
 
 
-6. Important Information
+6. Talking to a Member of Staff
+
+Guests who have a problem with their booking or stay can ask the hotel's voice agent to talk to a person at any time. The conversation then continues as a live chat with a member of the hotel staff. If no one is free at that moment, the agent opens an urgent ticket and a member of staff contacts the guest as soon as possible, in the chat or by email.
+
+7. Important Information
 
 For life-threatening emergencies, contact the Egyptian emergency services directly
-rather than the hotel.
+rather than the hotel: ambulance 123, police 122, fire 180.

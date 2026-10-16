@@ -3,29 +3,41 @@
 \pset footer off
 
 SELECT check_name, failures, CASE WHEN failures = 0 THEN 'PASS' ELSE 'FAIL' END AS result FROM (
-  SELECT 'no two Confirmed/Completed bookings share a room and night' AS check_name, (SELECT count(*) FROM bookings a JOIN bookings b ON a.room_number = b.room_number AND a.booking_id < b.booking_id
-   AND a.booking_status IN ('Confirmed','Completed') AND b.booking_status IN ('Confirmed','Completed')
+  SELECT 'no two Pending/Confirmed/Completed bookings share a room and night' AS check_name, (SELECT count(*) FROM bookings a JOIN bookings b ON a.room_number = b.room_number AND a.booking_id < b.booking_id
+   AND a.booking_status IN ('Pending','Confirmed','Completed') AND b.booking_status IN ('Pending','Confirmed','Completed')
    AND a.check_in < b.check_out AND b.check_in < a.check_out) AS failures
   UNION ALL
   SELECT 'guests fit the room type (children count)' AS check_name, (SELECT count(*) FROM bookings b JOIN room_types t USING (room_type_id) WHERE b.adults + b.children > t.capacity) AS failures
   UNION ALL
   SELECT 'statuses agree with system_date' AS check_name, (SELECT count(*) FROM bookings WHERE (booking_status = 'Completed' AND check_out > hotel_today())
-   OR (booking_status = 'Confirmed' AND check_out < hotel_today()) OR (booking_status = 'No-show' AND check_in >= hotel_today())) AS failures
+   OR (booking_status = 'Confirmed' AND check_out < hotel_today()) OR (booking_status = 'No-show' AND check_in >= hotel_today())
+   OR (booking_status = 'Pending' AND check_in <= hotel_today())) AS failures
   UNION ALL
   SELECT 'every booking has exactly one payment' AS check_name, (SELECT count(*) FROM bookings b LEFT JOIN payments p USING (booking_id) WHERE p.payment_id IS NULL) AS failures
   UNION ALL
   SELECT 'payment status fits the booking status' AS check_name, (SELECT count(*) FROM payments p JOIN bookings b USING (booking_id) WHERE NOT (
-   (b.booking_status = 'Confirmed' AND p.payment_status IN ('Paid','Pending','Failed','Partially Refunded'))
+   (b.booking_status = 'Pending' AND p.payment_status IN ('Pending','Failed'))
+   OR (b.booking_status = 'Confirmed' AND p.payment_status IN ('Paid','Partially Refunded'))
    OR (b.booking_status = 'Completed' AND p.payment_status IN ('Paid','Partially Refunded'))
-   OR (b.booking_status IN ('Cancelled','No-show') AND p.payment_status IN ('Paid','Refunded','Partially Refunded','Failed')))) AS failures
+   OR (b.booking_status = 'Cancelled' AND p.payment_status IN ('Paid','Refunded','Partially Refunded','Failed','Expired'))
+   OR (b.booking_status = 'No-show' AND p.payment_status IN ('Paid','Refunded','Partially Refunded')))) AS failures
   UNION ALL
-  SELECT 'amount paid equals the booking total (0 if nothing collected)' AS check_name, (SELECT count(*) FROM payments p JOIN bookings b USING (booking_id) WHERE
-   (p.payment_status IN ('Paid','Refunded','Partially Refunded') AND p.amount_paid <> b.total_amount)
-   OR (p.payment_status IN ('Pending','Failed') AND p.amount_paid <> 0)) AS failures
+  SELECT 'a Pending booking has a payment deadline after system_date, and only Pending bookings have one' AS check_name, (SELECT count(*) FROM payments p JOIN bookings b USING (booking_id) WHERE
+   (b.booking_status = 'Pending' AND (p.payment_due_at IS NULL OR p.payment_due_at::date < hotel_today()))
+   OR (b.booking_status <> 'Pending' AND p.payment_due_at IS NOT NULL)) AS failures
+  UNION ALL
+  SELECT 'amount paid: the total, or the first-night deposit for Flexible stays not completed (0 if nothing collected)' AS check_name, (SELECT count(*) FROM payments p JOIN bookings b USING (booking_id) WHERE
+   (p.payment_status IN ('Paid','Refunded','Partially Refunded') AND p.amount_paid <> CASE
+      WHEN b.rate_plan = 'Flexible' AND b.booking_status <> 'Completed' THEN b.price_per_night
+      ELSE b.total_amount END)
+   OR (p.payment_status IN ('Pending','Failed','Expired') AND p.amount_paid <> 0)) AS failures
+  UNION ALL
+  SELECT 'a Flexible deposit is refunded only for an early cancellation' AS check_name, (SELECT count(*) FROM payments p JOIN bookings b USING (booking_id)
+   WHERE b.rate_plan = 'Flexible' AND b.booking_status = 'No-show' AND p.refund_amount > 0) AS failures
   UNION ALL
   SELECT 'refunds agree with the payment status' AS check_name, (SELECT count(*) FROM payments WHERE (payment_status = 'Refunded' AND refund_amount <> amount_paid)
    OR (payment_status = 'Partially Refunded' AND NOT (refund_amount > 0 AND refund_amount < amount_paid))
-   OR (payment_status IN ('Paid','Pending','Failed') AND refund_amount <> 0)) AS failures
+   OR (payment_status IN ('Paid','Pending','Failed','Expired') AND refund_amount <> 0)) AS failures
   UNION ALL
   SELECT 'Non-refundable cancellations refund nothing' AS check_name, (SELECT count(*) FROM payments p JOIN bookings b USING (booking_id)
    WHERE b.rate_plan = 'Non-refundable' AND b.booking_status IN ('Cancelled','No-show') AND p.refund_amount > 0) AS failures
@@ -52,6 +64,15 @@ SELECT check_name, failures, CASE WHEN failures = 0 THEN 'PASS' ELSE 'FAIL' END 
   UNION ALL
   SELECT 'discount code status agrees with system_date' AS check_name, (SELECT count(*) FROM discount_codes WHERE status <> CASE WHEN end_date < hotel_today() THEN 'Expired'
    WHEN start_date > hotel_today() THEN 'Scheduled' WHEN max_usage IS NOT NULL AND usage_count >= max_usage THEN 'Exhausted' ELSE 'Active' END) AS failures
+  UNION ALL
+  SELECT 'guest accounts use the customer''s email; staff and admins have no customer record' AS check_name, (SELECT count(*) FROM user_accounts a LEFT JOIN customers c USING (customer_id)
+   WHERE (a.role = 'Guest' AND a.email <> c.email) OR (a.role <> 'Guest' AND a.customer_id IS NOT NULL)) AS failures
+  UNION ALL
+  SELECT 'linked bookings belong to another customer and were linked by system_date' AS check_name, (SELECT count(*) FROM booking_links l JOIN user_accounts a USING (account_id) JOIN bookings b USING (booking_id)
+   WHERE a.role <> 'Guest' OR b.customer_id = a.customer_id OR l.linked_at::date > hotel_today()) AS failures
+  UNION ALL
+  SELECT 'emergencies are Critical and staff callbacks Urgent' AS check_name, (SELECT count(*) FROM customer_requests WHERE
+   (request_type = 'Emergency') <> (priority = 'Critical') OR (request_type = 'Staff Callback') <> (priority = 'Urgent')) AS failures
   UNION ALL
   SELECT 'loyalty members joined after registering' AS check_name, (SELECT count(*) FROM loyalty_members m JOIN customers c USING (customer_id) WHERE m.join_date < c.created_at::date) AS failures
   UNION ALL

@@ -19,3 +19,7 @@ Codes are entered when booking. Each code has validity dates and a usage limit; 
 3. Terms
 
 Only one discount, code or special rate applies to a booking. Offers are subject to availability and may have blackout dates.
+
+4. Booking With the Hotel's Voice Agent
+
+The voice agent on the hotel website applies only two discounts: the extended-stay discount (7 or more nights) and a valid promotional code. If both apply, the bigger one is used. Member, corporate, group and low-season rates are arranged by the reservations team: the agent records the request and the team replies by email. The agent never gives any other discount. A guest who asks for one can leave a discount request; if the hotel approves it, the guest receives a promotional code by email.

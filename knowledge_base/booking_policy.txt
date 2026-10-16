@@ -11,7 +11,7 @@ Reservations can be made on the hotel website, by phone on +20 2 2794 5501, by e
 
 3. Information Required
 
-A reservation requires the guest's full name, number of adults and children, check-in and check-out dates, room type, phone number and email address. The Flexible rate is guaranteed with a card; the Non-refundable rate is paid in full at booking.
+A reservation requires the guest's full name, number of adults and children, check-in and check-out dates, room type, phone number and email address. On the Flexible rate the first night is paid online as a deposit through a secure payment link sent after booking, and the rest is paid at the hotel; the Non-refundable rate is paid in full at booking.
 
 4. Room Types and Capacity
 

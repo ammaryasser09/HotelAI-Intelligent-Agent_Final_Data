@@ -23,4 +23,4 @@ Guests who expect to arrive after 23:59 on the check-in date should inform the h
 
 6. Charges
 
-Flexible rate: a no-show is charged the first night; the remaining nights are released and not charged. Non-refundable rate: the full amount is kept.
+Flexible rate: a no-show is charged the first night, which is the deposit already paid; the remaining nights are released and not charged. Non-refundable rate: the full amount is kept.

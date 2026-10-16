@@ -19,11 +19,11 @@ The guest checks the dates, room type, number of guests, rate plan and total pri
 
 5. Payment
 
-Flexible: a card is taken as a guarantee and the stay is paid at the hotel. Non-refundable: the full amount is paid at booking.
+Flexible: the first night is paid online as a deposit through a secure payment link sent by email right after booking; the rest of the stay is paid at the hotel at check-in or check-out. Non-refundable: the full amount is paid through the payment link at booking. The link must be paid within 24 hours, or within 2 hours if arrival is less than 24 hours away; otherwise the booking is cancelled automatically and the room is released.
 
 6. Confirmation
 
-The confirmation with the booking reference is sent immediately by email and SMS.
+The booking reference is given at once. The booking is confirmed, and the confirmation sent by email, when the payment link is paid.
 
 7. Changes After Booking
 

@@ -3,11 +3,11 @@ PAYMENT POLICY
 
 1. When Payment Is Taken
 
-Flexible rate: a card guarantees the booking and the stay is paid at the hotel, at check-in or check-out. Non-refundable rate: the full amount is paid at booking.
+Flexible rate: the first night is paid online as a deposit through a secure payment link sent after booking, and the rest of the stay is paid at the hotel, at check-in or check-out. Non-refundable rate: the full amount is paid at booking.
 
 2. Incidentals Deposit
 
-At check-in the hotel takes a refundable deposit of 3,000 EGP per night, by card pre-authorisation or in cash, to cover room service and other charges. It is released at check-out.
+Separately from the first-night deposit, at check-in the hotel takes a refundable deposit of 3,000 EGP per night, by card pre-authorisation or in cash, to cover room service and other charges. It is released at check-out.
 
 3. Additional Charges
 
@@ -23,4 +23,4 @@ All payments are in Egyptian Pounds. Cards issued abroad are charged in EGP and 
 
 6. Payment Problems
 
-If a payment is declined, the guest can use another card or another accepted method. Customer service and reception help with payment problems; billing disputes are handled as complaints.
+If a payment is declined, the guest can use another card or another accepted method through the same payment link, or ask customer service to send a new link; the payment deadline does not change. A booking whose link is not paid within 24 hours (2 hours if arrival is less than 24 hours away) is cancelled automatically. Customer service and reception help with payment problems; billing disputes are handled as complaints.

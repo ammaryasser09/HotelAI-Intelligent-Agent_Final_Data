@@ -13,7 +13,7 @@ booking, a payment, a points balance or a code check from RAG.
 | Is a Double free 12-15 November? | **DB** | `free_rooms()` - query 1 in `database/queries.sql` |
 | What will three nights cost? | **DB** | `room_types.base_price` x nights (`pricing_tiers` for special rates) |
 | Book it for me | **DB write** | availability again, the guest's "yes", then insert - query 4 |
-| My booking B000037, is it confirmed? Did my payment go through? | **DB, after the identity check** | `v_booking_details` - query 2 |
+| My booking B000037, is it confirmed? Did my payment go through? | **DB: a booking in the guest's account** (or linked after the reference check) | `my_bookings` - query 2 |
 | What would cancelling cost me now? | **DB** | query 3 (rate plan + 48-hour rule) |
 | Cancel it | **DB write** | quote, the guest's "yes", then update - query 3b |
 | Can I stay until 5 PM? How many points do I have? | **DB** | `loyalty_members`, `loyalty_tiers`, `fees` - query 5 |

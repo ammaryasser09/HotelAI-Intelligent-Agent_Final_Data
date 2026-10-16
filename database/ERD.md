@@ -18,6 +18,8 @@ erDiagram
         int capacity
         decimal base_price
         int size_sqm
+        string image_nile
+        string image_city
     }
     rooms {
         int room_number PK
@@ -120,6 +122,8 @@ erDiagram
         decimal total_amount
         timestamp created_at
         timestamp cancelled_at
+        timestamp checked_in_at
+        timestamp checked_out_at
     }
     payments {
         string payment_id PK
@@ -129,6 +133,7 @@ erDiagram
         string payment_status
         decimal refund_amount
         uuid transaction_reference
+        timestamp payment_due_at
         timestamp created_at
     }
     customer_requests {
@@ -172,14 +177,22 @@ erDiagram
         string feedback_channel
         string would_recommend
     }
-    staff_users {
-        int staff_id PK
+    user_accounts {
+        int account_id PK
+        string role
+        string customer_id FK
         string full_name
         string email
-        string role
         string password_hash
+        boolean email_verified
         boolean is_active
         timestamp created_at
+        timestamp last_login_at
+    }
+    booking_links {
+        int account_id PK
+        string booking_id PK
+        timestamp linked_at
     }
     calls {
         uuid call_id PK
@@ -230,7 +243,10 @@ erDiagram
     bookings ||--o| customer_feedback : "booking_id"
     customers |o--o{ calls : "customer_id"
     bookings |o--o{ calls : "booking_id"
-    staff_users |o--o{ calls : "assigned_staff_id"
+    user_accounts |o--o{ calls : "assigned_staff_id"
+    customers ||--o| user_accounts : "customer_id"
+    user_accounts ||--o{ booking_links : "account_id"
+    bookings ||--o{ booking_links : "booking_id"
     calls ||--o{ call_messages : "call_id"
     calls ||--o{ call_actions : "call_id"
     bookings |o--o{ call_actions : "booking_id"

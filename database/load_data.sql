@@ -5,7 +5,7 @@ SET client_encoding = 'UTF8';
 SET TIME ZONE 'Africa/Cairo';
 BEGIN;
 \copy app_settings (key, value, description) FROM 'seed/app_settings.csv' WITH (FORMAT csv, HEADER true, ENCODING 'UTF8')
-\copy room_types (room_type_id, room_type_name, description, capacity, base_price, size_sqm) FROM 'seed/room_types.csv' WITH (FORMAT csv, HEADER true, ENCODING 'UTF8')
+\copy room_types (room_type_id, room_type_name, description, capacity, base_price, size_sqm, image_nile, image_city) FROM 'seed/room_types.csv' WITH (FORMAT csv, HEADER true, ENCODING 'UTF8')
 \copy rooms (room_number, floor, room_type_id, view, status) FROM 'seed/rooms.csv' WITH (FORMAT csv, HEADER true, ENCODING 'UTF8')
 \copy customers (customer_id, first_name, last_name, first_name_ar, last_name_ar, email, phone, nationality, date_of_birth, created_at) FROM 'seed/customers.csv' WITH (FORMAT csv, HEADER true, ENCODING 'UTF8')
 \copy loyalty_tiers (tier, min_nights_per_year, points_bonus_pct, late_checkout_until, benefits) FROM 'seed/loyalty_tiers.csv' WITH (FORMAT csv, HEADER true, ENCODING 'UTF8')
@@ -17,7 +17,10 @@ BEGIN;
 \copy fees (fee_id, fee_name, amount, unit, rule) FROM 'seed/fees.csv' WITH (FORMAT csv, HEADER true, ENCODING 'UTF8')
 \copy menu_items (item_id, name_en, name_ar, category, price, dietary, night_menu) FROM 'seed/menu_items.csv' WITH (FORMAT csv, HEADER true, ENCODING 'UTF8')
 \copy bookings (booking_id, customer_id, room_number, room_type_id, check_in, check_out, adults, children, booking_status, booking_channel, rate_plan, price_per_night) FROM 'seed/bookings.csv' WITH (FORMAT csv, HEADER true, ENCODING 'UTF8')
-\copy payments (payment_id, booking_id, payment_method, amount_paid, payment_status, refund_amount, transaction_reference) FROM 'seed/payments.csv' WITH (FORMAT csv, HEADER true, ENCODING 'UTF8')
+\copy payments (payment_id, booking_id, payment_method, amount_paid, payment_status, refund_amount, transaction_reference, payment_due_at) FROM 'seed/payments.csv' WITH (FORMAT csv, HEADER true, ENCODING 'UTF8')
+\copy user_accounts (account_id, role, customer_id, full_name, email, password_hash, email_verified, is_active, created_at, last_login_at) FROM 'seed/user_accounts.csv' WITH (FORMAT csv, HEADER true, ENCODING 'UTF8')
+\copy booking_links (account_id, booking_id, linked_at) FROM 'seed/booking_links.csv' WITH (FORMAT csv, HEADER true, ENCODING 'UTF8')
+DO $$ BEGIN PERFORM setval(pg_get_serial_sequence('user_accounts', 'account_id'), (SELECT max(account_id) FROM user_accounts)); END $$;
 \copy customer_requests (request_id, customer_id, booking_id, request_type, request_text, request_status, created_at) FROM 'seed/customer_requests.csv' WITH (FORMAT csv, HEADER true, ENCODING 'UTF8')
 \copy complaint_tickets (ticket_id, customer_id, booking_id, complaint_type, priority, description, status, created_at, resolved_at) FROM 'seed/complaint_tickets.csv' WITH (FORMAT csv, HEADER true, ENCODING 'UTF8')
 \copy special_requests (request_id, customer_id, booking_id, request_type, request_text, request_status, created_at, fulfilled_at) FROM 'seed/special_requests.csv' WITH (FORMAT csv, HEADER true, ENCODING 'UTF8')
