@@ -7,6 +7,7 @@ Small automatic test of the whole agent on the realistic Egyptian questions.
 Scores (automatic, rough — read the answers yourself too; the CSV has everything):
   retrieval  the expected KB document is among the documents given to the LLM (RAG rows)
   route      the expected tool was called / a question was asked / the reception was named ...
+             (each row runs as its account_id: a logged-in guest, or a visitor when empty)
   facts      share of the expected numbers (prices, times, counts) that appear in the answer
 """
 import csv, os, re
@@ -27,13 +28,21 @@ def facts_score(expected, answer):
     hit = sum(any(abs(g - e) <= max(1, e * 0.01) for g in got) for e in exp)
     return round(hit / len(exp), 2)
 
+T = import_module('app.rag.tools')
+
+def leaked(row, r):
+    """Booking details reached the model for a booking that is not in the caller's account (or for a visitor)."""
+    seen = T._visible(row.get('account_id')) if row.get('account_id') else set()
+    return any(t['tool'] in ('find_booking', 'quote_cancellation', 'quote_modification', 'late_checkout_quote', 'loyalty_status')
+               and isinstance(t['result'], dict) and t['result'].get('ok') and t['result'].get('booking_ref', '') not in seen
+               and t['tool'] != 'link_booking' for t in r['tools'])
+
 def route_ok(row, r):
     tools = [t['tool'] for t in r['tools']]; a = r['answer']; route = row['route']
     if row['expected_tool'] and any(x in route for x in ('TOOL', 'DATABASE')):
         return row['expected_tool'] in tools
     if route.startswith('CLARIFY'):
-        leaked = any(t['tool'] == 'find_booking' and t['result'].get('ok') for t in r['tools'])
-        return ('؟' in a or '?' in a) and not leaked
+        return ('؟' in a or '?' in a) and not leaked(row, r)
     if route == 'EMERGENCY': return bool(re.search(r'2794\s?5500|استقبال|ريسبشن|الطوارئ|الإسعاف', a))
     if route == 'ESCALATE': return 'escalate_to_human' in tools or bool(re.search(r'موظف|مدير|حد من|أحولك|هحولك|تحويل', a))
     if route == 'REFUSE': return not tools
@@ -53,7 +62,7 @@ def run(agent, n=40, out='prototype_results.csv', show=True):
     rows = sample(list(csv.DictReader(open(TEST, encoding='utf-8'))), n)
     res = []
     for k, row in enumerate(rows, 1):
-        agent.reset(); r = agent.ask(row['question'])
+        agent.reset(); agent.login(row.get('account_id')); r = agent.ask(row['question'])   # empty account_id = visitor
         exp_docs = [d for d in row['expected_doc'].split(';') if d]
         res.append({**row, 'answer': r['answer'], 'tools_called': ' '.join(t['tool'] for t in r['tools']),
                     'docs_given': ' '.join(r['docs']), 'seconds': r['seconds'],

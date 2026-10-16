@@ -6,7 +6,7 @@
 
 | الملف | فيه إيه |
 |---|---|
-| `agent.py` | الـ agent: بيدوّر، وبيشغّل الـ tools (من الـ router أو من الموديل)، وبيبعت للـ LLM. شغال مع Qwen على Colab أو مع أي API شبه OpenAI |
+| `agent.py` | الـ agent: بيدوّر، وبيشغّل الـ tools (من الـ router أو من الموديل)، وبيبعت للـ LLM. شغال مع Qwen على Colab أو مع أي API شبه OpenAI. `agent.login(account_id)` بيخليه ضيف عامل login و`agent.logout()` بيرجعه زائر، والـ tools دايماً بتاخد الحساب من الـ session مش من كلام الموديل |
 | `speech.py` | Whisper بيعرف اللغة لوحده، وصوت الرد حسب اللغة، وحساب WER |
 | `test_agent.py` | اختبار أوتوماتيك على الأسئلة الواقعية وعلى الـ 5 لغات |
 | `HotelAI_Prototype.ipynb` | الـ notebook الجاهز |

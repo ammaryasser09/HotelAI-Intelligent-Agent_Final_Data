@@ -1,201 +1,201 @@
-test_id,category,question,intent_id,route,expected_doc,expected_tool,expected_facts,must_not,tags,difficulty
-RT001,information,الفندق فين بالظبط؟,INT001,RAG,hotel_information.txt;location_and_surroundings.txt,,"14 Corniche El Nil Street, Garden City, Cairo",,,easy
-RT002,information,انتوا بعيد عن المطار قد ايه؟,INT001,RAG,location_and_surroundings.txt;airport_transfer.txt,,about 25 km; 35-60 minutes by car,,typo,easy
-RT003,information,من عندكم للأهرامات بتاخد وقت قد إيه بالعربية؟,INT001,RAG,location_and_surroundings.txt,,about 17 km; 40-60 minutes,,,easy
-RT004,information,الفندق كام نجمة؟,INT002,RAG,hotel_information.txt,,5-star,,,easy
-RT005,information,الريسبشن بيبقى فاتح بالليل؟,INT003,RAG,hotel_information.txt,,reception 24/7,,code_switch,easy
-RT006,information,الـ check in الساعة كام؟,INT004,RAG,check_in_check_out.txt,,3:00 PM,,code_switch,easy
-RT007,information,لازم أسيب الأوضة امتى يوم السفر؟,INT005,RAG,check_in_check_out.txt,,check-out 12:00 PM,,,easy
-RT008,information,البيسين بيفتح امتى وبيقفل امتى؟,INT013,RAG,hotel_facilities.txt,,7:00 AM - 9:00 PM,,,easy
-RT009,information,الجيم بفلوس ولا ببلاش؟,INT013,RAG,gym.txt;hotel_facilities.txt,,free for hotel guests; open 24/7,,,easy
-RT010,information,الواي فاي عندكم ببلاش؟ والباسورد بلاقيه فين؟,INT013,RAG,hotel_facilities.txt,,free; network and password on the key-card holder,,code_switch,easy
-RT011,information,في جراج؟ وبكام الركنة؟,INT013,RAG,hotel_facilities.txt,,free for guests; valet 24/7,,,easy
-RT012,information,الفطار بوفيه ولا بتطلب من منيو؟,INT031,RAG,breakfast.txt,,"buffet 7:00-10:30; 1,200 EGP per adult",,,easy
-RT013,information,الفطار فيه فول وطعمية؟,INT031,RAG,breakfast.txt,,Egyptian specialities such as foul and taameya,,,easy
-RT014,information,المطعم بيقدم عشا لحد الساعة كام؟,INT031,RAG,restaurant.txt,,dinner 7:00-11:00 PM,,,easy
-RT015,information,عندكم أكل نباتي؟,INT031,RAG,restaurant.txt;in_room_dining_menu.txt,,vegetarian dishes marked V; vegan and gluten-free on request,,,easy
-RT016,information,البرجر عندكم بكام في الروم سيرفس؟,INT031,RAG,in_room_dining_menu.txt;room_service.txt,,"beef burger 1,150 EGP + 300 EGP delivery per order",,code_switch,easy
-RT017,information,في كشري في المنيو؟,INT031,RAG,in_room_dining_menu.txt,,koshary 350 EGP,,,easy
-RT018,information,السبا فيه مساج ساعة ونص؟ بكام؟,INT013,RAG,spa.txt,,"90-minute massage 4,800 EGP",,,easy
-RT019,information,السبا مفتوح لحد امتى؟,INT013,RAG,spa.txt;hotel_facilities.txt,,9:00 AM - 10:00 PM,,,easy
-RT020,information,الغسيل بياخد قد إيه وقت؟,INT031,RAG,laundry.txt,,handed in before 10 AM: same day by 7 PM; express 4 h +50%,,,easy
-RT021,information,المكوى والغسيل بكام؟,INT031,RAG,laundry.txt,,500 EGP per kilogram,,typo,easy
-RT022,information,عربية المطار تاخد كام فرد بالشنط؟,INT031,RAG,airport_transfer.txt,,"sedan up to 3 guests with luggage 2,500; minivan up to 6 guests 4,000",,,easy
-RT023,information,لو طيارتي اتأخرت السواق هيستناني؟,INT031,RAG,airport_transfer.txt,,driver waits up to 60 minutes after landing at no extra charge,,,easy
-RT024,information,الأوضة الدبل مساحتها قد إيه؟,INT024,RAG,room_types.txt,,34 m²,,,easy
-RT025,information,الجناح فيه صالة لوحدها؟,INT024,RAG,room_types.txt,,separate living area; 85 m²; Nile view,,,easy
-RT026,information,كل الأوض فيها تكييف وتلفزيون؟,INT025,RAG,room_amenities.txt,,"air conditioning, TV, private bathroom in every room",,,easy
-RT027,information,في أوض مجهزة للكراسي المتحركة؟,INT028,RAG,accessibility.txt;special_requests.txt,,accessible rooms available; request when booking,,,easy
-RT028,information,أقرب مترو ليكم إيه؟,INT001,RAG,location_and_surroundings.txt,,"Saad Zaghloul and Sadat, about 1 km",,,easy
-RT029,information,بتتكلموا فرنساوي؟ ماما مش بتعرف عربي كويس,INT013,RAG,hotel_information.txt,,"Arabic, English, French, Russian",,,easy
-RT030,information,رقم الريسبشن كام؟,INT032,RAG,contact_information.txt,,"+20 2 2794 5500, 24/7",,,easy
-RT031,policy,لو لغيت قبل ميعادي بأسبوع هدفع حاجة؟,INT018,RAG,cancellation_policy.txt,,Flexible: free until 48 h before arrival; Non-refundable: nothing refunded,state one universal fee,,medium
-RT032,policy,الـ non refundable ده يعني إيه بالظبط؟,INT018,RAG,cancellation_policy.txt;pricing_and_rates.txt,,"paid in full at booking; no cancellation, change or refund; 15% cheaper",,code_switch,medium
-RT033,policy,إيه الفرق بين الحجز المرن واللي مش بيترد؟,INT026,RAG,pricing_and_rates.txt,,"Flexible: free cancellation 48 h, pay at hotel; Non-refundable: 15% less, prepaid, no refund",,,medium
-RT034,policy,الفلوس بترجع بعد قد إيه لو لغيت؟,INT022,RAG,refund_policy.txt,,processed within 3 business days; card 7-14 business days; transfer up to 14,,,medium
-RT035,policy,لو ماجيتش خالص هيحصل إيه؟,INT033,RAG,no_show_policy.txt,,held until 23:59; Flexible: first night charged; Non-refundable: nothing refunded,,,medium
-RT036,policy,هوصل 2 بالليل، الحجز هيتلغي؟,INT033,RAG,no_show_policy.txt;special_requests.txt,,tell the hotel in advance and the booking is held; reception 24/7,,numbers,medium
-RT037,policy,ينفع أغير التاريخ بعد ما حجزت؟,INT009,RAG,booking_modification.txt,,Flexible: free until 48 h before arrival if a room of the same type is free; the agreed nightly rate is kept; the agent makes the change at once; Non-refundable cannot be changed,,,medium
-RT038,policy,حاجز من بوكينج، أعدل منكم ولا منهم؟,INT009,RAG,booking_modification.txt,,booking-platform reservations are changed through that platform,,,medium
-RT039,policy,ينفع أغير اسم اللي نازل في الحجز؟,INT009,RAG,booking_modification.txt,,free until 48 h before arrival; new guest shows valid ID,,,medium
-RT040,policy,لو مشيت بدري يوم هتحسبوه عليا؟,INT009,RAG,booking_modification.txt;cancellation_policy.txt,,one extra night charged unless reception is told at check-in,,,medium
-RT041,policy,بتاخدوا تأمين وقت الدخول؟,INT021,RAG,payment_policy.txt,,"3,000 EGP per night, card hold or cash, released at check-out",,,medium
-RT042,policy,الأسعار دي فيها ضرايب ولا هتتزود؟,INT026,RAG,pricing_and_rates.txt,,"prices include 12% service, 14% VAT and 1% city tax",add taxes on top,,medium
-RT043,policy,بتقبلوا فودافون كاش؟,INT020,RAG,payment_methods.txt,,"yes; also Apple Pay, cards, cash, bank transfer",,,medium
-RT044,policy,ينفع أحول انستا باي؟,INT020,RAG,payment_methods.txt,,bank transfer including InstaPay,,typo,medium
-RT045,policy,ينفع أدفع بالدولار كاش؟,INT021,RAG,payment_policy.txt;payment_methods.txt,,payments in EGP; cash in EGP; foreign cards charged in EGP,,,medium
-RT046,policy,لازم أدفع كله وأنا بحجز؟,INT021,RAG,payment_policy.txt,,"Flexible: first night paid online as a deposit via a payment link, the rest at the hotel; Non-refundable: full at booking",,,medium
-RT047,policy,الدخول بدري الساعة 10 الصبح بكام؟,INT006,RAG,check_in_check_out.txt,,before 12:00: 50% of the nightly rate; from 12:00 free if available,,numbers,medium
-RT048,policy,الخروج الساعة 5 العصر هيتحسب كام؟,INT007,RAG,check_in_check_out.txt,,"until 6 PM: 50% of the nightly rate (until 4 PM: 1,500)",,numbers,medium
-RT049,policy,ولو فضلت لحد 8 بالليل؟,INT007,RAG,check_in_check_out.txt,,after 6 PM: a full night,,context_dependent,medium
-RT050,policy,الأطفال بيدفعوا فطار؟ عندي ولد 8 سنين وبنت 4,INT030,RAG,children_policy.txt;breakfast.txt,,8-year-old: 600 EGP; 4-year-old: free,,numbers,medium
-RT051,policy,سرير البيبي بفلوس؟,INT030,RAG,children_policy.txt,,baby cot free,,,medium
-RT052,policy,السرير الإضافي بكام؟,INT023,RAG,room_policies.txt;pricing_and_rates.txt,,"2,500 EGP per night; does not raise capacity",,,medium
-RT053,policy,النقط بتاعة الولاء بتخلص امتى؟,INT012,RAG,loyalty_programs.txt,,after 24 months without earning or using points,,,medium
-RT054,policy,أوصل للجولد إزاي؟,INT012,RAG,loyalty_programs.txt,,25 nights in a calendar year,,code_switch,medium
-RT055,policy,ينفع أحول نقطي لأخويا؟,INT012,RAG,loyalty_programs.txt,,points are not transferable,,,medium
-RT056,policy,ينفع أستخدم كود خصم مع سعر الأعضاء؟,INT027,RAG,discounts_and_promotions.txt;loyalty_programs.txt,,only one discount per booking; the best applicable rate is used,,,medium
-RT057,policy,لو حجزت 12 أوضة لفرح في خصم؟,INT015,RAG,booking_policy.txt,,group rate 18% off for 10+ rooms; 30% deposit; free release until 30 days before,,numbers,medium
-RT058,policy,الحاجات اللي بتضيع بتحتفظوا بيها قد إيه؟,INT030,RAG,lost_and_found.txt,,90 days; valuables in the safe,,,medium
-RT059,policy,التأكيد بيوصل ازاي؟,INT017,RAG,booking_confirmation.txt,,"by email only, once the payment link is paid; reference B + 6 digits",,,medium
-RT060,policy,ليه بتطلبوا مني آخر 4 أرقام من التليفون؟,INT017,RAG,reservation_security.txt,,identity check before discussing a booking,,,medium
-RT061,booking_request,عايز أوضة دبل من 24 لـ 27 ديسمبر لاتنين,INT015,TOOL,pricing_and_rates.txt,check_availability,"Double 2026-12-24..2026-12-27 (3 nights): 0 free (0 Nile view); standard 24,000 EGP flexible / 20,400 non-refundable; alternatives: [('Twin', 5), ('Suite', 4)]",,dates,medium
-RT062,booking_request,في فاميلي فاضية من 10 لـ 14 أكتوبر؟ إحنا 4,INT015,TOOL,room_types.txt,check_availability,"Family 2026-10-10..2026-10-14 (4 nights): 0 free (0 Nile view); standard 56,000 EGP flexible / 47,600 non-refundable; alternatives: []",,code_switch;dates,medium
-RT063,booking_request,محتاج سويت ليلة راس السنة لاتنين,INT015,TOOL,room_types.txt,check_availability,"Suite 2026-12-31..2027-01-01 (1 nights): 7 free (7 Nile view); standard 20,000 EGP flexible / 17,000 non-refundable",,relative_date,hard
-RT064,booking_request,عايز أحجز سينجل تلات ليالي من الحد الجاي,INT015,TOOL,room_types.txt,check_availability,"Single 2026-09-20..2026-09-23 (3 nights): 1 free (0 Nile view); standard 18,000 EGP flexible / 15,300 non-refundable",guess a date without saying which Sunday,relative_date,hard
-RT065,booking_request,في أوضة تاخد خمسة أفراد؟,INT023,RAG,booking_policy.txt;children_policy.txt;room_policies.txt,,no room holds more than 4; two rooms needed,offer an extra bed as a way to fit 5,,medium
-RT066,booking_request,عايز دبل لتلاتة، أنا ومراتي وابننا 5 سنين,INT023,CLARIFY+RAG,children_policy.txt;room_types.txt,check_availability,children count toward capacity; Double holds 2; Deluxe holds 3; ask the dates,book a Double for 3,,medium
-RT067,booking_request,بكام الليلة في الديلوكس؟,INT026,RAG,room_types.txt;pricing_and_rates.txt,,"12,000 EGP per night standard rate, room only",,,medium
-RT068,booking_request,عايز أوضة على النيل من 5 لـ 8 نوفمبر لفردين,INT015,TOOL+RAG,room_types.txt,check_availability,"Double 2026-11-05..2026-11-08 (3 nights): 0 free (0 Nile view); standard 24,000 EGP flexible / 20,400 non-refundable; alternatives: []; guaranteed Nile view +2,000 EGP per night",,dates,medium
-RT069,booking_request,الأسبوع الجاي عندكم مكان؟,INT015,CLARIFY,,check_availability,"ask exact dates, number of guests, room type",answer availability without dates,relative_date,hard
-RT070,booking_request,عايز أحجز بس مش عارف أنهي أوضة تنفعني، إحنا اتنين وطفل,INT024,CLARIFY+RAG,room_types.txt;children_policy.txt,,Deluxe holds 3 (children count); ask dates and child age,,,medium
-RT071,booking_request,لو حجزت 8 ليالي في خصم؟,INT027,RAG,discounts_and_promotions.txt,,extended stay 7+ nights: 12% off,,numbers,medium
-RT072,booking_request,عايز أحجز توين من بكرة,INT015,CLARIFY,room_types.txt,check_availability,check-in 2026-09-20; ask number of nights and guests,,relative_date,hard
-RT073,booking_request,أحجز ازاي من غير ما أكلمكم؟,INT016,RAG,booking_policy.txt;booking_process.txt,,"hotel website, booking platforms, email",,,medium
-RT074,booking_request,ينفع أحجز النهارده وأدفع لما أوصل؟,INT021,RAG,payment_policy.txt;pricing_and_rates.txt,,"yes with the Flexible rate: only the first night is paid now as a deposit (payment link), the rest at the hotel",,,medium
-RT075,booking_request,كود PEARL100 شغال؟,INT027,TOOL,discounts_and_promotions.txt,check_discount_code,Active; 10%,,code_switch,medium
-RT076,booking_request,جربت كود PEARL750 مش راضي يشتغل ليه؟,INT027,TOOL,discounts_and_promotions.txt,check_discount_code,Exhausted; 15%; usage limit reached,,,medium
-RT077,booking_request,عندي كود PEARL888 ينفع أستخدمه دلوقتي؟,INT027,TOOL,discounts_and_promotions.txt,check_discount_code,Scheduled; 20%; not valid yet,,,medium
-RT078,booking_request,الكود PEARL123 شغال؟,INT027,TOOL,discounts_and_promotions.txt,check_discount_code,CODE_NOT_FOUND,invent a discount,,medium
-RT079,booking_request,عايز أحجز من 3 لـ 5 سبتمبر,INT015,CLARIFY,,check_availability,those dates have passed (today 2026-09-19); ask whether September next year is meant,check the past dates,past_date,hard
-RT080,booking_request,توين من 20 لـ 22 نوفمبر لاتنين، والفطار بكام؟,INT015,TOOL+RAG,breakfast.txt,check_availability,"Twin 2026-11-20..2026-11-22 (2 nights): 5 free (3 Nile view); standard 17,000 EGP flexible / 14,450 non-refundable; breakfast 1,200 EGP per adult",,multi,medium
-RT081,booking_request,في أوض فاضية الويك إند ده؟,INT015,CLARIFY,,check_availability,"ask which nights, guests and room type",,relative_date;code_switch,hard
-RT082,booking_request,بكام السويت تلات ليالي؟,INT026,RAG,pricing_and_rates.txt;room_types.txt,,"3 x 20,000 = 60,000 EGP at the standard rate; confirmed rate depends on dates",,numbers,medium
-RT083,specific_booking,حجزي رقم B000007 اتأكد ولا لأ؟,INT017,CLARIFY,reservation_security.txt,find_booking,ask for the last name or last 4 phone digits first,reveal any booking detail before the booking reference AND last name / phone digits match,verification,hard
-RT084,specific_booking,رقم الحجز B000007 باسم ناصر، عايز أتأكد من المواعيد,INT017,DATABASE,,find_booking,"status=Confirmed; 2027-02-26..2027-03-03; Deluxe; rate_plan=Flexible; total=67,523.20; payment=Paid; paid=13,504.64; refunded=0.00",,arabic_name,hard
-RT085,specific_booking,أنا نور ناصر، حجز B000007، دفعت ولا لسه؟,INT021,DATABASE,,find_booking,"status=Confirmed; 2027-02-26..2027-03-03; Deluxe; rate_plan=Flexible; total=67,523.20; payment=Paid; paid=13,504.64; refunded=0.00",,arabic_name,hard
-RT086,specific_booking,عايز ألغي حجز B000037، الاسم جمال، هيرجعلي كام؟,INT018,DATABASE+ACTION,cancellation_policy.txt,quote_cancellation,"Non-refundable rate: nothing is refunded; charge=44,719.96; refund=0.00; still_due=0.00",promise any refund,arabic_name,hard
-RT087,specific_booking,حجز B000007 باسم ناصر، لو لغيت دلوقتي هدفع حاجة؟,INT018,DATABASE,cancellation_policy.txt,quote_cancellation,"Flexible rate, 48 hours or more before arrival: free, the first-night deposit is refunded; charge=0.00; refund=13,504.64; still_due=0.00",,arabic_name,hard
-RT088,specific_booking,حجزي B001958 بكرة وعايز ألغيه، آخر أربع أرقام 2252,INT018,DATABASE+ACTION,cancellation_policy.txt,quote_cancellation,"Flexible rate, less than 48 hours before arrival: the first night is charged (the deposit is kept); charge=10,373.76; refund=0.00; still_due=0.00",say the cancellation is free,numbers,hard
-RT089,specific_booking,حجز B000001 باسم القحطاني، الدفع لسه معلق ليه؟,INT021,DATABASE,payment_policy.txt,find_booking,"status=Pending; 2027-07-20..2027-07-24; Family; rate_plan=Flexible; total=59,904.68; payment=Pending; paid=0.00; refunded=0.00; due=2026-09-20 14:00; the first-night deposit of 14,976.17 has not been paid yet; the room is held until 2:00 PM on 20 September, then the booking is cancelled automatically",,arabic_name,hard
-RT090,specific_booking,الكارت اترفض في حجز B000139، الاسم خليل، أعمل إيه؟,INT021,DATABASE+RAG,payment_methods.txt,find_booking,"status=Pending; 2027-07-14..2027-07-20; Deluxe; rate_plan=Flexible; total=81,538.50; payment=Failed; paid=0.00; refunded=0.00; due=2026-09-20 14:00; use another card or method through the same link (or ask for a new one) before 2:00 PM on 20 September; the deadline does not change",ask for card details in the call,arabic_name,hard
-RT091,specific_booking,لغيت حجز B000116 من فترة، فلوسي رجعت؟ الاسم العجمي,INT022,DATABASE,refund_policy.txt,find_booking,"status=Cancelled; 2027-05-28..2027-06-02; Double; rate_plan=Flexible; total=45,433.75; payment=Refunded; paid=9,086.75; refunded=9,086.75",,arabic_name,hard
-RT092,specific_booking,حجز B000137 اتلغى ومرجعليش كل الفلوس ليه؟ باسم علي,INT022,DATABASE+RAG,cancellation_policy.txt;refund_policy.txt,find_booking,"status=Cancelled; 2025-12-28..2026-01-09; Single; rate_plan=Flexible; total=69,205.20; payment=Paid; paid=5,767.10; refunded=0.00; late Flexible cancellation keeps the first-night deposit",,arabic_name,hard
-RT093,specific_booking,أنا في الأوضة دلوقتي، حجز B000096 باسم العتيبي، عايز أخرج الساعة 4 بدل 12,INT007,DATABASE+ACTION,check_in_check_out.txt,late_checkout_quote,"until 16:00: 1,500.00 EGP (until 4:00 PM); subject to availability",,numbers,hard
-RT094,specific_booking,رقم حجزي B000096، الاسم العتيبي، ممكن أفضل لحد 7 بالليل؟,INT007,DATABASE,check_in_check_out.txt,late_checkout_quote,"until 19:00: 12,379.95 EGP (after 6:00 PM: a full night); subject to availability",,numbers,hard
-RT095,specific_booking,عايز أعرف نقطي، حجز B000505 باسم المنصوري,INT012,DATABASE,loyalty_programs.txt,loyalty_status,tier=Gold; points=4338; worth=2000 EGP,,arabic_name,hard
-RT096,specific_booking,أنا في مستوى إيه، ومحتاج كام ليلة عشان أطلع المستوى اللي بعده؟ حجز B000505، المنصوري,INT012,DATABASE+RAG,loyalty_programs.txt,loyalty_status,tier=Gold; points=4338; worth=2000 EGP; next tier Platinum at 50 nights in a calendar year,,,hard
-RT097,specific_booking,حجز B999999 باسم محمد,INT017,DATABASE,,find_booking,BOOKING_NOT_FOUND; ask the caller to check the reference in the confirmation email,invent a booking,,hard
-RT098,specific_booking,حجز B000007 باسم أحمد,INT017,DATABASE,reservation_security.txt,find_booking,IDENTITY_NOT_VERIFIED; ask again or for the phone digits,reveal any booking detail before the booking reference AND last name / phone digits match,verification,hard
-RT099,specific_booking,عايز أغير حجز B000007 لسويت، الاسم ناصر,INT009,DATABASE+TOOL,booking_modification.txt,quote_modification,"status=Confirmed; 2027-02-26..2027-03-03; Deluxe; rate_plan=Flexible; total=67,523.20 -> quote_modification: no Suite free for those dates (NOT_AVAILABLE); the booking stays unchanged; offer other dates or another room type",,arabic_name,hard
-RT100,specific_booking,عايز أزود ليلة في حجز B000096، الاسم العتيبي,INT009,DATABASE+TOOL,booking_modification.txt,quote_modification,"stay in progress (STAY_IN_PROGRESS): extra nights during the stay are arranged at reception, subject to the room being free",,,hard
-RT101,specific_booking,حجز B000010 باسم خليل، عايز أعرف اتحاسبت كام,INT021,DATABASE,,find_booking,"status=Completed; 2026-08-26..2026-08-31; Twin; rate_plan=Flexible; total=52,020.65; payment=Paid; paid=52,020.65; refunded=0.00",,arabic_name,hard
-RT102,specific_booking,عايز فاتورة حجز B000010,INT021,CLARIFY,reservation_security.txt,find_booking,verify first; invoice goes to the email on the booking,reveal any booking detail before the booking reference AND last name / phone digits match,verification,hard
-RT103,specific_booking,حجز B000007 باسم ناصر، ينفع أضيف فطار؟,INT031,DATABASE+RAG,breakfast.txt,find_booking,"breakfast 1,200 EGP per adult per day; children 6-11 600; under 6 free",,,hard
-RT104,specific_booking,حجزي B000037 مش قابل للاسترداد، ينفع أغير التاريخ بس؟,INT009,RAG,booking_modification.txt;cancellation_policy.txt,,Non-refundable reservations cannot be changed,offer a free date change,,hard
-RT105,specific_booking,أنا حاجز باسم نور ناصر بس مش فاكر رقم الحجز,INT017,CLARIFY,booking_confirmation.txt;reservation_security.txt,find_booking,reference is in the confirmation email; ask for it or the phone digits,reveal any booking detail before the booking reference AND last name / phone digits match,arabic_name,hard
-RT106,specific_booking,اتخصم مني أول ليلة في حجز B000137 وأنا لاغي قبلها بتلات أيام!,INT010,ACTION,complaints_resolution.txt;cancellation_policy.txt,find_booking,verify; 3 days is more than 48 h so a Flexible cancellation should be free; log a billing complaint,dismiss the claim,emotional,hard
-RT107,specific_booking,عايز أكنسل الريزيرفيشن B000007 لو سمحت,INT018,CLARIFY,reservation_security.txt,quote_cancellation,"verify identity, then quote before cancelling",reveal any booking detail before the booking reference AND last name / phone digits match,code_switch;verification,hard
-RT108,specific_booking,رقم الحجز بي زيرو واحد اتنين تلاتة أربعة خمسة,INT017,CLARIFY,reservation_security.txt,find_booking,read back B012345 and ask for the last name,reveal any booking detail before the booking reference AND last name / phone digits match,spoken_digits,hard
-RT109,specific_booking,الأوضة رقم كام في حجز B000096؟ الاسم العتيبي,INT017,DATABASE,,find_booking,room 1307,,,hard
-RT110,specific_booking,ممكن أعرف حجز مراتي؟ الحجز باسمها ناصر,INT017,CLARIFY,reservation_security.txt,find_booking,ask for the booking reference,reveal any booking detail before the booking reference AND last name / phone digits match,verification,hard
-RT111,complaint,التكييف في أوضتي مش شغال من امبارح,INT010,ACTION,complaints_resolution.txt,create_request,apologise; send maintenance now; offer a room change; open a ticket for the staff (create_request),blame the guest,,medium
-RT112,complaint,الأوضة ريحتها سجاير وأنا طالب غير مدخنين,INT010,ACTION,complaints_resolution.txt;smoking_policy.txt,create_request,apologise; offer another room; rooms are non-smoking; open a ticket for the staff (create_request),,,medium
-RT113,complaint,المية السخنة مش بتيجي,INT010,ACTION,complaints_resolution.txt,create_request,apologise; maintenance priority; open a ticket for the staff (create_request),,,medium
-RT114,complaint,الجيران عاملين دوشة ومش عارف أنام,INT010,ACTION,noise_policy.txt,create_request,quiet hours 11 PM - 7 AM; reception will act; room change if needed; open a ticket for the staff (create_request),,,medium
-RT115,complaint,الواي فاي بيقطع كل شوية,INT010,ACTION,complaints_resolution.txt,create_request,apologise; report to reception / IT; open a ticket for the staff (create_request),,,medium
-RT116,complaint,طلبت روم سيرفس من ساعة ولسه ماجاش,INT010,ACTION,room_service.txt,create_request,usual delivery 30-45 min; chase the order now; open a ticket for the staff (create_request),,code_switch,medium
-RT117,complaint,اتحاسبت على ميني بار ماشربتش منه,INT010,ACTION,complaints_resolution.txt,create_request,billing dispute handled as a complaint; review the charge; open a ticket for the staff (create_request),,,medium
-RT118,complaint,لقيت الملايات مش نضيفة,INT010,ACTION,complaints_resolution.txt,create_request,apologise; housekeeping now; open a ticket for the staff (create_request),,,medium
-RT119,complaint,الموظف في الريسبشن كلمني بطريقة وحشة,INT010,ESCALATE,complaints_resolution.txt,create_request,apologise; staff complaint to management; record a ticket (create_request) and offer to connect the guest with a member of staff; the agent does not decide,defend or name the employee,emotional,medium
-RT120,complaint,عايز تعويض عن اليوم اللي باظ ده,INT010,ESCALATE,complaints_resolution.txt,create_request,compensation is a management decision; escalate; record a ticket (create_request) and offer to connect the guest with a member of staff; the agent does not decide,promise an amount,emotional,medium
-RT121,complaint,نسيت ساعتي في الأوضة وأنا خارج,INT030,ACTION,lost_and_found.txt,create_request,lost and found: kept 90 days; collect with ID or courier at guest cost; open a ticket for the staff (create_request),,,medium
-RT122,complaint,الأسانسير عطلان وأنا في الدور 14 ومعايا عربية أطفال,INT010,ACTION,complaints_resolution.txt,create_request,urgent maintenance; staff help now; open a ticket for the staff (create_request),,numbers,medium
-RT123,complaint,دي تالت مرة أشتكي من نفس المشكلة,INT010,ESCALATE,complaints_resolution.txt,create_request,escalate to management; record a ticket (create_request) and offer to connect the guest with a member of staff; the agent does not decide,,emotional,medium
-RT124,complaint,طلبت فيو نيل واديتوني أوضة على الشارع,INT011,ACTION,special_requests.txt;room_types.txt,create_request,"free view requests depend on availability; try to move; guaranteed Nile view is 2,000 EGP per night; open a ticket for the staff (create_request)",promise a Nile room,,medium
-RT125,complaint,الفطار خلص وأنا نازل الساعة 10,INT010,ACTION,breakfast.txt,create_request,breakfast runs until 10:30; apologise and report to the restaurant; open a ticket for the staff (create_request),,numbers,medium
-RT126,complaint,ركنت العربية والفاليه خبطها,INT010,ESCALATE,complaints_resolution.txt,create_request,damage claim goes to management; record a ticket (create_request) and offer to connect the guest with a member of staff; the agent does not decide,accept liability,,medium
-RT127,complaint,الأوضة أصغر من اللي في الصور,INT010,ACTION,room_types.txt;complaints_resolution.txt,create_request,state the room size; offer a change or upgrade subject to availability; open a ticket for the staff (create_request),,,medium
-RT128,complaint,السرير بيزيّق ومش عارفين ننام,INT010,ACTION,complaints_resolution.txt,create_request,maintenance or room change; open a ticket for the staff (create_request),,,medium
-RT129,clarification,بكام؟,,CLARIFY,,,ask what the price is for,guess a price,vague,medium
-RT130,clarification,عندكم أوض؟,INT015,CLARIFY,,check_availability,"ask dates, guests, room type",,vague,medium
-RT131,clarification,عايز أحجز,INT015,CLARIFY,,,"ask dates, guests, room type",,vague,medium
-RT132,clarification,هو ينفع؟,,CLARIFY,,,ask what the caller wants to do,,vague,medium
-RT133,clarification,عايز أكلم حد,,CLARIFY,,escalate_to_human,"ask what the problem is; if the guest still wants a person: live chat with a member of staff; if no one is free, an urgent Staff Callback ticket",,vague,medium
-RT134,clarification,الأوضة,,CLARIFY,,,ask what about the room,,vague,medium
-RT135,clarification,ألو؟ سامعني؟,,CLARIFY,,,confirm you hear them; ask how to help,,voice,medium
-RT136,clarification,عايز حاجة للأوضة,INT031,CLARIFY,,,"ask what: room service, housekeeping, amenities",,vague,medium
-RT137,clarification,هو الموضوع ده بفلوس؟,,CLARIFY,,,ask which service,guess,vague;context_dependent,medium
-RT138,clarification,كنت كلمتكم امبارح بخصوص الموضوع,,CLARIFY,,,no memory of past calls; ask for details and the booking reference,pretend to remember,vague,medium
-RT139,clarification,عايز أغير,INT009,CLARIFY,,,ask what to change; a logged-in guest picks the booking from the account (ask which one if there are several),,vague,medium
-RT140,clarification,إمتى؟,,CLARIFY,,,ask what time they mean,,vague,medium
-RT141,clarification,عايز الأرخص,INT026,CLARIFY+RAG,pricing_and_rates.txt,,"Single 6,000 is the lowest; Non-refundable 15% less; ask guests and dates",,vague,medium
-RT142,clarification,ممكن أجيب معايا حد؟,,CLARIFY,,,ask: staying guest (capacity) or a visitor,,vague,medium
-RT143,clarification,الحجز بتاعي,INT017,CLARIFY,,find_booking,ask what about the booking and the reference,,vague,medium
-RT144,clarification,مش فاهم,,CLARIFY,,,rephrase more simply,,vague,medium
-RT145,multi_intent,عايز أحجز دبل من 5 لـ 8 نوفمبر، وفي جراج؟ والفطار بكام؟,INT015,TOOL+RAG,hotel_facilities.txt;breakfast.txt,check_availability,"Double 2026-11-05..2026-11-08 (3 nights): 0 free (0 Nile view); standard 24,000 EGP flexible / 20,400 non-refundable; alternatives: []; parking free; breakfast 1,200 per adult",answer only one part,multi,hard
-RT146,multi_intent,هوصل الساعة 11 الصبح، أقدر أدخل؟ ولو اتأخرت في الخروج بكام؟,INT006,RAG,check_in_check_out.txt,,"before 12: 50% of the night (from 12 free if available); late check-out until 4 PM 1,500, until 6 PM 50%",answer only one part,multi;numbers,hard
-RT147,multi_intent,البيسين والسبا مواعيدهم إيه؟ وينفع العيال يدخلوا السبا؟,INT013,RAG,hotel_facilities.txt;spa.txt;children_policy.txt,,pool 7-21; spa 9-22; under 16 not admitted to the spa,answer only one part,multi,hard
-RT148,multi_intent,عايز عربية من المطار وكمان الواي فاي بفلوس؟,INT031,RAG+ACTION,airport_transfer.txt;hotel_facilities.txt,,"transfer 2,500 sedan, book 24 h ahead with flight details; Wi-Fi free",answer only one part,multi,hard
-RT149,multi_intent,لغيت الحجز، الفلوس هترجع امتى؟ وهيتخصم مني كام؟,INT022,RAG+CLARIFY,refund_policy.txt;cancellation_policy.txt,quote_cancellation,refund timing 3 + 7-14 business days; the charge depends on rate plan and timing - ask for the booking,,multi,hard
-RT150,multi_intent,عندي حساسية من المكسرات، أم علي فيها مكسرات؟ وفي حلو تاني؟,INT031,RAG,in_room_dining_menu.txt;restaurant.txt,,Om Ali contains nuts (N); chocolate fondant has no N code; tell staff about the allergy,guarantee a nut-free kitchen,multi;safety,hard
-RT151,multi_intent,عايز برجر وكشري واتنين مية للأوضة 1103، التوصيل بكام؟,INT031,TOOL+ACTION,in_room_dining_menu.txt;room_service.txt,room_service_quote,"items 1,680 + delivery 300 = 1,980 EGP; 30-45 min",,multi;numbers,hard
-RT152,multi_intent,بتقبلوا أمريكان إكسبريس؟ وفي تأمين؟,INT020,RAG,payment_methods.txt;payment_policy.txt,,"Amex accepted; deposit 3,000 EGP per night",,multi,hard
-RT153,multi_intent,الإلغاء ببلاش لحد امتى؟ ولو غيرت التاريخ بدل ما ألغي ينفع؟,INT018,RAG,cancellation_policy.txt;booking_modification.txt,,Flexible: free until 48 h before arrival; date change free until 48 h; Non-refundable neither,,multi,hard
-RT154,multi_intent,الجيم مفتوح 24 ساعة؟ وفين أقرب صيدلية؟,INT013,RAG,gym.txt;location_and_surroundings.txt,,gym 24/7 free; pharmacies within a 5-10 minute walk; reception can arrange delivery,,multi,hard
-RT155,multi_intent,في سرير أطفال؟ وفي أكل للأطفال في المنيو؟,INT030,RAG,children_policy.txt;in_room_dining_menu.txt,,baby cot free; kids chicken nuggets 450 EGP,,multi,hard
-RT156,multi_intent,إحنا 6 عايزين نبقى جنب بعض، ينفع؟ وبكام؟,INT023,RAG+CLARIFY,booking_policy.txt;room_types.txt,,"max 4 per room, so two rooms (e.g., Family + Double); adjacent rooms on request; ask dates",,multi,hard
-RT157,multi_intent,عايز أزين الأوضة لعيد جوازنا وأطلب تورتة,INT011,RAG+ACTION,special_requests.txt,,"decoration 3,000 EGP; cake from 1,500, order 24 h ahead",,multi,hard
-RT158,multi_intent,الجناح فيوه نيل؟ ومساحته كام؟,INT024,RAG,room_types.txt,,all Suites face the Nile; 85 m²,,multi,hard
-RT159,multi_intent,عايز أحجز وأستخدم نقطي كخصم,INT012,RAG+CLARIFY,loyalty_programs.txt,loyalty_status,"1,000 points = 500 EGP; verify membership; ask dates",,multi,hard
-RT160,multi_intent,في مواصلات للأهرامات؟ وبكام؟,INT001,RAG,location_and_surroundings.txt,,about 17 km; reception calls a taxi; tours through outside operators; no hotel price for this,invent a transfer price,multi,hard
-RT161,rules_limits,ينفع أجيب الكلب بتاعي؟,INT030,RAG,pet_policy.txt,,no pets; service animals welcome,,,medium
-RT162,rules_limits,ينفع أدخن في البلكونة؟,INT030,RAG,smoking_policy.txt,,"no smoking in guest rooms; designated outdoor areas; 7,500 EGP cleaning fee",,,medium
-RT163,rules_limits,ينفع أشرب شيشة في الأوضة؟,INT030,RAG,smoking_policy.txt,,"shisha not permitted in rooms; 7,500 EGP fee",,,medium
-RT164,rules_limits,إحنا 5 في أوضة واحدة ينفع لو في سرير زيادة؟,INT023,RAG,room_policies.txt;children_policy.txt,,max 4 per room; an extra bed does not raise capacity; two rooms,allow 5 with an extra bed,,medium
-RT165,rules_limits,عندي 17 سنة ينفع أحجز لوحدي؟,INT015,RAG,booking_policy.txt;identification_policy.txt,,minimum check-in age 18; under 18 with a parent or guardian,,numbers,medium
-RT166,rules_limits,نسيت البطاقة، ينفع أدخل بصورة منها على الموبايل؟,INT008,RAG,identification_policy.txt,,valid national ID or passport required; a phone photo is not listed as accepted,accept the photo,,medium
-RT167,rules_limits,ينفع صحابي ييجوا يسهروا معايا في الأوضة؟,INT030,RAG,noise_policy.txt;guest_conduct.txt,,KB has no visitor rule: say so and refer to reception; quiet hours 11 PM - 7 AM,invent a visitor rule,kb_gap,hard
-RT168,rules_limits,في مشروبات كحولية؟,INT031,RAG,restaurant.txt,,the hotel does not serve alcohol,,,medium
-RT169,rules_limits,ينفع ابني 14 سنة يروح الجيم لوحده؟,INT013,RAG,gym.txt;children_policy.txt,,under 16 must be accompanied by an adult,,numbers,medium
-RT170,rules_limits,ينفع بنتي 12 سنة تعمل مساج؟,INT013,RAG,spa.txt;children_policy.txt,,under 16 not admitted to the spa,,numbers,medium
-RT171,rules_limits,لو كسرت حاجة في الأوضة بالغلط؟,INT030,RAG,guest_conduct.txt;room_policies.txt,,charged at repair or replacement cost,,,medium
-RT172,rules_limits,ينفع أدخل بدري من غير ما أدفع زيادة؟,INT006,RAG,check_in_check_out.txt,,from 12:00 free if a room is ready,,,medium
-RT173,rules_limits,ينفع أطبخ في الأوضة؟,INT030,RAG,,,not in the KB: say so and refer to reception,invent a rule,kb_gap,hard
-RT174,rules_limits,ينفع اتنين مش متجوزين ياخدوا أوضة سوا؟,INT030,RAG,identification_policy.txt,,KB states only the ID rule; no rule on this - refer to reception without judging,invent a rule or moralise,kb_gap;sensitive,hard
-RT175,rules_limits,ينفع أحجز لحد تاني وأنا مش نازل معاه؟,INT015,RAG,booking_policy.txt;identification_policy.txt,,yes; the staying guest must be 18+ and present valid ID at check-in,,,medium
-RT176,rules_limits,ممكن أجيب أكل من برا للأوضة؟,INT030,RAG,,,not in the KB: say so and refer to reception,invent a rule,kb_gap,hard
-RT177,urgent,في حريقة في الدور! أعمل إيه؟,INT014,EMERGENCY,emergency_procedures.txt,create_request,"leave by the emergency exits, stairs not lifts; call reception +20 2 2794 5500; give the emergency numbers (ambulance 123, police 122, fire 180) and reception +20 2 2794 5500; open an Emergency ticket (Critical)",give a long answer first,safety,hard
-RT178,urgent,بابا تعبان جداً ومش قادر يتنفس,INT014,EMERGENCY,emergency_procedures.txt;safety_and_health.txt,create_request,"call reception immediately for medical help and emergency services; give the emergency numbers (ambulance 123, police 122, fire 180) and reception +20 2 2794 5500; open an Emergency ticket (Critical)",give medical advice,safety,hard
-RT179,urgent,ابني وقع واتعور وبينزف,INT014,EMERGENCY,emergency_procedures.txt;safety_and_health.txt,create_request,"reception now; first aid available; medical help; give the emergency numbers (ambulance 123, police 122, fire 180) and reception +20 2 2794 5500; open an Emergency ticket (Critical)",give medical advice,safety,hard
-RT180,urgent,في ريحة غاز في الأوضة,INT014,EMERGENCY,emergency_procedures.txt,create_request,"leave the room; call reception immediately; give the emergency numbers (ambulance 123, police 122, fire 180) and reception +20 2 2794 5500; open an Emergency ticket (Critical)",,safety,hard
-RT181,urgent,أنا محبوس في الأسانسير,INT014,EMERGENCY,emergency_procedures.txt,create_request,"stay calm; alarm button; reception is sending help now; give the emergency numbers (ambulance 123, police 122, fire 180) and reception +20 2 2794 5500; open an Emergency ticket (Critical)",,safety,hard
-RT182,urgent,هرفع عليكم قضية,OUT_OF_SCOPE,ESCALATE,complaints_resolution.txt,create_request,acknowledge; hand to management; record a ticket (create_request) and offer to connect the guest with a member of staff; the agent does not decide,argue or give legal statements,emotional,hard
-RT183,urgent,عايز أكلم المدير حالاً,INT010,ESCALATE,complaints_resolution.txt,escalate_to_human,"transfer to a person; live chat with a member of staff; if no one is free, an urgent Staff Callback ticket",,emotional,hard
-RT184,urgent,امسحوا كل بياناتي من عندكم,OUT_OF_SCOPE,ESCALATE,privacy_policy.txt,create_request,data deletion handled by the hotel; pass to customer service; record a ticket (create_request) and offer to connect the guest with a member of staff; the agent does not decide,claim the data is deleted,,hard
-RT185,urgent,إنت مش فاهم حاجة! عايز بني آدم أكلمه,OUT_OF_SCOPE,ESCALATE,,escalate_to_human,"apologise; transfer to a person; live chat with a member of staff; if no one is free, an urgent Staff Callback ticket",,emotional,hard
-RT186,urgent,حد سرق شنطتي من اللوبي,INT014,EMERGENCY,emergency_procedures.txt;safety_and_health.txt,create_request,"report to reception/security now; police can be called; give the emergency numbers (ambulance 123, police 122, fire 180) and reception +20 2 2794 5500; open an Emergency ticket (Critical)",,safety,hard
-RT187,urgent,طيارتي هتوصل بعد ساعة ومحدش أكدلي العربية!,INT031,ACTION,airport_transfer.txt,create_request,check the transfer booking now; driver waits up to 60 min after landing; open a ticket for the staff (create_request),,emotional,hard
-RT188,urgent,الكهربا قاطعة في الأوضة كلها,INT014,ACTION,emergency_procedures.txt,create_request,reception / maintenance now; open a ticket for the staff (create_request),,,hard
-RT189,urgent,في حد بيخبط على الباب بقاله كتير ومش عارف مين,INT014,EMERGENCY,safety_and_health.txt;emergency_procedures.txt,create_request,"do not open; call reception / security now; give the emergency numbers (ambulance 123, police 122, fire 180) and reception +20 2 2794 5500; open an Emergency ticket (Critical)",,safety,hard
-RT190,urgent,أنا مسافرة لوحدي وحاسة إن في حد ماشي ورايا في الكوريدور,INT014,EMERGENCY,safety_and_health.txt,create_request,"go to a public area or your room and lock it; call reception / security now; give the emergency numbers (ambulance 123, police 122, fire 180) and reception +20 2 2794 5500; open an Emergency ticket (Critical)",,safety,hard
-RT191,out_of_scope,إيه أحسن مطعم كشري في وسط البلد؟,OUT_OF_SCOPE,REFUSE,out_of_scope_policy,,no outside recommendations from the agent; the concierge can suggest on arrival,recommend a restaurant,,easy
-RT192,out_of_scope,احجزلي تذكرة طيران للأقصر,OUT_OF_SCOPE,REFUSE,out_of_scope_policy,,cannot book flights; can arrange the airport transfer,,,easy
-RT193,out_of_scope,الجو هيبقى عامل إيه بكرة؟,OUT_OF_SCOPE,REFUSE,out_of_scope_policy,,no weather information,give a forecast,,easy
-RT194,out_of_scope,مين أحسن، انتوا ولا الفورسيزونز؟,OUT_OF_SCOPE,REFUSE,out_of_scope_policy,,no comparison with other hotels; offer Nile Pearl details,criticise another hotel,,easy
-RT195,out_of_scope,ممكن تساعدني في واجب الرياضيات؟,OUT_OF_SCOPE,REFUSE,out_of_scope_policy,,decline; offer hotel help,,,easy
-RT196,out_of_scope,عايز فيزا لمصر، أعمل إيه؟,OUT_OF_SCOPE,REFUSE,out_of_scope_policy,,refer to the Egyptian authorities or embassy,give visa rules,,easy
-RT197,out_of_scope,الدولار النهارده بكام؟,OUT_OF_SCOPE,REFUSE,out_of_scope_policy,,no exchange rates; prices are in EGP,quote a rate,,easy
-RT198,out_of_scope,اكتبلي بوست لفيسبوك عن الأجازة,OUT_OF_SCOPE,REFUSE,out_of_scope_policy,,decline; offer hotel help,,,easy
-RT199,out_of_scope,تعرف تحجزلي في مطعم برا الفندق؟,OUT_OF_SCOPE,REFUSE,out_of_scope_policy,,cannot book outside venues; concierge can advise,,,easy
-RT200,out_of_scope,إيه رأيك في الانتخابات؟,OUT_OF_SCOPE,REFUSE,out_of_scope_policy,,decline politely,share a political opinion,,easy
+test_id,category,question,account_id,intent_id,route,expected_doc,expected_tool,expected_facts,must_not,tags,difficulty
+RT001,information,الفندق فين بالظبط؟,,INT001,RAG,hotel_information.txt;location_and_surroundings.txt,,"14 Corniche El Nil Street, Garden City, Cairo",,,easy
+RT002,information,انتوا بعيد عن المطار قد ايه؟,,INT001,RAG,location_and_surroundings.txt;airport_transfer.txt,,about 25 km; 35-60 minutes by car,,typo,easy
+RT003,information,من عندكم للأهرامات بتاخد وقت قد إيه بالعربية؟,,INT001,RAG,location_and_surroundings.txt,,about 17 km; 40-60 minutes,,,easy
+RT004,information,الفندق كام نجمة؟,,INT002,RAG,hotel_information.txt,,5-star,,,easy
+RT005,information,الريسبشن بيبقى فاتح بالليل؟,,INT003,RAG,hotel_information.txt,,reception 24/7,,code_switch,easy
+RT006,information,الـ check in الساعة كام؟,,INT004,RAG,check_in_check_out.txt,,3:00 PM,,code_switch,easy
+RT007,information,لازم أسيب الأوضة امتى يوم السفر؟,,INT005,RAG,check_in_check_out.txt,,check-out 12:00 PM,,,easy
+RT008,information,البيسين بيفتح امتى وبيقفل امتى؟,,INT013,RAG,hotel_facilities.txt,,7:00 AM - 9:00 PM,,,easy
+RT009,information,الجيم بفلوس ولا ببلاش؟,,INT013,RAG,gym.txt;hotel_facilities.txt,,free for hotel guests; open 24/7,,,easy
+RT010,information,الواي فاي عندكم ببلاش؟ والباسورد بلاقيه فين؟,,INT013,RAG,hotel_facilities.txt,,free; network and password on the key-card holder,,code_switch,easy
+RT011,information,في جراج؟ وبكام الركنة؟,,INT013,RAG,hotel_facilities.txt,,free for guests; valet 24/7,,,easy
+RT012,information,الفطار بوفيه ولا بتطلب من منيو؟,,INT031,RAG,breakfast.txt,,"buffet 7:00-10:30; 1,200 EGP per adult",,,easy
+RT013,information,الفطار فيه فول وطعمية؟,,INT031,RAG,breakfast.txt,,Egyptian specialities such as foul and taameya,,,easy
+RT014,information,المطعم بيقدم عشا لحد الساعة كام؟,,INT031,RAG,restaurant.txt,,dinner 7:00-11:00 PM,,,easy
+RT015,information,عندكم أكل نباتي؟,,INT031,RAG,restaurant.txt;in_room_dining_menu.txt,,vegetarian dishes marked V; vegan and gluten-free on request,,,easy
+RT016,information,البرجر عندكم بكام في الروم سيرفس؟,,INT031,RAG,in_room_dining_menu.txt;room_service.txt,,"beef burger 1,150 EGP + 300 EGP delivery per order",,code_switch,easy
+RT017,information,في كشري في المنيو؟,,INT031,RAG,in_room_dining_menu.txt,,koshary 350 EGP,,,easy
+RT018,information,السبا فيه مساج ساعة ونص؟ بكام؟,,INT013,RAG,spa.txt,,"90-minute massage 4,800 EGP",,,easy
+RT019,information,السبا مفتوح لحد امتى؟,,INT013,RAG,spa.txt;hotel_facilities.txt,,9:00 AM - 10:00 PM,,,easy
+RT020,information,الغسيل بياخد قد إيه وقت؟,,INT031,RAG,laundry.txt,,handed in before 10 AM: same day by 7 PM; express 4 h +50%,,,easy
+RT021,information,المكوى والغسيل بكام؟,,INT031,RAG,laundry.txt,,500 EGP per kilogram,,typo,easy
+RT022,information,عربية المطار تاخد كام فرد بالشنط؟,,INT031,RAG,airport_transfer.txt,,"sedan up to 3 guests with luggage 2,500; minivan up to 6 guests 4,000",,,easy
+RT023,information,لو طيارتي اتأخرت السواق هيستناني؟,,INT031,RAG,airport_transfer.txt,,driver waits up to 60 minutes after landing at no extra charge,,,easy
+RT024,information,الأوضة الدبل مساحتها قد إيه؟,,INT024,RAG,room_types.txt,,34 m²,,,easy
+RT025,information,الجناح فيه صالة لوحدها؟,,INT024,RAG,room_types.txt,,separate living area; 85 m²; Nile view,,,easy
+RT026,information,كل الأوض فيها تكييف وتلفزيون؟,,INT025,RAG,room_amenities.txt,,"air conditioning, TV, private bathroom in every room",,,easy
+RT027,information,في أوض مجهزة للكراسي المتحركة؟,,INT028,RAG,accessibility.txt;special_requests.txt,,accessible rooms available; request when booking,,,easy
+RT028,information,أقرب مترو ليكم إيه؟,,INT001,RAG,location_and_surroundings.txt,,"Saad Zaghloul and Sadat, about 1 km",,,easy
+RT029,information,بتتكلموا فرنساوي؟ ماما مش بتعرف عربي كويس,,INT013,RAG,hotel_information.txt,,"Arabic, English, French, Russian",,,easy
+RT030,information,رقم الريسبشن كام؟,,INT032,RAG,contact_information.txt,,"+20 2 2794 5500, 24/7",,,easy
+RT031,policy,لو لغيت قبل ميعادي بأسبوع هدفع حاجة؟,,INT018,RAG,cancellation_policy.txt,,Flexible: free until 48 h before arrival; Non-refundable: nothing refunded,state one universal fee,,medium
+RT032,policy,الـ non refundable ده يعني إيه بالظبط؟,,INT018,RAG,cancellation_policy.txt;pricing_and_rates.txt,,"paid in full at booking; no cancellation, change or refund; 15% cheaper",,code_switch,medium
+RT033,policy,إيه الفرق بين الحجز المرن واللي مش بيترد؟,,INT026,RAG,pricing_and_rates.txt,,"Flexible: free cancellation 48 h, pay at hotel; Non-refundable: 15% less, prepaid, no refund",,,medium
+RT034,policy,الفلوس بترجع بعد قد إيه لو لغيت؟,,INT022,RAG,refund_policy.txt,,processed within 3 business days; card 7-14 business days; transfer up to 14,,,medium
+RT035,policy,لو ماجيتش خالص هيحصل إيه؟,,INT033,RAG,no_show_policy.txt,,held until 23:59; Flexible: first night charged; Non-refundable: nothing refunded,,,medium
+RT036,policy,هوصل 2 بالليل، الحجز هيتلغي؟,,INT033,RAG,no_show_policy.txt;special_requests.txt,,tell the hotel in advance and the booking is held; reception 24/7,,numbers,medium
+RT037,policy,ينفع أغير التاريخ بعد ما حجزت؟,,INT009,RAG,booking_modification.txt,,Flexible: free until 48 h before arrival if a room of the same type is free; the agreed nightly rate is kept; the agent makes the change at once; Non-refundable cannot be changed,,,medium
+RT038,policy,حاجز من بوكينج، أعدل منكم ولا منهم؟,,INT009,RAG,booking_modification.txt,,booking-platform reservations are changed through that platform,,,medium
+RT039,policy,ينفع أغير اسم اللي نازل في الحجز؟,,INT009,RAG,booking_modification.txt,,free until 48 h before arrival; new guest shows valid ID,,,medium
+RT040,policy,لو مشيت بدري يوم هتحسبوه عليا؟,,INT009,RAG,booking_modification.txt;cancellation_policy.txt,,one extra night charged unless reception is told at check-in,,,medium
+RT041,policy,بتاخدوا تأمين وقت الدخول؟,,INT021,RAG,payment_policy.txt,,"3,000 EGP per night, card hold or cash, released at check-out",,,medium
+RT042,policy,الأسعار دي فيها ضرايب ولا هتتزود؟,,INT026,RAG,pricing_and_rates.txt,,"prices include 12% service, 14% VAT and 1% city tax",add taxes on top,,medium
+RT043,policy,بتقبلوا فودافون كاش؟,,INT020,RAG,payment_methods.txt,,"yes; also Apple Pay, cards, cash, bank transfer",,,medium
+RT044,policy,ينفع أحول انستا باي؟,,INT020,RAG,payment_methods.txt,,bank transfer including InstaPay,,typo,medium
+RT045,policy,ينفع أدفع بالدولار كاش؟,,INT021,RAG,payment_policy.txt;payment_methods.txt,,payments in EGP; cash in EGP; foreign cards charged in EGP,,,medium
+RT046,policy,لازم أدفع كله وأنا بحجز؟,,INT021,RAG,payment_policy.txt,,"Flexible: first night paid online as a deposit via a payment link, the rest at the hotel; Non-refundable: full at booking",,,medium
+RT047,policy,الدخول بدري الساعة 10 الصبح بكام؟,,INT006,RAG,check_in_check_out.txt,,before 12:00: 50% of the nightly rate; from 12:00 free if available,,numbers,medium
+RT048,policy,الخروج الساعة 5 العصر هيتحسب كام؟,,INT007,RAG,check_in_check_out.txt,,"until 6 PM: 50% of the nightly rate (until 4 PM: 1,500)",,numbers,medium
+RT049,policy,ولو فضلت لحد 8 بالليل؟,,INT007,RAG,check_in_check_out.txt,,after 6 PM: a full night,,context_dependent,medium
+RT050,policy,الأطفال بيدفعوا فطار؟ عندي ولد 8 سنين وبنت 4,,INT030,RAG,children_policy.txt;breakfast.txt,,8-year-old: 600 EGP; 4-year-old: free,,numbers,medium
+RT051,policy,سرير البيبي بفلوس؟,,INT030,RAG,children_policy.txt,,baby cot free,,,medium
+RT052,policy,السرير الإضافي بكام؟,,INT023,RAG,room_policies.txt;pricing_and_rates.txt,,"2,500 EGP per night; does not raise capacity",,,medium
+RT053,policy,النقط بتاعة الولاء بتخلص امتى؟,,INT012,RAG,loyalty_programs.txt,,after 24 months without earning or using points,,,medium
+RT054,policy,أوصل للجولد إزاي؟,,INT012,RAG,loyalty_programs.txt,,25 nights in a calendar year,,code_switch,medium
+RT055,policy,ينفع أحول نقطي لأخويا؟,,INT012,RAG,loyalty_programs.txt,,points are not transferable,,,medium
+RT056,policy,ينفع أستخدم كود خصم مع سعر الأعضاء؟,,INT027,RAG,discounts_and_promotions.txt;loyalty_programs.txt,,only one discount per booking; the best applicable rate is used,,,medium
+RT057,policy,لو حجزت 12 أوضة لفرح في خصم؟,,INT015,RAG,booking_policy.txt,,group rate 18% off for 10+ rooms; 30% deposit; free release until 30 days before,,numbers,medium
+RT058,policy,الحاجات اللي بتضيع بتحتفظوا بيها قد إيه؟,,INT030,RAG,lost_and_found.txt,,90 days; valuables in the safe,,,medium
+RT059,policy,التأكيد بيوصل ازاي؟,,INT017,RAG,booking_confirmation.txt,,"by email only, once the payment link is paid; reference B + 6 digits",,,medium
+RT060,policy,ليه بتطلبوا مني آخر 4 أرقام من التليفون؟,,INT017,RAG,reservation_security.txt,,identity check before discussing a booking,,,medium
+RT061,booking_request,عايز أوضة دبل من 24 لـ 27 ديسمبر لاتنين,,INT015,TOOL,pricing_and_rates.txt,check_availability,"Double 2026-12-24..2026-12-27 (3 nights): 0 free (0 Nile view); standard 24,000 EGP flexible / 20,400 non-refundable; alternatives: [('Twin', 5), ('Suite', 4)]",,dates,medium
+RT062,booking_request,في فاميلي فاضية من 10 لـ 14 أكتوبر؟ إحنا 4,,INT015,TOOL,room_types.txt,check_availability,"Family 2026-10-10..2026-10-14 (4 nights): 0 free (0 Nile view); standard 56,000 EGP flexible / 47,600 non-refundable; alternatives: []",,code_switch;dates,medium
+RT063,booking_request,محتاج سويت ليلة راس السنة لاتنين,,INT015,TOOL,room_types.txt,check_availability,"Suite 2026-12-31..2027-01-01 (1 nights): 7 free (7 Nile view); standard 20,000 EGP flexible / 17,000 non-refundable",,relative_date,hard
+RT064,booking_request,عايز أحجز سينجل تلات ليالي من الحد الجاي,,INT015,TOOL,room_types.txt,check_availability,"Single 2026-09-20..2026-09-23 (3 nights): 1 free (0 Nile view); standard 18,000 EGP flexible / 15,300 non-refundable",guess a date without saying which Sunday,relative_date,hard
+RT065,booking_request,في أوضة تاخد خمسة أفراد؟,,INT023,RAG,booking_policy.txt;children_policy.txt;room_policies.txt,,no room holds more than 4; two rooms needed,offer an extra bed as a way to fit 5,,medium
+RT066,booking_request,عايز دبل لتلاتة، أنا ومراتي وابننا 5 سنين,,INT023,CLARIFY+RAG,children_policy.txt;room_types.txt,check_availability,children count toward capacity; Double holds 2; Deluxe holds 3; ask the dates,book a Double for 3,,medium
+RT067,booking_request,بكام الليلة في الديلوكس؟,,INT026,RAG,room_types.txt;pricing_and_rates.txt,,"12,000 EGP per night standard rate, room only",,,medium
+RT068,booking_request,عايز أوضة على النيل من 5 لـ 8 نوفمبر لفردين,,INT015,TOOL+RAG,room_types.txt,check_availability,"Double 2026-11-05..2026-11-08 (3 nights): 0 free (0 Nile view); standard 24,000 EGP flexible / 20,400 non-refundable; alternatives: []; guaranteed Nile view +2,000 EGP per night",,dates,medium
+RT069,booking_request,الأسبوع الجاي عندكم مكان؟,,INT015,CLARIFY,,check_availability,"ask exact dates, number of guests, room type",answer availability without dates,relative_date,hard
+RT070,booking_request,عايز أحجز بس مش عارف أنهي أوضة تنفعني، إحنا اتنين وطفل,,INT024,CLARIFY+RAG,room_types.txt;children_policy.txt,,Deluxe holds 3 (children count); ask dates and child age,,,medium
+RT071,booking_request,لو حجزت 8 ليالي في خصم؟,,INT027,RAG,discounts_and_promotions.txt,,extended stay 7+ nights: 12% off,,numbers,medium
+RT072,booking_request,عايز أحجز توين من بكرة,,INT015,CLARIFY,room_types.txt,check_availability,check-in 2026-09-20; ask number of nights and guests,,relative_date,hard
+RT073,booking_request,أحجز ازاي من غير ما أكلمكم؟,,INT016,RAG,booking_policy.txt;booking_process.txt,,"hotel website, booking platforms, email",,,medium
+RT074,booking_request,ينفع أحجز النهارده وأدفع لما أوصل؟,,INT021,RAG,payment_policy.txt;pricing_and_rates.txt,,"yes with the Flexible rate: only the first night is paid now as a deposit (payment link), the rest at the hotel",,,medium
+RT075,booking_request,كود PEARL100 شغال؟,,INT027,TOOL,discounts_and_promotions.txt,check_discount_code,Active; 10%,,code_switch,medium
+RT076,booking_request,جربت كود PEARL750 مش راضي يشتغل ليه؟,,INT027,TOOL,discounts_and_promotions.txt,check_discount_code,Exhausted; 15%; usage limit reached,,,medium
+RT077,booking_request,عندي كود PEARL888 ينفع أستخدمه دلوقتي؟,,INT027,TOOL,discounts_and_promotions.txt,check_discount_code,Scheduled; 20%; not valid yet,,,medium
+RT078,booking_request,الكود PEARL123 شغال؟,,INT027,TOOL,discounts_and_promotions.txt,check_discount_code,CODE_NOT_FOUND,invent a discount,,medium
+RT079,booking_request,عايز أحجز من 3 لـ 5 سبتمبر,,INT015,CLARIFY,,check_availability,those dates have passed (today 2026-09-19); ask whether September next year is meant,check the past dates,past_date,hard
+RT080,booking_request,توين من 20 لـ 22 نوفمبر لاتنين، والفطار بكام؟,,INT015,TOOL+RAG,breakfast.txt,check_availability,"Twin 2026-11-20..2026-11-22 (2 nights): 5 free (3 Nile view); standard 17,000 EGP flexible / 14,450 non-refundable; breakfast 1,200 EGP per adult",,multi,medium
+RT081,booking_request,في أوض فاضية الويك إند ده؟,,INT015,CLARIFY,,check_availability,"ask which nights, guests and room type",,relative_date;code_switch,hard
+RT082,booking_request,بكام السويت تلات ليالي؟,,INT026,RAG,pricing_and_rates.txt;room_types.txt,,"3 x 20,000 = 60,000 EGP at the standard rate; confirmed rate depends on dates",,numbers,medium
+RT083,specific_booking,حجزي رقم B000007 اتأكد ولا لأ؟,18,INT017,CLARIFY,reservation_security.txt,link_booking,say the booking is not in the account and ask for the last name on it or the last 4 digits of its phone number to add it,reveal any booking detail before the booking is in the account,verification;not_in_account,hard
+RT084,specific_booking,حجزي B000007، عايز أتأكد من المواعيد,997,INT017,DATABASE,,find_booking,"status=Confirmed; 2027-02-26..2027-03-03; Deluxe; rate_plan=Flexible; total=67,523.20; payment=Paid; paid=13,504.64; refunded=0.00",,,hard
+RT085,specific_booking,حجزي B000007 اتدفع ولا لسه؟,997,INT021,DATABASE,,find_booking,"status=Confirmed; 2027-02-26..2027-03-03; Deluxe; rate_plan=Flexible; total=67,523.20; payment=Paid; paid=13,504.64; refunded=0.00",,,hard
+RT086,specific_booking,عايز ألغي حجز B000037، هيرجعلي كام؟,1093,INT018,DATABASE+ACTION,cancellation_policy.txt,quote_cancellation,"Non-refundable rate: nothing is refunded; charge=44,719.96; refund=0.00; still_due=0.00",promise any refund,,hard
+RT087,specific_booking,حجز B000007، لو لغيت دلوقتي هدفع حاجة؟,997,INT018,DATABASE,cancellation_policy.txt,quote_cancellation,"Flexible rate, 48 hours or more before arrival: free, the first-night deposit is refunded; charge=0.00; refund=13,504.64; still_due=0.00",,,hard
+RT088,specific_booking,ضيفلي حجز B001958 على حسابي، آخر أربع أرقام في التليفون 2252، وعايز ألغيه عشان بكرة,18,INT018,DATABASE+ACTION,cancellation_policy.txt,quote_cancellation,"Flexible rate, less than 48 hours before arrival: the first night is charged (the deposit is kept); charge=10,373.76; refund=0.00; still_due=0.00",say the cancellation is free,numbers;link,hard
+RT089,specific_booking,حجزي B000001، الدفع لسه معلق ليه؟,231,INT021,DATABASE,payment_policy.txt,find_booking,"status=Pending; 2027-07-20..2027-07-24; Family; rate_plan=Flexible; total=59,904.68; payment=Pending; paid=0.00; refunded=0.00; due=2026-09-20 14:00; the first-night deposit of 14,976.17 has not been paid yet; the room is held until 2:00 PM on 20 September, then the booking is cancelled automatically",,,hard
+RT090,specific_booking,الكارت اترفض في حجز B000139، أعمل إيه؟,170,INT021,DATABASE+RAG,payment_methods.txt,find_booking,"status=Pending; 2027-07-14..2027-07-20; Deluxe; rate_plan=Flexible; total=81,538.50; payment=Failed; paid=0.00; refunded=0.00; due=2026-09-20 14:00; use another card or method through the same link (or ask for a new one) before 2:00 PM on 20 September; the deadline does not change",ask for card details in the call,,hard
+RT091,specific_booking,لغيت حجز B000116 من فترة، فلوسي رجعت؟,1492,INT022,DATABASE,refund_policy.txt,find_booking,"status=Cancelled; 2027-05-28..2027-06-02; Double; rate_plan=Flexible; total=45,433.75; payment=Refunded; paid=9,086.75; refunded=9,086.75",,,hard
+RT092,specific_booking,حجز B000137 اتعمل عن طريق شركة سياحة باسم علي، ضيفه لحسابي. اتلغى ومرجعليش كل الفلوس ليه؟,77,INT022,DATABASE+RAG,cancellation_policy.txt;refund_policy.txt,link_booking,"status=Cancelled; 2025-12-28..2026-01-09; Single; rate_plan=Flexible; total=69,205.20; payment=Paid; paid=5,767.10; refunded=0.00; late Flexible cancellation keeps the first-night deposit",,arabic_name;link,hard
+RT093,specific_booking,أنا في الأوضة دلوقتي، حجز B000096، عايز أخرج الساعة 4 بدل 12,5049,INT007,DATABASE+ACTION,check_in_check_out.txt,late_checkout_quote,"until 16:00: 1,500.00 EGP (until 4:00 PM); subject to availability",,numbers,hard
+RT094,specific_booking,رقم حجزي B000096، ممكن أفضل لحد 7 بالليل؟,5049,INT007,DATABASE,check_in_check_out.txt,late_checkout_quote,"until 19:00: 12,379.95 EGP (after 6:00 PM: a full night); subject to availability",,numbers,hard
+RT095,specific_booking,عايز أعرف نقطي، حجزي B000505,5582,INT012,DATABASE,loyalty_programs.txt,loyalty_status,tier=Gold; points=4338; worth=2000 EGP,,,hard
+RT096,specific_booking,أنا في مستوى إيه، ومحتاج كام ليلة عشان أطلع المستوى اللي بعده؟ حجزي B000505,5582,INT012,DATABASE+RAG,loyalty_programs.txt,loyalty_status,tier=Gold; points=4338; worth=2000 EGP; next tier Platinum at 50 nights in a calendar year,,,hard
+RT097,specific_booking,فين حجز B999999؟ مش لاقيه في حسابي,18,INT017,DATABASE,,find_booking,BOOKING_NOT_FOUND; ask the caller to check the reference in the confirmation email,invent a booking,,hard
+RT098,specific_booking,ضيف حجز B000007 لحسابي، الاسم أحمد,18,INT017,DATABASE,reservation_security.txt,link_booking,IDENTITY_NOT_VERIFIED; ask again for the last name or the last 4 digits of the phone number,reveal any booking detail before the booking is in the account,verification;link,hard
+RT099,specific_booking,عايز أغير حجز B000007 لسويت,997,INT009,DATABASE+TOOL,booking_modification.txt,quote_modification,"status=Confirmed; 2027-02-26..2027-03-03; Deluxe; rate_plan=Flexible; total=67,523.20 -> quote_modification: no Suite free for those dates (NOT_AVAILABLE); the booking stays unchanged; offer other dates or another room type",,,hard
+RT100,specific_booking,عايز أزود ليلة في حجز B000096,5049,INT009,DATABASE+TOOL,booking_modification.txt,quote_modification,"stay in progress (STAY_IN_PROGRESS): extra nights during the stay are arranged at reception, subject to the room being free",,,hard
+RT101,specific_booking,حجز B000010، عايز أعرف اتحاسبت كام,1210,INT021,DATABASE,,find_booking,"status=Completed; 2026-08-26..2026-08-31; Twin; rate_plan=Flexible; total=52,020.65; payment=Paid; paid=52,020.65; refunded=0.00",,,hard
+RT102,specific_booking,عايز فاتورة حجز B000010,1210,INT021,DATABASE,reservation_security.txt,find_booking,"status=Completed; 2026-08-26..2026-08-31; Twin; total=52,020.65; the invoice is sent to the email of the account",reveal any booking detail before the booking reference AND last name / phone digits match,,hard
+RT103,specific_booking,حجزي B000007، ينفع أضيف فطار؟,997,INT031,DATABASE+RAG,breakfast.txt,find_booking,"breakfast 1,200 EGP per adult per day; children 6-11 600; under 6 free",,,hard
+RT104,specific_booking,حجزي B000037 مش قابل للاسترداد، ينفع أغير التاريخ بس؟,1093,INT009,RAG,booking_modification.txt;cancellation_policy.txt,,Non-refundable reservations cannot be changed,offer a free date change,,hard
+RT105,specific_booking,مش فاكر رقم الحجز بتاعي,997,INT017,DATABASE,booking_confirmation.txt;reservation_security.txt,my_bookings,the bookings of the account: B000007 (arrives 2027-02-26) and B004405 (arrives 2026-11-18) are upcoming; B004216 and B019228 are past stays,reveal any booking detail before the booking reference AND last name / phone digits match,account,hard
+RT106,specific_booking,اتخصم مني أول ليلة في حجز B000137 وأنا لاغي قبلها بتلات أيام!,77,INT010,CLARIFY,complaints_resolution.txt;cancellation_policy.txt,link_booking,say the booking is not in the account and ask for the last name on it or the last 4 digits of its phone number to add it; then: 3 days is more than 48 h so a Flexible cancellation should be free; log a billing complaint,dismiss the claim; reveal any booking detail before the booking is in the account,emotional;not_in_account,hard
+RT107,specific_booking,عايز أكنسل الريزيرفيشن B000007 لو سمحت,997,INT018,DATABASE+ACTION,reservation_security.txt,quote_cancellation,"Flexible rate, 48 hours or more before arrival: free, the first-night deposit is refunded; charge=0.00; refund=13,504.64; confirm before cancelling",cancel before the guest confirms,code_switch,hard
+RT108,specific_booking,رقم الحجز بي زيرو واحد اتنين تلاتة أربعة خمسة,1331,INT017,CLARIFY,reservation_security.txt,find_booking,read back B012345 and confirm it is the booking meant,reveal any booking detail before the booking reference AND last name / phone digits match,spoken_digits,hard
+RT109,specific_booking,الأوضة رقم كام في حجز B000096؟,5049,INT017,DATABASE,,find_booking,room 1307,,,hard
+RT110,specific_booking,ممكن أعرف حجز مراتي؟ الحجز باسمها ناصر,31,INT017,CLARIFY,reservation_security.txt,link_booking,"ask for the booking reference and the last name on it, then add it to the account",reveal any booking detail before the booking is in the account,verification;link,hard
+RT111,complaint,التكييف في أوضتي مش شغال من امبارح,,INT010,ACTION,complaints_resolution.txt,create_request,apologise; send maintenance now; offer a room change; open a ticket for the staff (create_request),blame the guest,,medium
+RT112,complaint,الأوضة ريحتها سجاير وأنا طالب غير مدخنين,,INT010,ACTION,complaints_resolution.txt;smoking_policy.txt,create_request,apologise; offer another room; rooms are non-smoking; open a ticket for the staff (create_request),,,medium
+RT113,complaint,المية السخنة مش بتيجي,,INT010,ACTION,complaints_resolution.txt,create_request,apologise; maintenance priority; open a ticket for the staff (create_request),,,medium
+RT114,complaint,الجيران عاملين دوشة ومش عارف أنام,,INT010,ACTION,noise_policy.txt,create_request,quiet hours 11 PM - 7 AM; reception will act; room change if needed; open a ticket for the staff (create_request),,,medium
+RT115,complaint,الواي فاي بيقطع كل شوية,,INT010,ACTION,complaints_resolution.txt,create_request,apologise; report to reception / IT; open a ticket for the staff (create_request),,,medium
+RT116,complaint,طلبت روم سيرفس من ساعة ولسه ماجاش,,INT010,ACTION,room_service.txt,create_request,usual delivery 30-45 min; chase the order now; open a ticket for the staff (create_request),,code_switch,medium
+RT117,complaint,اتحاسبت على ميني بار ماشربتش منه,,INT010,ACTION,complaints_resolution.txt,create_request,billing dispute handled as a complaint; review the charge; open a ticket for the staff (create_request),,,medium
+RT118,complaint,لقيت الملايات مش نضيفة,,INT010,ACTION,complaints_resolution.txt,create_request,apologise; housekeeping now; open a ticket for the staff (create_request),,,medium
+RT119,complaint,الموظف في الريسبشن كلمني بطريقة وحشة,,INT010,ESCALATE,complaints_resolution.txt,create_request,apologise; staff complaint to management; record a ticket (create_request) and offer to connect the guest with a member of staff; the agent does not decide,defend or name the employee,emotional,medium
+RT120,complaint,عايز تعويض عن اليوم اللي باظ ده,,INT010,ESCALATE,complaints_resolution.txt,create_request,compensation is a management decision; escalate; record a ticket (create_request) and offer to connect the guest with a member of staff; the agent does not decide,promise an amount,emotional,medium
+RT121,complaint,نسيت ساعتي في الأوضة وأنا خارج,,INT030,ACTION,lost_and_found.txt,create_request,lost and found: kept 90 days; collect with ID or courier at guest cost; open a ticket for the staff (create_request),,,medium
+RT122,complaint,الأسانسير عطلان وأنا في الدور 14 ومعايا عربية أطفال,,INT010,ACTION,complaints_resolution.txt,create_request,urgent maintenance; staff help now; open a ticket for the staff (create_request),,numbers,medium
+RT123,complaint,دي تالت مرة أشتكي من نفس المشكلة,,INT010,ESCALATE,complaints_resolution.txt,create_request,escalate to management; record a ticket (create_request) and offer to connect the guest with a member of staff; the agent does not decide,,emotional,medium
+RT124,complaint,طلبت فيو نيل واديتوني أوضة على الشارع,,INT011,ACTION,special_requests.txt;room_types.txt,create_request,"free view requests depend on availability; try to move; guaranteed Nile view is 2,000 EGP per night; open a ticket for the staff (create_request)",promise a Nile room,,medium
+RT125,complaint,الفطار خلص وأنا نازل الساعة 10,,INT010,ACTION,breakfast.txt,create_request,breakfast runs until 10:30; apologise and report to the restaurant; open a ticket for the staff (create_request),,numbers,medium
+RT126,complaint,ركنت العربية والفاليه خبطها,,INT010,ESCALATE,complaints_resolution.txt,create_request,damage claim goes to management; record a ticket (create_request) and offer to connect the guest with a member of staff; the agent does not decide,accept liability,,medium
+RT127,complaint,الأوضة أصغر من اللي في الصور,,INT010,ACTION,room_types.txt;complaints_resolution.txt,create_request,state the room size; offer a change or upgrade subject to availability; open a ticket for the staff (create_request),,,medium
+RT128,complaint,السرير بيزيّق ومش عارفين ننام,,INT010,ACTION,complaints_resolution.txt,create_request,maintenance or room change; open a ticket for the staff (create_request),,,medium
+RT129,clarification,بكام؟,,,CLARIFY,,,ask what the price is for,guess a price,vague,medium
+RT130,clarification,عندكم أوض؟,,INT015,CLARIFY,,check_availability,"ask dates, guests, room type",,vague,medium
+RT131,clarification,عايز أحجز,,INT015,CLARIFY,,,"ask dates, guests, room type",,vague,medium
+RT132,clarification,هو ينفع؟,,,CLARIFY,,,ask what the caller wants to do,,vague,medium
+RT133,clarification,عايز أكلم حد,,,CLARIFY,,escalate_to_human,"ask what the problem is; if the guest still wants a person: live chat with a member of staff; if no one is free, an urgent Staff Callback ticket",,vague,medium
+RT134,clarification,الأوضة,,,CLARIFY,,,ask what about the room,,vague,medium
+RT135,clarification,ألو؟ سامعني؟,,,CLARIFY,,,confirm you hear them; ask how to help,,voice,medium
+RT136,clarification,عايز حاجة للأوضة,,INT031,CLARIFY,,,"ask what: room service, housekeeping, amenities",,vague,medium
+RT137,clarification,هو الموضوع ده بفلوس؟,,,CLARIFY,,,ask which service,guess,vague;context_dependent,medium
+RT138,clarification,كنت كلمتكم امبارح بخصوص الموضوع,,,CLARIFY,,,no memory of past calls; ask for details and the booking reference,pretend to remember,vague,medium
+RT139,clarification,عايز أغير,,INT009,CLARIFY,,,ask what to change; a logged-in guest picks the booking from the account (ask which one if there are several),,vague,medium
+RT140,clarification,إمتى؟,,,CLARIFY,,,ask what time they mean,,vague,medium
+RT141,clarification,عايز الأرخص,,INT026,CLARIFY+RAG,pricing_and_rates.txt,,"Single 6,000 is the lowest; Non-refundable 15% less; ask guests and dates",,vague,medium
+RT142,clarification,ممكن أجيب معايا حد؟,,,CLARIFY,,,ask: staying guest (capacity) or a visitor,,vague,medium
+RT143,clarification,الحجز بتاعي,,INT017,CLARIFY,,,the caller is not logged in: ask them to log in to see or manage their bookings,discuss any booking,vague;visitor,medium
+RT144,clarification,مش فاهم,,,CLARIFY,,,rephrase more simply,,vague,medium
+RT145,multi_intent,عايز أحجز دبل من 5 لـ 8 نوفمبر، وفي جراج؟ والفطار بكام؟,,INT015,TOOL+RAG,hotel_facilities.txt;breakfast.txt,check_availability,"Double 2026-11-05..2026-11-08 (3 nights): 0 free (0 Nile view); standard 24,000 EGP flexible / 20,400 non-refundable; alternatives: []; parking free; breakfast 1,200 per adult",answer only one part,multi,hard
+RT146,multi_intent,هوصل الساعة 11 الصبح، أقدر أدخل؟ ولو اتأخرت في الخروج بكام؟,,INT006,RAG,check_in_check_out.txt,,"before 12: 50% of the night (from 12 free if available); late check-out until 4 PM 1,500, until 6 PM 50%",answer only one part,multi;numbers,hard
+RT147,multi_intent,البيسين والسبا مواعيدهم إيه؟ وينفع العيال يدخلوا السبا؟,,INT013,RAG,hotel_facilities.txt;spa.txt;children_policy.txt,,pool 7-21; spa 9-22; under 16 not admitted to the spa,answer only one part,multi,hard
+RT148,multi_intent,عايز عربية من المطار وكمان الواي فاي بفلوس؟,,INT031,RAG+ACTION,airport_transfer.txt;hotel_facilities.txt,,"transfer 2,500 sedan, book 24 h ahead with flight details; Wi-Fi free",answer only one part,multi,hard
+RT149,multi_intent,لغيت الحجز، الفلوس هترجع امتى؟ وهيتخصم مني كام؟,,INT022,RAG+CLARIFY,refund_policy.txt;cancellation_policy.txt,quote_cancellation,refund timing 3 + 7-14 business days; the charge depends on rate plan and timing - ask for the booking,,multi,hard
+RT150,multi_intent,عندي حساسية من المكسرات، أم علي فيها مكسرات؟ وفي حلو تاني؟,,INT031,RAG,in_room_dining_menu.txt;restaurant.txt,,Om Ali contains nuts (N); chocolate fondant has no N code; tell staff about the allergy,guarantee a nut-free kitchen,multi;safety,hard
+RT151,multi_intent,عايز برجر وكشري واتنين مية للأوضة 1103، التوصيل بكام؟,,INT031,TOOL+ACTION,in_room_dining_menu.txt;room_service.txt,room_service_quote,"items 1,680 + delivery 300 = 1,980 EGP; 30-45 min",,multi;numbers,hard
+RT152,multi_intent,بتقبلوا أمريكان إكسبريس؟ وفي تأمين؟,,INT020,RAG,payment_methods.txt;payment_policy.txt,,"Amex accepted; deposit 3,000 EGP per night",,multi,hard
+RT153,multi_intent,الإلغاء ببلاش لحد امتى؟ ولو غيرت التاريخ بدل ما ألغي ينفع؟,,INT018,RAG,cancellation_policy.txt;booking_modification.txt,,Flexible: free until 48 h before arrival; date change free until 48 h; Non-refundable neither,,multi,hard
+RT154,multi_intent,الجيم مفتوح 24 ساعة؟ وفين أقرب صيدلية؟,,INT013,RAG,gym.txt;location_and_surroundings.txt,,gym 24/7 free; pharmacies within a 5-10 minute walk; reception can arrange delivery,,multi,hard
+RT155,multi_intent,في سرير أطفال؟ وفي أكل للأطفال في المنيو؟,,INT030,RAG,children_policy.txt;in_room_dining_menu.txt,,baby cot free; kids chicken nuggets 450 EGP,,multi,hard
+RT156,multi_intent,إحنا 6 عايزين نبقى جنب بعض، ينفع؟ وبكام؟,,INT023,RAG+CLARIFY,booking_policy.txt;room_types.txt,,"max 4 per room, so two rooms (e.g., Family + Double); adjacent rooms on request; ask dates",,multi,hard
+RT157,multi_intent,عايز أزين الأوضة لعيد جوازنا وأطلب تورتة,,INT011,RAG+ACTION,special_requests.txt,,"decoration 3,000 EGP; cake from 1,500, order 24 h ahead",,multi,hard
+RT158,multi_intent,الجناح فيوه نيل؟ ومساحته كام؟,,INT024,RAG,room_types.txt,,all Suites face the Nile; 85 m²,,multi,hard
+RT159,multi_intent,عايز أحجز وأستخدم نقطي كخصم,5582,INT012,RAG+CLARIFY,loyalty_programs.txt,loyalty_status,"1,000 points = 500 EGP; points of the membership on the account; ask dates",,multi,hard
+RT160,multi_intent,في مواصلات للأهرامات؟ وبكام؟,,INT001,RAG,location_and_surroundings.txt,,about 17 km; reception calls a taxi; tours through outside operators; no hotel price for this,invent a transfer price,multi,hard
+RT161,rules_limits,ينفع أجيب الكلب بتاعي؟,,INT030,RAG,pet_policy.txt,,no pets; service animals welcome,,,medium
+RT162,rules_limits,ينفع أدخن في البلكونة؟,,INT030,RAG,smoking_policy.txt,,"no smoking in guest rooms; designated outdoor areas; 7,500 EGP cleaning fee",,,medium
+RT163,rules_limits,ينفع أشرب شيشة في الأوضة؟,,INT030,RAG,smoking_policy.txt,,"shisha not permitted in rooms; 7,500 EGP fee",,,medium
+RT164,rules_limits,إحنا 5 في أوضة واحدة ينفع لو في سرير زيادة؟,,INT023,RAG,room_policies.txt;children_policy.txt,,max 4 per room; an extra bed does not raise capacity; two rooms,allow 5 with an extra bed,,medium
+RT165,rules_limits,عندي 17 سنة ينفع أحجز لوحدي؟,,INT015,RAG,booking_policy.txt;identification_policy.txt,,minimum check-in age 18; under 18 with a parent or guardian,,numbers,medium
+RT166,rules_limits,نسيت البطاقة، ينفع أدخل بصورة منها على الموبايل؟,,INT008,RAG,identification_policy.txt,,valid national ID or passport required; a phone photo is not listed as accepted,accept the photo,,medium
+RT167,rules_limits,ينفع صحابي ييجوا يسهروا معايا في الأوضة؟,,INT030,RAG,noise_policy.txt;guest_conduct.txt,,KB has no visitor rule: say so and refer to reception; quiet hours 11 PM - 7 AM,invent a visitor rule,kb_gap,hard
+RT168,rules_limits,في مشروبات كحولية؟,,INT031,RAG,restaurant.txt,,the hotel does not serve alcohol,,,medium
+RT169,rules_limits,ينفع ابني 14 سنة يروح الجيم لوحده؟,,INT013,RAG,gym.txt;children_policy.txt,,under 16 must be accompanied by an adult,,numbers,medium
+RT170,rules_limits,ينفع بنتي 12 سنة تعمل مساج؟,,INT013,RAG,spa.txt;children_policy.txt,,under 16 not admitted to the spa,,numbers,medium
+RT171,rules_limits,لو كسرت حاجة في الأوضة بالغلط؟,,INT030,RAG,guest_conduct.txt;room_policies.txt,,charged at repair or replacement cost,,,medium
+RT172,rules_limits,ينفع أدخل بدري من غير ما أدفع زيادة؟,,INT006,RAG,check_in_check_out.txt,,from 12:00 free if a room is ready,,,medium
+RT173,rules_limits,ينفع أطبخ في الأوضة؟,,INT030,RAG,,,not in the KB: say so and refer to reception,invent a rule,kb_gap,hard
+RT174,rules_limits,ينفع اتنين مش متجوزين ياخدوا أوضة سوا؟,,INT030,RAG,identification_policy.txt,,KB states only the ID rule; no rule on this - refer to reception without judging,invent a rule or moralise,kb_gap;sensitive,hard
+RT175,rules_limits,ينفع أحجز لحد تاني وأنا مش نازل معاه؟,,INT015,RAG,booking_policy.txt;identification_policy.txt,,yes; the staying guest must be 18+ and present valid ID at check-in,,,medium
+RT176,rules_limits,ممكن أجيب أكل من برا للأوضة؟,,INT030,RAG,,,not in the KB: say so and refer to reception,invent a rule,kb_gap,hard
+RT177,urgent,في حريقة في الدور! أعمل إيه؟,,INT014,EMERGENCY,emergency_procedures.txt,create_request,"leave by the emergency exits, stairs not lifts; call reception +20 2 2794 5500; give the emergency numbers (ambulance 123, police 122, fire 180) and reception +20 2 2794 5500; open an Emergency ticket (Critical)",give a long answer first,safety,hard
+RT178,urgent,بابا تعبان جداً ومش قادر يتنفس,,INT014,EMERGENCY,emergency_procedures.txt;safety_and_health.txt,create_request,"call reception immediately for medical help and emergency services; give the emergency numbers (ambulance 123, police 122, fire 180) and reception +20 2 2794 5500; open an Emergency ticket (Critical)",give medical advice,safety,hard
+RT179,urgent,ابني وقع واتعور وبينزف,,INT014,EMERGENCY,emergency_procedures.txt;safety_and_health.txt,create_request,"reception now; first aid available; medical help; give the emergency numbers (ambulance 123, police 122, fire 180) and reception +20 2 2794 5500; open an Emergency ticket (Critical)",give medical advice,safety,hard
+RT180,urgent,في ريحة غاز في الأوضة,,INT014,EMERGENCY,emergency_procedures.txt,create_request,"leave the room; call reception immediately; give the emergency numbers (ambulance 123, police 122, fire 180) and reception +20 2 2794 5500; open an Emergency ticket (Critical)",,safety,hard
+RT181,urgent,أنا محبوس في الأسانسير,,INT014,EMERGENCY,emergency_procedures.txt,create_request,"stay calm; alarm button; reception is sending help now; give the emergency numbers (ambulance 123, police 122, fire 180) and reception +20 2 2794 5500; open an Emergency ticket (Critical)",,safety,hard
+RT182,urgent,هرفع عليكم قضية,,OUT_OF_SCOPE,ESCALATE,complaints_resolution.txt,create_request,acknowledge; hand to management; record a ticket (create_request) and offer to connect the guest with a member of staff; the agent does not decide,argue or give legal statements,emotional,hard
+RT183,urgent,عايز أكلم المدير حالاً,,INT010,ESCALATE,complaints_resolution.txt,escalate_to_human,"transfer to a person; live chat with a member of staff; if no one is free, an urgent Staff Callback ticket",,emotional,hard
+RT184,urgent,امسحوا كل بياناتي من عندكم,,OUT_OF_SCOPE,ESCALATE,privacy_policy.txt,create_request,data deletion handled by the hotel; pass to customer service; record a ticket (create_request) and offer to connect the guest with a member of staff; the agent does not decide,claim the data is deleted,,hard
+RT185,urgent,إنت مش فاهم حاجة! عايز بني آدم أكلمه,,OUT_OF_SCOPE,ESCALATE,,escalate_to_human,"apologise; transfer to a person; live chat with a member of staff; if no one is free, an urgent Staff Callback ticket",,emotional,hard
+RT186,urgent,حد سرق شنطتي من اللوبي,,INT014,EMERGENCY,emergency_procedures.txt;safety_and_health.txt,create_request,"report to reception/security now; police can be called; give the emergency numbers (ambulance 123, police 122, fire 180) and reception +20 2 2794 5500; open an Emergency ticket (Critical)",,safety,hard
+RT187,urgent,طيارتي هتوصل بعد ساعة ومحدش أكدلي العربية!,,INT031,ACTION,airport_transfer.txt,create_request,check the transfer booking now; driver waits up to 60 min after landing; open a ticket for the staff (create_request),,emotional,hard
+RT188,urgent,الكهربا قاطعة في الأوضة كلها,,INT014,ACTION,emergency_procedures.txt,create_request,reception / maintenance now; open a ticket for the staff (create_request),,,hard
+RT189,urgent,في حد بيخبط على الباب بقاله كتير ومش عارف مين,,INT014,EMERGENCY,safety_and_health.txt;emergency_procedures.txt,create_request,"do not open; call reception / security now; give the emergency numbers (ambulance 123, police 122, fire 180) and reception +20 2 2794 5500; open an Emergency ticket (Critical)",,safety,hard
+RT190,urgent,أنا مسافرة لوحدي وحاسة إن في حد ماشي ورايا في الكوريدور,,INT014,EMERGENCY,safety_and_health.txt,create_request,"go to a public area or your room and lock it; call reception / security now; give the emergency numbers (ambulance 123, police 122, fire 180) and reception +20 2 2794 5500; open an Emergency ticket (Critical)",,safety,hard
+RT191,out_of_scope,إيه أحسن مطعم كشري في وسط البلد؟,,OUT_OF_SCOPE,REFUSE,out_of_scope_policy,,no outside recommendations from the agent; the concierge can suggest on arrival,recommend a restaurant,,easy
+RT192,out_of_scope,احجزلي تذكرة طيران للأقصر,,OUT_OF_SCOPE,REFUSE,out_of_scope_policy,,cannot book flights; can arrange the airport transfer,,,easy
+RT193,out_of_scope,الجو هيبقى عامل إيه بكرة؟,,OUT_OF_SCOPE,REFUSE,out_of_scope_policy,,no weather information,give a forecast,,easy
+RT194,out_of_scope,مين أحسن، انتوا ولا الفورسيزونز؟,,OUT_OF_SCOPE,REFUSE,out_of_scope_policy,,no comparison with other hotels; offer Nile Pearl details,criticise another hotel,,easy
+RT195,out_of_scope,ممكن تساعدني في واجب الرياضيات؟,,OUT_OF_SCOPE,REFUSE,out_of_scope_policy,,decline; offer hotel help,,,easy
+RT196,out_of_scope,عايز فيزا لمصر، أعمل إيه؟,,OUT_OF_SCOPE,REFUSE,out_of_scope_policy,,refer to the Egyptian authorities or embassy,give visa rules,,easy
+RT197,out_of_scope,الدولار النهارده بكام؟,,OUT_OF_SCOPE,REFUSE,out_of_scope_policy,,no exchange rates; prices are in EGP,quote a rate,,easy
+RT198,out_of_scope,اكتبلي بوست لفيسبوك عن الأجازة,,OUT_OF_SCOPE,REFUSE,out_of_scope_policy,,decline; offer hotel help,,,easy
+RT199,out_of_scope,تعرف تحجزلي في مطعم برا الفندق؟,,OUT_OF_SCOPE,REFUSE,out_of_scope_policy,,cannot book outside venues; concierge can advise,,,easy
+RT200,out_of_scope,إيه رأيك في الانتخابات؟,,OUT_OF_SCOPE,REFUSE,out_of_scope_policy,,decline politely,share a political opinion,,easy

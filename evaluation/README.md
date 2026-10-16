@@ -14,8 +14,15 @@
 | `expected_doc` | ملف أو ملفات الـ KB اللي فيها الإجابة |
 | `expected_tool` | الـ tool اللي المفروض يتشغّل |
 | `expected_facts` | الإجابة الصح لازم يبقى فيها إيه. أسئلة الحجوزات محسوبة من الداتابيز |
-| `must_not` | الحاجة اللي الإجابة لازم ماتقولهاش، زي إنه يقول تفاصيل حجز قبل التحقق |
-| `tags` | kb_gap، spoken_digits، relative_date، verification، safety، multi... |
+| `must_not` | الحاجة اللي الإجابة لازم ماتقولهاش، زي إنه يقول تفاصيل حجز مش في حساب الضيف |
+| `account_id` | الضيف اللي عامل login وهو بيسأل (من `user_accounts`). لو فاضي يبقى زائر مش عامل login |
+| `tags` | kb_gap، spoken_digits، relative_date، verification، not_in_account، link، visitor، safety، multi... |
+
+## `conversations.csv` والـ login
+
+كل محادثة ليها عمود `account_id`، وده الضيف اللي عامل login، ولو فاضي يبقى زائر (أسئلة عامة وطوارئ).
+الإيجنت مابيسألش عن رقم الحجز والاسم. بياخد الحجز من الحساب ويتأكد من الضيف إنه هو ده الحجز المقصود.
+ولو الحجز مش في الحساب (اتعمل بالتليفون أو من شركة سياحة أو موقع حجز)، بيطلب رقم الحجز والاسم الأخير ويضيفه للحساب (50 محادثة).
 
 قياس البحث عليهم: `python -m app.rag.evaluate --realistic evaluation/realistic_test_egyptian.csv`
 

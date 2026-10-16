@@ -4,8 +4,15 @@ Code-side router: the code decides which tools to run, the LLM only phrases the 
 
 Small models (7B and below) often skip tool calls or guess. This router reads the caller's
 message with simple rules, runs the needed tools itself, and hands the results to the LLM
-as TOOL RESULTS, together with notes such as "verification needed". The LLM can still call
+as TOOL RESULTS, together with notes such as "not logged in". The LLM can still call
 tools on its own; the router only makes the common cases reliable.
+
+Who is calling comes from the login, not from the conversation:
+  account_id = the logged-in guest -> the bookings of the account need no further questions;
+               a booking that is not in the account is added first (link_booking: reference +
+               last name or the last 4 digits of its phone number)
+  account_id = None (visitor)      -> general answers and availability only; to book or to manage
+               a booking the caller logs in first
 """
 import re
 from datetime import date
@@ -20,6 +27,13 @@ TYPES = [(r'سينجل|سنجل|فردية|single', 'Single'), (r'دبل|داب�
 GUESTS = [(r'لوحدي|لفرد|شخص واحد|\bone\b', 1), (r'لاتنين|لاثنين|لإتنين|اتنين|اثنين|لفردين|two|أنا ومراتي|انا ومراتي|أنا وجوزي', 2),
           (r'لتلاتة|تلاتة|ثلاثة|three', 3), (r'لأربعة|لاربعة|أربعة|اربعة|four', 4), (r'لخمسة|خمسة|five', 5), (r'لستة|ستة|six', 6)]
 AR_DIGITS = str.maketrans('٠١٢٣٤٥٦٧٨٩', '0123456789')
+# "my booking / my payment / my points": the caller's own data
+MINE = re.compile(r'حجزي|حجزنا|الحجز بتاعي|الحجز بتاعنا|حجوزاتي|الريزيرفيشن|دفعت|الدفع بتاعي|فلوسي|فاتورتي|الفاتورة|نقطي|نقاطي|'
+                  r'مستوايا|عضويتي|my (?:booking|reservation|payment|points|bill|invoice)', re.I)
+# wants to change or cancel a booking, or to book a new one
+MANAGE = re.compile(r'ألغي|الغي|إلغاء|الغاء|اكنسل|أكنسل|أغير|اغير|أعدل|اعدل|أأخر|أزود|ازود|أمد|امد|cancel|change my|modify', re.I)
+NEW = re.compile(r'أحجز|احجز|احجزلي|\bbook\b', re.I)
+CANCEL = re.compile(r'ألغي|الغي|إلغاء|الغاء|لغيت|cancel|أكنسل|اكنسل', re.I)
 
 def _year_for(month, day, today):
     y = today.year
@@ -35,32 +49,65 @@ def parse_dates(text, today):
         return ci, co
     return None
 
-def route(text, today=None):
+def _who(t):
+    """Last name or last 4 phone digits given in the message (only used to add a booking to the account)."""
+    name = re.search(r'(?:باسم|باسمها|باسمه|الاسم|اسمي|اسم العيلة|last name is|name is|under)\s*[:،]?\s*([^\s،,.؟?]+)', t)
+    phone = re.search(r'(?:آخر|اخر)\s*(?:أربع|اربع|4)\s*(?:أرقام|ارقام)(?:\s*(?:في|فى)\s*(?:التليفون|الموبايل|الفون))?\s*(\d{4})|'
+                      r'last (?:four|4) digits?\s*(\d{4})', t)
+    if name: return {'last_name': name.group(1)}
+    if phone: return {'phone_last4': phone.group(1) or phone.group(2)}
+    return {}
+
+def route(text, today=None, account_id=None):
     today = today or T.SYSTEM_DATE
     t = text.translate(AR_DIGITS)
     results, notes = [], []
     ref = re.search(r'\bB\d{6}\b', t.upper())
-    if ref:
-        name = re.search(r'(?:باسم|الاسم|اسمي|اسم العيلة|last name is|name is)\s*[:،]?\s*([^\s،,.؟?]+)', t)
-        phone = re.search(r'(?:آخر|اخر)\s*(?:أربع|اربع|4)\s*(?:أرقام|ارقام)\s*(\d{4})|last (?:four|4) digits?\s*(\d{4})', t)
-        who = {'last_name': name.group(1)} if name else ({'phone_last4': phone.group(1) or phone.group(2)} if phone else None)
-        if not who:
-            notes.append(f'VERIFICATION NEEDED for {ref.group()}: ask for the last name on the booking or the last 4 digits '
-                         'of its phone number. Say NOTHING about the booking (not even that it exists) until then.')
+    ref = ref.group() if ref else None
+
+    if account_id is None:                                       # visitor
+        if ref or MINE.search(t) or MANAGE.search(t) or NEW.search(t):
+            notes.append('VISITOR: the caller is not logged in. Answer general questions only. To book, to see or manage a '
+                         'booking, or to make a request, ask them to log in on the website first. Say NOTHING about any '
+                         'booking, not even whether it exists.')
+    elif ref:
+        who = _who(t)
+        b = T.find_booking(ref, account_id=account_id)
+        if b.get('reason') == 'IDENTITY_NOT_VERIFIED':           # a real booking, but not in this account
+            if who:
+                b = T.link_booking(account_id, ref, **who); results.append(('link_booking', b))
+                if b.get('ok'):
+                    notes.append(f'{ref} was added to the account (made by phone, agency or a booking platform): '
+                                 'tell the caller, then answer.')
+                    b = b['booking']
+                else:
+                    notes.append('The name or digits do not match the booking: say you could not add it and ask again. '
+                                 'Reveal nothing about it.')
+            else:
+                notes.append(f'NOT IN ACCOUNT: {ref} is not in the caller\'s account. Say NOTHING about it (not even that '
+                             'it exists). Offer to add it: ask for the last name on the booking or the last 4 digits of its '
+                             'phone number (link_booking).')
         else:
-            b = T.find_booking(ref.group(), **who); results.append(('find_booking', b))
-            if b.get('ok'):
-                if re.search(r'ألغي|الغي|إلغاء|الغاء|لغيت|cancel|أكنسل|اكنسل', t, re.I):
-                    results.append(('quote_cancellation', T.quote_cancellation(ref.group(), **who)))
-                    notes.append('Tell the caller the charge and refund BEFORE cancelling, and ask them to confirm.')
-                hour = re.search(r'(?:الساعة|لحد|until)\s*(\d{1,2})', t)
-                if re.search(r'أخرج|اخرج|الخروج|أفضل|افضل|late check', t, re.I) and hour:
-                    h = int(hour.group(1)); h = h + 12 if h < 9 else h           # "4" means 4 PM
-                    results.append(('late_checkout_quote', T.late_checkout_quote(ref.group(), f'{h:02d}:00', **who)))
-                if re.search(r'نقط|نقاط|points|مستوى|مستوايا', t, re.I):
-                    results.append(('loyalty_status', T.loyalty_status(ref.group(), **who)))
-            elif b.get('reason') == 'IDENTITY_NOT_VERIFIED':
-                notes.append('The name or digits do not match: say you could not verify, ask again. Reveal nothing.')
+            results.append(('find_booking', b))
+        if b.get('ok'):
+            kw = dict(who, account_id=account_id)
+            if CANCEL.search(t):
+                results.append(('quote_cancellation', T.quote_cancellation(ref, **kw)))
+                notes.append('Tell the caller the charge and refund BEFORE cancelling, and ask them to confirm.')
+            hour = re.search(r'(?:الساعة|لحد|until)\s*(\d{1,2})', t)
+            if re.search(r'أخرج|اخرج|الخروج|أفضل|افضل|late check', t, re.I) and hour:
+                h = int(hour.group(1)); h = h + 12 if h < 9 else h           # "4" means 4 PM
+                results.append(('late_checkout_quote', T.late_checkout_quote(ref, f'{h:02d}:00', **kw)))
+            if re.search(r'نقط|نقاط|points|مستوى|مستوايا', t, re.I):
+                results.append(('loyalty_status', T.loyalty_status(ref, **kw)))
+    elif MINE.search(t) or MANAGE.search(t):
+        mine = T.my_bookings(account_id); results.append(('my_bookings', mine))
+        if mine.get('ok') and not mine['bookings']:
+            notes.append('The account has no bookings. If the caller booked by phone, through an agency or a booking '
+                         'platform, offer to add it: booking reference + last name or the last 4 digits of its phone.')
+        elif mine.get('ok'):
+            notes.append('Confirm with the caller which of the account\'s bookings they mean before acting on it.')
+
     code = re.search(r'\b(PEARL\d+)\b', t.upper())
     if code: results.append(('check_discount_code', T.check_discount_code(code.group(1))))
     rt = next((name for pat, name in TYPES if re.search(pat, t, re.I)), None)

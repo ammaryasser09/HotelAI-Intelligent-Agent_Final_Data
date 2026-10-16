@@ -23,7 +23,7 @@ Every table and column of `schema.sql`. The same descriptions are stored in the 
 | [`complaint_tickets`](#complaint_tickets) | Guest service | 68 | Complaints. Room, service and facility complaints belong to a stay that happened; billing and booking complaints may have no booking. |
 | [`special_requests`](#special_requests) | Guest service | 103 | Special requests attached to a booking (celebrations, dietary needs, accessibility, room preferences...). |
 | [`customer_feedback`](#customer_feedback) | Guest service | 4,001 | Reviews of finished stays: one per booking. |
-| [`user_accounts`](#user_accounts) | Accounts | 5,594 | One login for everyone: guests (linked to a customer), hotel staff and admins. |
+| [`user_accounts`](#user_accounts) | Accounts | 5,599 | One login for everyone: guests (linked to a customer), hotel staff and admins. |
 | [`booking_links`](#booking_links) | Accounts | 20 | Bookings made elsewhere that a guest added to the account after the reference check. |
 | [`calls`](#calls) | Dashboard | 0 | One row per conversation with the voice agent (voice or text). Filled by the API; shown on the dashboard. |
 | [`call_messages`](#call_messages) | Dashboard | 0 | Every turn of every call: what the guest said (after speech-to-text) and what the agent answered. |
@@ -356,9 +356,9 @@ Table rules:
 
 ## user_accounts
 
-One login for everyone: guests (linked to a customer), hotel staff and admins. The demo data has 1 admin, 4 staff and an account for every customer who booked on the website, the app or with the voice agent; the demo password of all of them is `NilePearl@2026`.
+One login for everyone: guests (linked to a customer), hotel staff and admins. The demo data has 1 admin, 4 staff and an account for every customer who booked on the website, the app or with the voice agent, plus a few phone and agency guests who signed up later; the demo password of all of them is `NilePearl@2026`.
 
-Rows in the demo data: **5,594**
+Rows in the demo data: **5,599**
 
 | Column | Type | Rules | Description |
 |---|---|---|---|

@@ -5593,3 +5593,8 @@ account_id,role,customer_id,full_name,email,password_hash,email_verified,is_acti
 5592,Guest,C009990,James Davis,james.davis9990@example.com,$2a$10$jPZV0oP3M/LK804ezerFoen8AkFBboIi7rVCpoUaMXj21EiDVLScK,true,true,2022-07-29 05:26:39,
 5593,Guest,C009993,Lea Müller,lea.müller9993@example.com,$2a$10$jPZV0oP3M/LK804ezerFoen8AkFBboIi7rVCpoUaMXj21EiDVLScK,true,true,2023-06-08 23:30:47,
 5594,Guest,C009997,Mia Davis,mia.davis9997@example.com,$2a$10$jPZV0oP3M/LK804ezerFoen8AkFBboIi7rVCpoUaMXj21EiDVLScK,true,true,2022-10-26 15:06:43,
+5595,Guest,C009021,Amr Gamal,amr.gamal9021@example.com,$2a$10$jPZV0oP3M/LK804ezerFoen8AkFBboIi7rVCpoUaMXj21EiDVLScK,true,true,2025-10-16 08:32:52,
+5596,Guest,C004689,Michael Khalil,michael.khalil4689@example.com,$2a$10$jPZV0oP3M/LK804ezerFoen8AkFBboIi7rVCpoUaMXj21EiDVLScK,true,true,2022-07-28 17:43:13,
+5597,Guest,C004290,Isla Jones,isla.jones4290@example.com,$2a$10$jPZV0oP3M/LK804ezerFoen8AkFBboIi7rVCpoUaMXj21EiDVLScK,true,true,2023-08-16 10:17:57,
+5598,Guest,C004092,Hana Abdelrahman,hana.abdelrahman4092@example.com,$2a$10$jPZV0oP3M/LK804ezerFoen8AkFBboIi7rVCpoUaMXj21EiDVLScK,true,true,2023-08-13 17:48:22,
+5599,Guest,C003871,Hugo Richard,hugo.richard3871@example.com,$2a$10$jPZV0oP3M/LK804ezerFoen8AkFBboIi7rVCpoUaMXj21EiDVLScK,true,true,2023-03-05 14:34:14,

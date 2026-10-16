@@ -26,9 +26,11 @@ booking, a payment, a points balance or a code check from RAG.
 
 ## Four rules the agent never breaks
 
-1. **Identity before details.** A booking is discussed only when the reference matches the last
-   name (English or Arabic) or the last 4 digits of the phone on the booking. Query 2 returns no
-   row otherwise, so nothing can leak.
+1. **The login decides whose bookings.** A logged-in guest sees only the bookings of the account
+   (`v_account_bookings`), with no further questions; the account comes from the session, never from
+   the conversation. A booking made by phone, agency or a booking platform is added first
+   (`link_booking`): the reference must match the last name (English or Arabic) or the last 4 digits
+   of the phone on the booking. A visitor gets general answers only and is asked to log in.
 2. **Quote before acting.** Before a cancellation or a change, tell the guest what it costs and get a "yes".
 3. **Read back numbers.** Repeat the booking reference, dates and amounts before any write.
 4. **One "today".** Use `hotel_today()` / `app_settings.system_date`, never the machine clock, while the demo data is in use.
