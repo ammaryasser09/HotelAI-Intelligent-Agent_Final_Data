@@ -1,0 +1,10 @@
+from sqlalchemy import create_engine
+
+from app.api.config import settings
+
+engine = create_engine(settings.database_url, pool_pre_ping=True)
+
+
+def get_db():
+    with engine.connect() as connection:
+        yield connection
