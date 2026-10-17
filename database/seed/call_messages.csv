@@ -1,0 +1,91 @@
+call_id,turn_no,role,content,latency_ms,created_at
+d19c9b18-425b-558e-8ec2-68bfc47f8833,1,guest,I've stayed with you before and I'm coming back in October. Is there a discount for me?,,2026-09-14 19:30:24
+d19c9b18-425b-558e-8ec2-68bfc47f8833,2,agent,"Welcome back! I can apply the extended-stay discount of 12% for 7 nights or more, or a valid promotional code. I can also send a discount request to the hotel; if it is approved, you will get a personal code by email. Shall I send it?",862,2026-09-14 19:30:25
+d19c9b18-425b-558e-8ec2-68bfc47f8833,3,guest,"Yes, please. It would be three nights in October.",,2026-09-14 19:30:47
+d19c9b18-425b-558e-8ec2-68bfc47f8833,4,agent,"Done. I've sent a discount request for three nights in October, and the hotel will reply by email.",1100,2026-09-14 19:30:49
+d19c9b18-425b-558e-8ec2-68bfc47f8833,5,guest,Thank you.,,2026-09-14 19:31:00
+252dec86-4087-5dc8-b676-bb6988424c19,1,guest,"Bonjour, je suis étudiante. Avez-vous une réduction étudiante pour un séjour en octobre ?",,2026-09-15 21:05:42
+252dec86-4087-5dc8-b676-bb6988424c19,2,agent,"Je peux appliquer la remise long séjour de 12 % à partir de 7 nuits, ou un code promotionnel valable. Je peux aussi transmettre une demande de réduction à l'hôtel : si elle est acceptée, vous recevrez un code personnel par e-mail. Je l'envoie ?",912,2026-09-15 21:05:43
+252dec86-4087-5dc8-b676-bb6988424c19,3,guest,"Oui, merci.",,2026-09-15 21:06:06
+252dec86-4087-5dc8-b676-bb6988424c19,4,agent,"C'est fait : votre demande de réduction est transmise, et l'hôtel vous répondra par e-mail.",1536,2026-09-15 21:06:08
+252dec86-4087-5dc8-b676-bb6988424c19,5,guest,Merci beaucoup.,,2026-09-15 21:06:18
+ca7e9112-9797-5250-bb1b-2b278e6167a5,1,guest,هل يمكنني الحصول على خصم؟ سأحجز ثلاث غرف لصديقاتي في نوفمبر.,,2026-09-16 13:20:55
+ca7e9112-9797-5250-bb1b-2b278e6167a5,2,agent,سعر المجموعات للحجوزات من 10 غرف فأكثر. يمكنني تطبيق خصم الإقامة الطويلة 12% لسبع ليالٍ أو أكثر أو كود خصم ساري، كما يمكنني إرسال طلب خصم إلى الفندق، وإذا وافق عليه يصلك كود شخصي بالبريد الإلكتروني. هل أرسله؟,786,2026-09-16 13:20:56
+ca7e9112-9797-5250-bb1b-2b278e6167a5,3,guest,نعم، أرسله من فضلك.,,2026-09-16 13:21:15
+ca7e9112-9797-5250-bb1b-2b278e6167a5,4,agent,تم إرسال طلب الخصم لثلاث غرف في نوفمبر، وسيصلك الرد بالبريد الإلكتروني.,837,2026-09-16 13:21:16
+ca7e9112-9797-5250-bb1b-2b278e6167a5,5,guest,شكراً.,,2026-09-16 13:21:23
+3a3c5573-87ae-574f-b7f8-5701e0af0466,1,guest,أشمّ رائحة دخان قوية في ممر الطابق الثامن.,,2026-09-17 06:05:19
+3a3c5573-87ae-574f-b7f8-5701e0af0466,2,agent,غادر غرفتك الآن عبر مخارج الطوارئ واستخدم السلالم لا المصاعد. أبلغتُ فريق الفندق بحالة طوارئ في الطابق الثامن. إذا رأيت ناراً فاتصل بالمطافئ على 180، والاستقبال على ‎+20 2 2794 5500.,1229,2026-09-17 06:05:20
+3a3c5573-87ae-574f-b7f8-5701e0af0466,3,guest,حسناً، أنا أنزل الآن.,,2026-09-17 06:05:37
+3a3c5573-87ae-574f-b7f8-5701e0af0466,4,agent,توجّه إلى نقطة التجمع ولا تعد إلى غرفتك حتى يؤكد الموظفون أن ذلك آمن.,1713,2026-09-17 06:05:39
+ff5f9a87-9c44-5eca-a359-dbedc193b77b,1,guest,هل وصلت دفعتي لحجز أكتوبر؟,,2026-09-17 17:41:01
+ff5f9a87-9c44-5eca-a359-dbedc193b77b,2,agent,أرى في حسابك الحجز B003887 لغرفة ديلوكس من 21 أكتوبر. هل هذا هو الحجز المقصود؟,1151,2026-09-17 17:41:02
+ff5f9a87-9c44-5eca-a359-dbedc193b77b,3,guest,نعم.,,2026-09-17 17:41:12
+ff5f9a87-9c44-5eca-a359-dbedc193b77b,4,agent,"نعم، العربون مدفوع وهو الليلة الأولى: 13,536 جنيه. أما المبلغ المتبقي 162,432 جنيه فيُدفع في الفندق عند الوصول أو المغادرة.",1631,2026-09-17 17:41:13
+ff5f9a87-9c44-5eca-a359-dbedc193b77b,5,guest,شكراً لك.,,2026-09-17 17:41:27
+cf86e48c-cc59-5015-a115-6a1c37338aeb,1,guest,Allô ? Bonjour...,,2026-09-17 20:10:47
+cf86e48c-cc59-5015-a115-6a1c37338aeb,2,agent,"Bonjour, ici Nour, l'assistante virtuelle du Nile Pearl Hotel. Comment puis-je vous aider ?",905,2026-09-17 20:10:48
+cf86e48c-cc59-5015-a115-6a1c37338aeb,3,system,The caller hung up.,,2026-09-17 20:10:57
+5c0639b0-c4c2-523d-a354-3e8254cb9218,1,guest,كنت عايز أعرف حجزي اتأكد ولا لسه.,,2026-09-18 12:15:37
+5c0639b0-c4c2-523d-a354-3e8254cb9218,2,agent,علشان أشوف حجزك لازم تسجّل دخول الأول من الموقع، وبعدها أقدر أقولك كل التفاصيل. ولو مش عامل حساب تقدر تعمله بإيميلك وهيوصلك كود تأكيد.,1575,2026-09-18 12:15:38
+5c0639b0-c4c2-523d-a354-3e8254cb9218,3,guest,طب الفندق فيه جيم؟,,2026-09-18 12:15:52
+5c0639b0-c4c2-523d-a354-3e8254cb9218,4,agent,أيوه، الجيم مفتوح 24 ساعة ومجاني لنزلاء الفندق.,792,2026-09-18 12:15:53
+5c0639b0-c4c2-523d-a354-3e8254cb9218,5,guest,تمام، شكراً.,,2026-09-18 12:16:00
+092d8a57-3f62-5936-a243-41216236ab97,1,guest,"I got a discount code by email, PEARL5150. I'd like to use it for a Twin Room from 23 to 26 October, two of us.",,2026-09-18 14:02:38
+092d8a57-3f62-5936-a243-41216236ab97,2,agent,"PEARL5150 is your personal code: 10% off, valid until 15 October. A Twin Room is free for those 3 nights: 25,500 EGP, so 22,950 EGP with the code on the Flexible rate, with the first night, 8,500 EGP, paid now and the rest at the hotel. The Non-refundable rate would be 21,675 EGP, but the code can't be added to it. Which would you like?",1104,2026-09-18 14:02:39
+092d8a57-3f62-5936-a243-41216236ab97,3,guest,Flexible is fine. Go ahead.,,2026-09-18 14:03:09
+092d8a57-3f62-5936-a243-41216236ab97,4,agent,"Done. Booking B020002 is made, and the payment link for 8,500 EGP is in your email. The room is held for 24 hours until it is paid.",1638,2026-09-18 14:03:11
+092d8a57-3f62-5936-a243-41216236ab97,5,guest,Thanks.,,2026-09-18 14:03:25
+3d5f7820-e698-51bb-a99a-78f75b4b9b31,1,guest,My husband booked our November stay through a travel agent. Can you add it to my account? The reference is B016453.,,2026-09-18 16:30:16
+3d5f7820-e698-51bb-a99a-78f75b4b9b31,2,agent,"Sure. What's the last name on that booking, or the last four digits of its phone number?",1120,2026-09-18 16:30:17
+3d5f7820-e698-51bb-a99a-78f75b4b9b31,3,guest,Fischer.,,2026-09-18 16:30:27
+3d5f7820-e698-51bb-a99a-78f75b4b9b31,4,agent,Thank you. B016453 is now in your account: a Double Room from 6 to 13 November. Anything else?,866,2026-09-18 16:30:28
+3d5f7820-e698-51bb-a99a-78f75b4b9b31,5,guest,"No, that's all. Thanks.",,2026-09-18 16:30:39
+1dea0079-c847-55ac-86d2-14aa240bb51b,1,guest,В октябре у моей подруги день рождения. Можно украсить номер?,,2026-09-18 19:45:26
+1dea0079-c847-55ac-86d2-14aa240bb51b,2,agent,"Конечно! Вижу бронирование B006486, номер Делюкс с 10 октября. Это оно?",1311,2026-09-18 19:45:27
+1dea0079-c847-55ac-86d2-14aa240bb51b,3,guest,"Да. И торт, если можно.",,2026-09-18 19:45:36
+1dea0079-c847-55ac-86d2-14aa240bb51b,4,agent,"Я добавила запрос к бронированию B006486: украшение номера ко дню рождения и торт. Отель подтвердит, что можно организовать, и стоимость.",1126,2026-09-18 19:45:37
+1dea0079-c847-55ac-86d2-14aa240bb51b,5,guest,Спасибо!,,2026-09-18 19:45:50
+e08ba4e0-559b-546d-9ae6-4715c2a737c5,1,guest,"Please help, my husband has chest pain and can hardly breathe. We're in room 410.",,2026-09-18 22:41:48
+e08ba4e0-559b-546d-9ae6-4715c2a737c5,2,agent,"If it is life-threatening, call an ambulance on 123 right now. I've alerted the hotel team to an emergency in room 410 and someone is coming to you. Reception is on +20 2 2794 5500.",1523,2026-09-18 22:41:49
+e08ba4e0-559b-546d-9ae6-4715c2a737c5,3,guest,"Okay, I'm calling the ambulance.",,2026-09-18 22:42:06
+e08ba4e0-559b-546d-9ae6-4715c2a737c5,4,agent,Stay with him and leave the door unlocked so the staff can come in. Help is on its way.,830,2026-09-18 22:42:07
+54a26e66-6b3e-58d0-a6a6-fd392809702c,1,guest,الأوضة اللي جنبي عاملين دوشة جامدة ومش عارفين ننام.,,2026-09-18 23:35:16
+54a26e66-6b3e-58d0-a6a6-fd392809702c,2,agent,آسفين جداً يا أستاذ حسن. بلّغت الاستقبال بالدوشة جنب أوضة 1201 وهيتصرفوا دلوقتي، ولو استمرت ممكن ننقلك أوضة تانية حسب المتاح.,1312,2026-09-18 23:35:18
+54a26e66-6b3e-58d0-a6a6-fd392809702c,3,guest,ماشي، شكراً.,,2026-09-18 23:35:31
+54a26e66-6b3e-58d0-a6a6-fd392809702c,4,agent,العفو، وتصبح على خير.,1229,2026-09-18 23:35:32
+3165021f-5008-58a0-913b-1877985e2dae,1,guest,"Hi, I'd like a Double Room from 7 to 15 December for two adults.",,2026-09-19 08:20:15
+3165021f-5008-58a0-913b-1877985e2dae,2,agent,"A Double Room is free for those 8 nights. As the stay is 7 nights or more, the extended-stay discount of 12% applies: 64,000 EGP becomes 56,320 EGP on the Flexible rate, with the first night, 8,000 EGP, paid now and the rest at the hotel. The Non-refundable rate is 54,400 EGP, all paid now, with no other discount. Which would you like?",1512,2026-09-19 08:20:17
+3165021f-5008-58a0-913b-1877985e2dae,3,guest,"Flexible, please.",,2026-09-19 08:20:47
+3165021f-5008-58a0-913b-1877985e2dae,4,agent,"To confirm: a Double Room from 7 to 15 December for two adults, Flexible rate, 56,320 EGP, with 8,000 EGP paid now. Shall I book it?",1245,2026-09-19 08:20:48
+3165021f-5008-58a0-913b-1877985e2dae,5,guest,Yes.,,2026-09-19 08:21:02
+3165021f-5008-58a0-913b-1877985e2dae,6,agent,"Done. Your booking reference is B020001. The payment link for 8,000 EGP is on its way to your email, and the room is held for 24 hours until it is paid.",1693,2026-09-19 08:21:04
+3165021f-5008-58a0-913b-1877985e2dae,7,guest,"Great, thanks.",,2026-09-19 08:21:20
+28ef31b4-d8f9-519e-a21a-27f0ed5c01df,1,guest,التكييف في الأوضة مش بيبرّد خالص.,,2026-09-19 09:12:08
+28ef31b4-d8f9-519e-a21a-27f0ed5c01df,2,agent,آسفين جداً على كده. حضرتك في أوضة 1106، حجز B006557، صح؟,1498,2026-09-19 09:12:09
+28ef31b4-d8f9-519e-a21a-27f0ed5c01df,3,guest,أيوه.,,2026-09-19 09:12:15
+28ef31b4-d8f9-519e-a21a-27f0ed5c01df,4,agent,بلّغت الصيانة دلوقتي إن التكييف في أوضة 1106 مش بيبرّد، وفي حد هيطلعلك في أقرب وقت. ولو ماتصلحش بسرعة الاستقبال يقدر يغيّرلك الأوضة حسب المتاح.,1642,2026-09-19 09:12:17
+28ef31b4-d8f9-519e-a21a-27f0ed5c01df,5,guest,تمام، شكراً.,,2026-09-19 09:12:31
+28ef31b4-d8f9-519e-a21a-27f0ed5c01df,6,agent,العفو، ولو احتجتي أي حاجة تانية أنا موجودة.,690,2026-09-19 09:12:31
+2bca871c-5a31-5320-8828-d76e9138d411,1,guest,أنا ومراتي ناويين نيجي شهر عسل في ديسمبر، في أي خصم ليّا؟,,2026-09-19 10:05:56
+2bca871c-5a31-5320-8828-d76e9138d411,2,agent,ألف مبروك يا أستاذ حسن! أنا أقدر أطبّق خصم الإقامة الطويلة 12% لو 7 ليالي أو أكتر، أو كود خصم ساري. غير كده أقدر أبعت طلب خصم للإدارة، ولو اتوافق عليه هيوصلك كود شخصي على الإيميل. أبعته؟,1583,2026-09-19 10:05:57
+2bca871c-5a31-5320-8828-d76e9138d411,3,guest,آه ابعته، هنقعد 5 ليالي من 18 ديسمبر.,,2026-09-19 10:06:17
+2bca871c-5a31-5320-8828-d76e9138d411,4,agent,تمام، بعت طلب الخصم لإقامة 5 ليالي من 18 ديسمبر، والرد هيوصلك على الإيميل.,830,2026-09-19 10:06:18
+2bca871c-5a31-5320-8828-d76e9138d411,5,guest,متشكر.,,2026-09-19 10:06:28
+f5b77b93-118a-58d8-86c8-c847f17b19b9,1,guest,عايز أعرف الحساب بتاعي لحد النهارده.,,2026-09-19 10:30:45
+f5b77b93-118a-58d8-86c8-c847f17b19b9,2,agent,أستاذ محمود، حجزك B007805 أوضة توين من 11 لـ 25 سبتمبر على السعر المرن: الليلة الأولى مدفوعة أونلاين والباقي بيتدفع في الفندق. تحب أقولك المبلغ الباقي؟,1155,2026-09-19 10:30:46
+f5b77b93-118a-58d8-86c8-c847f17b19b9,3,guest,لا مش ده، أنا قصدي الحاجات اللي طلبتها على الأوضة.,,2026-09-19 10:31:04
+f5b77b93-118a-58d8-86c8-c847f17b19b9,4,agent,تقصد إنك عايز تطلب روم سيرفس؟ أقدر أقولك المنيو.,1294,2026-09-19 10:31:05
+f5b77b93-118a-58d8-86c8-c847f17b19b9,5,guest,لأ يا عم، مش فاهمني. خليني أكلم حد من الفندق.,,2026-09-19 10:31:17
+f5b77b93-118a-58d8-86c8-c847f17b19b9,6,agent,آسف إني مافهمتكش صح. هحوّلك دلوقتي لحد من فريق الفندق في نفس الشات، وهيشوف كلامنا من الأول فمش هتحتاج تعيد.,876,2026-09-19 10:31:17
+f5b77b93-118a-58d8-86c8-c847f17b19b9,7,system,Nada Samir (reception) joined the chat.,,2026-09-19 10:32:15
+f5b77b93-118a-58d8-86c8-c847f17b19b9,8,staff,أهلاً أستاذ محمود، معاك ندى من الاستقبال. حضرتك عايز كشف بالطلبات اللي اتحسبت على أوضة 1005، صح؟,,2026-09-19 10:33:18
+f5b77b93-118a-58d8-86c8-c847f17b19b9,9,guest,أيوه بالظبط.,,2026-09-19 10:33:21
+f5b77b93-118a-58d8-86c8-c847f17b19b9,10,staff,هبعتلك الكشف على الإيميل خلال دقايق، ولو في أي سؤال عليه أنا موجودة.,,2026-09-19 10:34:11
+f5b77b93-118a-58d8-86c8-c847f17b19b9,11,guest,تمام، متشكر.,,2026-09-19 10:34:15
+81e7f5ea-84ab-5772-a2ec-d3897054c858,1,guest,I'd like to speak to someone about the charges on my bill before I check out on Monday.,,2026-09-19 11:52:26
+81e7f5ea-84ab-5772-a2ec-d3897054c858,2,agent,Of course. I'll connect you with a member of staff here in the chat.,1657,2026-09-19 11:52:28
+81e7f5ea-84ab-5772-a2ec-d3897054c858,3,system,No member of staff is free right now.,,2026-09-19 11:52:35
+81e7f5ea-84ab-5772-a2ec-d3897054c858,4,agent,"Everyone is busy this minute, so I've opened an urgent request: a member of staff will contact you soon, here in the chat or by email. Can I help with anything meanwhile?",1687,2026-09-19 11:52:36
+81e7f5ea-84ab-5772-a2ec-d3897054c858,5,guest,"No, that's fine. Thanks.",,2026-09-19 11:52:52
+81e7f5ea-84ab-5772-a2ec-d3897054c858,6,agent,You're welcome. Enjoy the rest of your stay.,1200,2026-09-19 11:52:53

@@ -5,7 +5,7 @@ Every table and column of `schema.sql`. The same descriptions are stored in the 
 
 | Table | Group | Rows (demo data) | What it holds |
 |---|---|---|---|
-| [`app_settings`](#app_settings) | Hotel settings | 11 | Hotel-wide settings. system_date is the frozen "today" of the dataset; the API must use it instead of the machine clock while the demo data is in use. |
+| [`app_settings`](#app_settings) | Hotel settings | 14 | Hotel-wide settings. system_date is the frozen "today" of the dataset; the API must use it instead of the machine clock while the demo data is in use. |
 | [`room_types`](#room_types) | Rooms | 6 | The six room categories, their capacity and standard nightly rate (EGP, taxes included, room only). |
 | [`rooms`](#rooms) | Rooms | 150 | 150 rooms on floors 2-16. room_number = floor x 100 + n; rooms 1-5 of a floor and every Suite face the Nile. |
 | [`customers`](#customers) | Guests | 10,000 | Guests. Arab guests also carry the Arabic spelling of their name, so a caller who gives an Arabic name is found. |
@@ -13,27 +13,27 @@ Every table and column of `schema.sql`. The same descriptions are stored in the 
 | [`loyalty_rules`](#loyalty_rules) | Loyalty | 7 | Programme rules as numbers: earn rate, redemption, expiry, referral bonus, member discount. |
 | [`loyalty_members`](#loyalty_members) | Loyalty | 100 | Programme members: one membership per guest. |
 | [`pricing_tiers`](#pricing_tiers) | Pricing | 10 | Special rates as multipliers of the standard Flexible rate. Only one discount applies to a booking. |
-| [`discount_codes`](#discount_codes) | Pricing | 29 | Promotional codes. status is derived on system_date: Expired, Scheduled, Exhausted or Active. |
+| [`discount_codes`](#discount_codes) | Pricing | 31 | Promotional codes. status is derived on system_date: Expired, Scheduled, Exhausted or Active. |
 | [`services`](#services) | Services | 16 | Priced hotel services (breakfast, transfers, spa, laundry, extra bed, late check-out...). |
 | [`fees`](#fees) | Services | 10 | Fees and percentages from the hotel policies: deposit, smoking fee, early/late check-out, cancellation. |
 | [`menu_items`](#menu_items) | Services | 23 | In-room dining and restaurant menu. Room service adds the delivery charge of service S002 per order. |
-| [`bookings`](#bookings) | Reservations | 16,532 | Reservations. Every Pending, Confirmed or Completed booking occupies its room; the database refuses two of them on the same room and nights. |
-| [`payments`](#payments) | Reservations | 16,532 | One payment record per booking: what was collected and refunded. |
-| [`customer_requests`](#customer_requests) | Guest service | 13,573 | Service requests (room service, housekeeping, transfers, changes...). In-stay requests are dated inside the stay; requests without a stay have no booking. |
-| [`complaint_tickets`](#complaint_tickets) | Guest service | 68 | Complaints. Room, service and facility complaints belong to a stay that happened; billing and booking complaints may have no booking. |
-| [`special_requests`](#special_requests) | Guest service | 103 | Special requests attached to a booking (celebrations, dietary needs, accessibility, room preferences...). |
+| [`bookings`](#bookings) | Reservations | 16,534 | Reservations. Every Pending, Confirmed or Completed booking occupies its room; the database refuses two of them on the same room and nights. |
+| [`payments`](#payments) | Reservations | 16,534 | One payment record per booking: what was collected and refunded. |
+| [`customer_requests`](#customer_requests) | Guest service | 13,756 | Every ticket for the hotel team: service requests, maintenance, complaints, special requests, discount requests, staff callbacks and emergencies. |
 | [`customer_feedback`](#customer_feedback) | Guest service | 4,001 | Reviews of finished stays: one per booking. |
 | [`user_accounts`](#user_accounts) | Accounts | 5,599 | One login for everyone: guests (linked to a customer), hotel staff and admins. |
-| [`booking_links`](#booking_links) | Accounts | 20 | Bookings made elsewhere that a guest added to the account after the reference check. |
-| [`calls`](#calls) | Dashboard | 0 | One row per conversation with the voice agent (voice or text). Filled by the API; shown on the dashboard. |
-| [`call_messages`](#call_messages) | Dashboard | 0 | Every turn of every call: what the guest said (after speech-to-text) and what the agent answered. |
-| [`call_actions`](#call_actions) | Dashboard | 0 | What the agent did during a call: each tool it ran (availability check, booking lookup, cancellation...) and the result. |
+| [`verification_codes`](#verification_codes) | Accounts | 0 | One-time codes sent by email to confirm the email at sign-up or to reset a password. Only a hash of the code is stored. Filled by the API. |
+| [`booking_links`](#booking_links) | Accounts | 21 | Bookings made elsewhere that a guest added to the account after the reference check. |
+| [`hotel_photos`](#hotel_photos) | Hotel | 6 | Photos of the hotel areas (pool, spa, gym, restaurant, lobby, building) that the agent can show during a call. Room photos are in room_types. |
+| [`calls`](#calls) | Dashboard | 17 | One row per conversation with the voice agent (voice or text). Filled by the API; shown on the dashboard. The demo data has 17 sample calls. |
+| [`call_messages`](#call_messages) | Dashboard | 90 | Every turn of every call: what the guest said (after speech-to-text) and what the agent answered. |
+| [`call_actions`](#call_actions) | Dashboard | 22 | What the agent did during a call: each tool it ran (availability check, booking lookup, cancellation...) and the result. |
 
 ## app_settings
 
 Hotel-wide settings. system_date is the frozen "today" of the dataset; the API must use it instead of the machine clock while the demo data is in use.
 
-Rows in the demo data: **11**
+Rows in the demo data: **14**
 
 | Column | Type | Rules | Description |
 |---|---|---|---|
@@ -70,7 +70,7 @@ Rows in the demo data: **150**
 | `floor` | SMALLINT | required, floor BETWEEN 2 AND 16 | Floor |
 | `room_type_id` | VARCHAR(5) | FK → room_types, required | Room type |
 | `view` | VARCHAR(4) | required, one of: Nile, City | Nile or City |
-| `status` | VARCHAR(11) | required, one of: Available, Occupied, Maintenance | Snapshot on system_date. Availability for any dates is computed from bookings, not from this column; a room in Maintenance is never offered. |
+| `status` | VARCHAR(11) | required, one of: Available, Occupied, Maintenance | Snapshot on system_date: Occupied = a guest is checked in now. Availability for any dates is computed from bookings, not from this column; a room in Maintenance is never offered. |
 
 Table rules:
 - `UNIQUE (room_number, room_type_id)`
@@ -155,11 +155,11 @@ Rows in the demo data: **10**
 
 Promotional codes. status is derived on system_date: Expired, Scheduled, Exhausted or Active.
 
-Rows in the demo data: **29**
+Rows in the demo data: **31**
 
 | Column | Type | Rules | Description |
 |---|---|---|---|
-| `code_id` | VARCHAR(5) | PK, required | DC001-DC029 |
+| `code_id` | VARCHAR(5) | PK, required | DC001-DC029 public codes; DC030-DC031 personal codes issued for approved Discount Requests |
 | `discount_code` | VARCHAR(20) | required, unique | Code the guest gives, e.g. PEARL100 |
 | `discount_type` | VARCHAR(12) | required, one of: PERCENTAGE, FIXED_AMOUNT | Percentage or fixed EGP amount |
 | `discount_value` | NUMERIC(10,2) | required, discount_value > 0 | Percent (1-100) or EGP |
@@ -168,9 +168,11 @@ Rows in the demo data: **29**
 | `start_date` | DATE | required | First valid day |
 | `end_date` | DATE | required | Last valid day |
 | `status` | VARCHAR(10) | required, one of: Active, Scheduled, Exhausted, Expired | Status on system_date |
+| `customer_id` | VARCHAR(7) | FK → customers, optional | Personal code: only this guest can use it, once (max_usage = 1). Issued when the administrator approves a Discount Request. NULL = a public code |
 
 Table rules:
 - `CHECK (end_date >= start_date)`
+- `CHECK (customer_id IS NULL OR max_usage = 1)`
 - `CHECK (max_usage IS NULL OR usage_count <= max_usage)`
 - `CHECK (discount_type <> 'PERCENTAGE' OR discount_value <= 100)`
 
@@ -222,9 +224,9 @@ Rows in the demo data: **23**
 
 ## bookings
 
-Reservations. Every Confirmed or Completed booking occupies its room; the database refuses two of them on the same room and nights.
+Reservations. Every Pending, Confirmed or Completed booking occupies its room; the database refuses two of them on the same room and nights.
 
-Rows in the demo data: **16,532**
+Rows in the demo data: **16,534**
 
 | Column | Type | Rules | Description |
 |---|---|---|---|
@@ -241,14 +243,25 @@ Rows in the demo data: **16,532**
 | `booking_channel` | VARCHAR(20) | required, one of: Website, Booking Platform, Mobile App, Phone, Travel Agent, Voice Agent | Where it was booked; bookings made by the voice agent use "Voice Agent" |
 | `rate_plan` | VARCHAR(14) | required, one of: Flexible, Non-refundable | Flexible: first night paid online as a deposit, the rest at the hotel; free cancellation until 48 h before arrival. Non-refundable: 15% cheaper, prepaid, no refund |
 | `price_per_night` | NUMERIC(10,2) | required, price_per_night > 0 | Agreed nightly rate, EGP |
-| `total_amount` | NUMERIC(12,2) | computed | Computed: price_per_night x nights |
-| `created_at` | TIMESTAMPTZ | optional | When the booking was made (set by the API for new bookings; empty in the demo data) |
+| `total_amount` | NUMERIC(12,2) | computed | Computed: price_per_night x nights (before any discount) |
+| `discount_source` | VARCHAR(9) | optional, one of: Long Stay, Code | The one discount applied: Long Stay (7+ nights) or Code; NULL when none. When both apply, the bigger one is used |
+| `discount_code_id` | VARCHAR(5) | FK → discount_codes, optional | The code used when discount_source = Code |
+| `discount_amount` | NUMERIC(12,2) | required, discount_amount >= 0, default 0 | Discount in EGP (0 when none) |
+| `amount_due` | NUMERIC(12,2) | computed | Computed: total_amount - discount_amount, what the guest pays for the stay |
+| `created_at` | TIMESTAMPTZ | optional | When the booking was made (set by the API; in the demo data only for the two bookings made by the voice agent, B020001-B020002) |
 | `cancelled_at` | TIMESTAMPTZ | optional | When it was cancelled (set by the API) |
-| `checked_in_at` | TIMESTAMPTZ | optional | Arrival recorded by staff on the dashboard (empty in the demo data) |
-| `checked_out_at` | TIMESTAMPTZ | optional | Departure recorded by staff, with the balance paid at the hotel (empty in the demo data) |
+| `checked_in_at` | TIMESTAMPTZ | optional | Arrival recorded by staff on the dashboard. Demo data: every Completed stay and every in-house stay that arrived before system_date (today's arrivals are still to check in) |
+| `checked_out_at` | TIMESTAMPTZ | optional | Departure recorded by staff, with the balance paid at the hotel; only for Completed stays |
 
 Table rules:
 - `CHECK (check_out > check_in)`
+- `CHECK ((discount_source IS NULL) = (discount_amount = 0))`
+- `CHECK ((discount_source = 'Code') = (discount_code_id IS NOT NULL))`
+- `CHECK (discount_amount < price_per_night * (check_out - check_in))`
+- `CHECK (rate_plan = 'Flexible' OR discount_source IS NULL)` (Non-refundable is already the special price)
+- `CHECK (discount_source IS DISTINCT FROM 'Long Stay' OR check_out - check_in >= 7)`
+- `CHECK (checked_in_at IS NULL OR booking_status IN ('Confirmed', 'Completed'))`
+- `CHECK (checked_out_at IS NULL OR (booking_status = 'Completed' AND checked_in_at IS NOT NULL AND checked_out_at >= checked_in_at))`
 - `FOREIGN KEY (room_number, room_type_id) REFERENCES rooms (room_number, room_type_id)`
 - `CONSTRAINT no_double_booking EXCLUDE USING gist (room_number WITH =, daterange(check_in, check_out, '[)') WITH &&) WHERE (booking_status IN ('Pending', 'Confirmed', 'Completed'))`
 
@@ -256,7 +269,7 @@ Table rules:
 
 One payment record per booking: what was collected and refunded.
 
-Rows in the demo data: **16,532**
+Rows in the demo data: **16,534**
 
 | Column | Type | Rules | Description |
 |---|---|---|---|
@@ -275,63 +288,44 @@ Table rules:
 
 ## customer_requests
 
-Service requests (room service, housekeeping, transfers, changes...). In-stay requests are dated inside the stay; requests without a stay have no booking.
+Every ticket for the hotel team: service requests, maintenance, complaints, special requests, discount requests, staff callbacks and emergencies (complaints and special requests used to be two other tables). In-stay requests are dated inside the stay; requests without a stay have no booking.
 
-Rows in the demo data: **13,573**
+Rows in the demo data: **13,756**
 
 | Column | Type | Rules | Description |
 |---|---|---|---|
 | `request_id` | VARCHAR(9) | PK, required, auto: next reference | REQ + 6 digits |
-| `customer_id` | VARCHAR(7) | FK → customers, required | Guest |
-| `booking_id` | VARCHAR(7) | FK → bookings, optional | Related booking (optional) |
-| `request_type` | VARCHAR(25) | required, one of: Room Service, Booking Inquiry, Housekeeping, Late Checkout, Modification Request, Airport Transfer, General Inquiry, Cancellation Request, Complaint, Extra Bed, Early Check-in, Payment Inquiry, Discount Request, Staff Callback, Emergency | Type; a Discount Request is decided by the admin (approved: a promotional code is emailed); Staff Callback = the guest asked for a person and no one was free; Emergency = raised by the agent during an emergency |
+| `customer_id` | VARCHAR(7) | FK → customers, optional | Guest (from the login). NULL only for an Emergency or Staff Callback raised by a visitor who is not logged in; `call_id` then says where it came from |
+| `booking_id` | VARCHAR(7) | FK → bookings, optional | Related booking (required for a Special Request) |
+| `call_id` | UUID | FK → calls, optional | The call in which the agent opened the ticket (NULL for tickets made at the desk or before the agent existed) |
+| `request_type` | VARCHAR(25) | required, one of: Room Service, Booking Inquiry, Housekeeping, Late Checkout, Modification Request, Airport Transfer, General Inquiry, Cancellation Request, Complaint, Extra Bed, Early Check-in, Payment Inquiry, Maintenance, Special Request, Discount Request, Staff Callback, Emergency | Type; Maintenance = something broken in the room (AC, light, tap); Special Request = a wish for a stay (celebration, dietary need...), decided by staff; a Discount Request is decided by the admin (approved: a personal one-time code is emailed); Staff Callback = the guest asked for a person and no one was free; Emergency = raised by the agent during an emergency |
+| `category` | VARCHAR(25) | optional, see the table rules | Complaint: Room Issue, Service Issue, Facility Issue, Billing Issue or Booking Issue (NULL = not said). Special Request: Checkout Extension, Service Request, Celebration Arrangement, Dietary Requirement, Transportation, Accessibility Request or Room Preference. Other types: NULL |
+| `priority` | VARCHAR(8) | required, one of: Normal, Urgent, Critical, default 'Normal' | Normal; Urgent = a Staff Callback or a serious complaint; Critical = Emergency only (shown first on the staff dashboard) |
 | `request_text` | TEXT | required | What the guest asked |
-| `request_status` | VARCHAR(12) | required, one of: Open, In Progress, Resolved, Closed | Status |
-| `priority` | VARCHAR(8) | required, one of: Normal, Urgent, Critical, default 'Normal' | Urgent = Staff Callback; Critical = Emergency (shown first on the staff dashboard) |
+| `request_status` | VARCHAR(12) | required, one of: Open, In Progress, Resolved, Closed, default 'Open' | Open (no one has taken it), In Progress, Resolved (done), Closed (finished without being done: rejected, cancelled by the guest, or the stay ended) |
+| `handled_by` | INTEGER | FK → user_accounts, optional | Staff or admin account that took the ticket; NULL while Open |
+| `decision` | VARCHAR(8) | optional, one of: Approved, Rejected | Discount Request (decided by the administrator) or Special Request (decided by staff); NULL while waiting or when the guest cancelled |
+| `decided_by` | INTEGER | FK → user_accounts, optional | Account that decided |
+| `decided_at` | TIMESTAMPTZ | optional | When the decision was made |
+| `issued_code_id` | VARCHAR(5) | FK → discount_codes, optional | Approved Discount Request: the personal one-time code emailed to the guest |
 | `created_at` | TIMESTAMPTZ | required, default now() | When it was made |
-
-## complaint_tickets
-
-Complaints. Room, service and facility complaints belong to a stay that happened; billing and booking complaints may have no booking.
-
-Rows in the demo data: **68**
-
-| Column | Type | Rules | Description |
-|---|---|---|---|
-| `ticket_id` | VARCHAR(8) | PK, required, auto: next reference | CMP + 5 digits |
-| `customer_id` | VARCHAR(7) | FK → customers, required | Guest |
-| `booking_id` | VARCHAR(7) | FK → bookings, optional | Related booking (optional) |
-| `complaint_type` | VARCHAR(20) | required, one of: Room Issue, Service Issue, Facility Issue, Billing Issue, Booking Issue | Type |
-| `priority` | VARCHAR(10) | required, one of: Low, Medium, High, Critical | Priority |
-| `description` | TEXT | required | What went wrong |
-| `status` | VARCHAR(12) | required, one of: Open, In Progress, Resolved, Closed | Status |
-| `created_at` | TIMESTAMPTZ | required, default now() | Opened |
-| `resolved_at` | TIMESTAMPTZ | optional | Resolved (only for Resolved / Closed) |
+| `resolved_at` | TIMESTAMPTZ | optional | When it was Resolved or Closed (set only then) |
 
 Table rules:
+- `CHECK (customer_id IS NOT NULL OR (call_id IS NOT NULL AND request_type IN ('Emergency', 'Staff Callback')))`
+- `CHECK (request_type <> 'Special Request' OR booking_id IS NOT NULL)`
+- `CHECK` category: a Complaint's category is NULL or one of its five; a Special Request needs one of its seven; other types have none
+- `CHECK ((request_type = 'Emergency') = (priority = 'Critical'))`
+- `CHECK (request_type <> 'Staff Callback' OR priority = 'Urgent')`
+- `CHECK (priority <> 'Urgent' OR request_type IN ('Staff Callback', 'Complaint'))`
+- `CHECK ((request_status = 'Open') = (handled_by IS NULL))`
+- `CHECK ((request_status IN ('Resolved', 'Closed')) = (resolved_at IS NOT NULL))`
 - `CHECK (resolved_at IS NULL OR resolved_at >= created_at)`
-- `CHECK ((status IN ('Resolved', 'Closed')) = (resolved_at IS NOT NULL))`
-
-## special_requests
-
-Special requests attached to a booking (celebrations, dietary needs, accessibility, room preferences...).
-
-Rows in the demo data: **103**
-
-| Column | Type | Rules | Description |
-|---|---|---|---|
-| `request_id` | VARCHAR(7) | PK, required, auto: next reference | SR + 5 digits |
-| `customer_id` | VARCHAR(7) | FK → customers, required | Guest |
-| `booking_id` | VARCHAR(7) | FK → bookings, required | Booking |
-| `request_type` | VARCHAR(25) | required, one of: Checkout Extension, Service Request, Celebration Arrangement, Dietary Requirement, Transportation, Accessibility Request, Room Preference | Type |
-| `request_text` | TEXT | required | The request |
-| `request_status` | VARCHAR(10) | required, one of: Pending, Approved, Denied, Cancelled, Fulfilled | Status |
-| `created_at` | TIMESTAMPTZ | required, default now() | Made |
-| `fulfilled_at` | TIMESTAMPTZ | optional | Fulfilled (only for Fulfilled) |
-
-Table rules:
-- `CHECK ((request_status = 'Fulfilled') = (fulfilled_at IS NOT NULL))`
-- `CHECK (fulfilled_at IS NULL OR fulfilled_at >= created_at)`
+- `CHECK (decision IS NULL OR request_type IN ('Discount Request', 'Special Request'))`
+- `CHECK ((decision IS NULL) = (decided_at IS NULL) AND (decision IS NULL) = (decided_by IS NULL))`
+- `CHECK (decision IS NULL OR request_status <> 'Open')`
+- `CHECK (decided_at IS NULL OR decided_at >= created_at)`
+- `CHECK ((issued_code_id IS NOT NULL) = (request_type = 'Discount Request' AND decision IS NOT DISTINCT FROM 'Approved'))`
 
 ## customer_feedback
 
@@ -380,7 +374,7 @@ Table rules:
 
 Bookings made elsewhere (phone, agency, booking platform) that a guest added to the account after the reference check.
 
-Rows in the demo data: **20**
+Rows in the demo data: **21**
 
 | Column | Type | Rules | Description |
 |---|---|---|---|
@@ -388,20 +382,55 @@ Rows in the demo data: **20**
 | `booking_id` | VARCHAR(7) | PK, FK → bookings, required | Booking added |
 | `linked_at` | TIMESTAMPTZ | required, default now() | When it was added |
 
-## calls
+## verification_codes
 
-One row per conversation with the voice agent (voice or text). Filled by the API; shown on the dashboard.
+One-time codes sent by email to confirm the email at sign-up or to reset a password. Only a hash of the code is stored. Filled by the API. Staff passwords are reset by the administrator, not with a code.
 
 Rows in the demo data: **0**
+
+| Column | Type | Rules | Description |
+|---|---|---|---|
+| `code_id` | BIGSERIAL | PK, required | Code record id |
+| `account_id` | INTEGER | FK → user_accounts, required | Account the code was sent to |
+| `purpose` | VARCHAR(14) | required, one of: verify_email, reset_password | verify_email (sign-up) or reset_password |
+| `code_hash` | TEXT | required | Hash of the 6-digit code (never the code itself) |
+| `attempts` | SMALLINT | required, 0-5, default 0 | Wrong tries so far; the code stops working after app_settings.otp_max_attempts |
+| `expires_at` | TIMESTAMPTZ | required | Code expiry (app_settings.otp_valid_minutes after it was sent) |
+| `used_at` | TIMESTAMPTZ | optional | When it was used; a code works only once |
+| `created_at` | TIMESTAMPTZ | required, default now() | When it was sent |
+
+Table rules:
+- `CHECK (expires_at > created_at)`
+- `CHECK (used_at IS NULL OR used_at >= created_at)`
+
+## hotel_photos
+
+Photos of the hotel areas (pool, spa, gym, restaurant, lobby, building) that the agent can show during a call. Room photos are in room_types.
+
+Rows in the demo data: **6**
+
+| Column | Type | Rules | Description |
+|---|---|---|---|
+| `photo_key` | VARCHAR(20) | PK, required | Short name of the area: hotel, lobby, pool, spa, gym, restaurant |
+| `title_en` | VARCHAR(40) | required | Title in English |
+| `title_ar` | VARCHAR(40) | required | Title in Arabic |
+| `image_path` | VARCHAR(80) | required, unique, under /static/hotel/ | Path of the photo |
+| `service_id` | VARCHAR(4) | FK → services, optional | Related priced service, if any (spa S005, gym S006) |
+
+## calls
+
+One row per conversation with the voice agent (voice or text). Filled by the API; shown on the dashboard. The demo data has 17 sample calls (14-19 September 2026) that agree with the rest of the data: the bookings, tickets, codes and the booking link they created.
+
+Rows in the demo data: **17**
 
 | Column | Type | Rules | Description |
 |---|---|---|---|
 | `call_id` | UUID | PK, required, default gen_random_uuid() | Call id |
 | `channel` | VARCHAR(5) | required, one of: voice, text, default 'voice' | Voice call or typed chat |
 | `language` | VARCHAR(16) | optional, one of: Arabic-Egyptian, Arabic, English, French, Russian | Caller's language |
-| `customer_id` | VARCHAR(7) | FK → customers, optional | Caller, once identified |
-| `booking_id` | VARCHAR(7) | FK → bookings, optional | Booking discussed, once verified |
-| `identity_verified` | BOOLEAN | required, default false | The guest was logged in (or passed the reference check to link a booking) |
+| `account_id` | INTEGER | FK → user_accounts, optional | Logged-in guest account that made the call; NULL = a visitor (general answers only) |
+| `customer_id` | VARCHAR(7) | FK → customers, optional | The logged-in guest's customer record (from the account); NULL for a visitor |
+| `booking_id` | VARCHAR(7) | FK → bookings, optional | Main booking discussed (one in the account, or one added to it with link_booking) |
 | `status` | VARCHAR(10) | required, one of: active, completed, escalated, abandoned, default 'active' | Call status |
 | `escalation_reason` | TEXT | optional | Why it was handed to a person |
 | `assigned_staff_id` | INTEGER | FK → user_accounts, optional | Staff account that took the escalated call |
@@ -417,7 +446,7 @@ Table rules:
 
 Every turn of every call: what the guest said (after speech-to-text) and what the agent answered.
 
-Rows in the demo data: **0**
+Rows in the demo data: **90**
 
 | Column | Type | Rules | Description |
 |---|---|---|---|
@@ -436,7 +465,7 @@ Table rules:
 
 What the agent did during a call: each tool it ran (availability check, booking lookup, cancellation...) and the result.
 
-Rows in the demo data: **0**
+Rows in the demo data: **22**
 
 | Column | Type | Rules | Description |
 |---|---|---|---|
@@ -456,5 +485,5 @@ Rows in the demo data: **0**
 | `hotel_today()` | The dataset's "today" (`app_settings.system_date`) |
 | `free_rooms(room_type, check_in, check_out)` | Free rooms of a type for the nights [check_in, check_out); Nile view first |
 | `trg_booking_capacity` (trigger) | Refuses a booking whose adults + children exceed the room type capacity |
-| `v_booking_details` | One row per booking with guest, room, type and payment: what a verified caller may hear |
-| `v_call_overview` | Dashboard list of calls with turns, actions, average latency and duration |
+| `v_booking_details` | One row per booking with guest, room, type, discount, amount due, check-in/out and payment: what the guest may hear about a booking in the account |
+| `v_call_overview` | Dashboard list of calls: visitor or account, turns, actions, tickets opened, average latency and duration |

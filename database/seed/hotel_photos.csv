@@ -1,0 +1,7 @@
+photo_key,title_en,title_ar,image_path,service_id
+hotel,Nile Pearl Hotel,فندق نايل بيرل,/static/hotel/hero.webp,
+lobby,Lobby,اللوبي,/static/hotel/lobby.webp,
+pool,Swimming Pool,حمام السباحة,/static/hotel/pool.webp,
+spa,Spa,السبا,/static/hotel/spa.webp,S005
+gym,Gym,الجيم,/static/hotel/gym.webp,S006
+restaurant,Main Restaurant,المطعم,/static/hotel/restaurant.webp,

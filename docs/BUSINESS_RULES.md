@@ -69,20 +69,30 @@ and cannot be transferred. Member rate: 15% off. **One discount per booking.**
 ## Discount codes
 Valid only between `start_date` and `end_date` and below `max_usage` (NULL = unlimited).
 `status` on `system_date`: Expired, then Scheduled, then Exhausted, otherwise Active.
-- The agent applies only the extended-stay discount (7+ nights, 12%) or a valid code, whichever is bigger.
+- The agent applies only the extended-stay discount (7+ nights, 12%) or a valid code, whichever is bigger, and only
+  on the Flexible rate: Non-refundable is already 15% less and takes no other discount (the database refuses it).
   Member, corporate, group and low-season rates are arranged by the reservations team. Any other
   discount is a `Discount Request` (customer_requests) decided by the admin; if approved, a code is emailed.
 
 ## Guest service
-- In-stay requests and complaints become tickets (`customer_requests`, query 10) for the staff dashboard.
+- Every ticket is a row of `customer_requests` (query 10): in-stay requests, `Maintenance`, `Complaint` (category:
+  Room, Service, Facility, Billing or Booking Issue), `Special Request` (needs a booking and a category; staff approve
+  or reject it), `Discount Request` (the admin decides), `Staff Callback`, `Emergency`. Tickets need a logged-in guest,
+  except an `Emergency` or `Staff Callback` from a visitor, which is kept with the call (`call_id`).
+- Status: Open (no one has it) → In Progress (`handled_by`) → Resolved (done) or Closed (not done: rejected,
+  cancelled, or the stay ended); `resolved_at` only then. Priority: Critical = Emergency only; Urgent = Staff Callback
+  or a serious complaint; otherwise Normal.
+- The staff queue holds only tickets that can still be acted on: from the last 14 days, or a service for a stay
+  that is on or coming. A service for a stay (housekeeping, room service, special request...) ends with the stay.
 - Talking to a person: only when the guest has a problem and asks. It continues as a live chat with a free
   staff member (`calls.assigned_staff_id`, `call_messages.role = 'staff'`); if no one is free, a `Staff Callback`
   ticket with priority Urgent is opened and staff contact the guest in the chat or by email.
 - Emergencies: the agent gives reception +20 2 2794 5500 and ambulance 123, police 122, fire 180, and opens an
   `Emergency` ticket with priority Critical, shown first on the staff dashboard.
-- Requests, complaints, special requests and feedback that name a booking belong to the guest who holds it.
-- Room, service and facility complaints belong to a stay that happened. `resolved_at` is set only for Resolved/Closed.
-- A special request is Fulfilled only for a stay that happened; only Fulfilled requests have `fulfilled_at`.
+- Tickets and feedback that name a booking belong to the guest who holds it.
+- Room, service and facility complaints belong to a stay that has started (after check-in).
+- Check-in and check-out are recorded by staff (`checked_in_at`, `checked_out_at`, query 8). A room is Occupied
+  while a guest is checked in; a Completed stay has both times.
 - Feedback exists only for Completed stays, one per booking; rating 4-5 Positive, 3 Neutral, 1-2 Negative.
 
 ## Identity and privacy

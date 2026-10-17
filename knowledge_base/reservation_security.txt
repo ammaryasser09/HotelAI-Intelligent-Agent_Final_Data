@@ -5,22 +5,34 @@ RESERVATION SECURITY
 
 Guests who are logged in to their account on the hotel website can see and manage the bookings in their account without further questions. Visitors who are not logged in can ask general questions; making or managing a booking and making requests need a login.
 
-2. Adding a Booking Made Elsewhere
+2. Creating an Account
+
+Guests create an account on the hotel website with their email address and a password. A 6-digit code is sent to that email to confirm it: the code works once, for 10 minutes, with up to 5 tries. Hotel staff and the administrator log in on the same page with the accounts the hotel gives them.
+
+3. Forgotten Password
+
+On the login page, choose "Forgot password". A 6-digit code is sent to the account's email; it works once, for 10 minutes, with up to 5 tries, and then a new password is set. Staff passwords are reset by the hotel administrator.
+
+4. Emergencies Without a Login
+
+In an emergency the voice agent helps at once, whether or not the caller is logged in: it gives the emergency numbers and alerts the hotel team.
+
+5. Adding a Booking Made Elsewhere
 
 A booking made by phone, by email, at reception, through a travel agent or through a booking platform can be added to the account once, with the booking reference and one of: the last name on the booking, or the last four digits of the phone number on the booking. It is added only when both match.
 
-3. Identity Check by Phone or Email
+6. Identity Check by Phone or Email
 
 Before discussing, changing or cancelling a reservation by phone or email, customer service asks for the booking reference and the last name on the booking or the last four digits of its phone number.
 
-4. What the Hotel Never Asks For
+7. What the Hotel Never Asks For
 
 The hotel never asks for full card numbers, card security codes or passwords by phone, chat, WhatsApp or email.
 
-5. Confirmation of Changes
+8. Confirmation of Changes
 
 Every change or cancellation is confirmed by email to the address on the booking.
 
-6. Suspicious Contact
+9. Suspicious Contact
 
 Guests who receive a suspicious message claiming to be from the hotel should contact reception on +20 2 2794 5500.

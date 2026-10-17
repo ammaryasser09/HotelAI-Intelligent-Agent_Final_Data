@@ -79,6 +79,7 @@ erDiagram
         date start_date
         date end_date
         string status
+        string customer_id FK
     }
     services {
         string service_id PK
@@ -120,6 +121,10 @@ erDiagram
         string rate_plan
         decimal price_per_night
         decimal total_amount
+        string discount_source
+        string discount_code_id FK
+        decimal discount_amount
+        decimal amount_due
         timestamp created_at
         timestamp cancelled_at
         timestamp checked_in_at
@@ -140,31 +145,19 @@ erDiagram
         string request_id PK
         string customer_id FK
         string booking_id FK
+        uuid call_id FK
         string request_type
+        string category
+        string priority
         string request_text
         string request_status
-        timestamp created_at
-    }
-    complaint_tickets {
-        string ticket_id PK
-        string customer_id FK
-        string booking_id FK
-        string complaint_type
-        string priority
-        string description
-        string status
+        int handled_by FK
+        string decision
+        int decided_by FK
+        timestamp decided_at
+        string issued_code_id FK
         timestamp created_at
         timestamp resolved_at
-    }
-    special_requests {
-        string request_id PK
-        string customer_id FK
-        string booking_id FK
-        string request_type
-        string request_text
-        string request_status
-        timestamp created_at
-        timestamp fulfilled_at
     }
     customer_feedback {
         string feedback_id PK
@@ -189,6 +182,23 @@ erDiagram
         timestamp created_at
         timestamp last_login_at
     }
+    verification_codes {
+        bigint code_id PK
+        int account_id FK
+        string purpose
+        string code_hash
+        int attempts
+        timestamp expires_at
+        timestamp used_at
+        timestamp created_at
+    }
+    hotel_photos {
+        string photo_key PK
+        string title_en
+        string title_ar
+        string image_path
+        string service_id FK
+    }
     booking_links {
         int account_id PK
         string booking_id PK
@@ -198,9 +208,9 @@ erDiagram
         uuid call_id PK
         string channel
         string language
+        int account_id FK
         string customer_id FK
         string booking_id FK
-        boolean identity_verified
         string status
         string escalation_reason
         int assigned_staff_id FK
@@ -233,20 +243,25 @@ erDiagram
     customers ||--o{ bookings : "customer_id"
     rooms ||--o{ bookings : "room_number, room_type_id"
     bookings ||--o| payments : "booking_id"
-    customers ||--o{ customer_requests : "customer_id"
+    customers |o--o{ customer_requests : "customer_id"
     bookings |o--o{ customer_requests : "booking_id"
-    customers ||--o{ complaint_tickets : "customer_id"
-    bookings |o--o{ complaint_tickets : "booking_id"
-    customers ||--o{ special_requests : "customer_id"
-    bookings ||--o{ special_requests : "booking_id"
     customers ||--o| customer_feedback : "customer_id"
     bookings ||--o| customer_feedback : "booking_id"
     customers |o--o{ calls : "customer_id"
     bookings |o--o{ calls : "booking_id"
     user_accounts |o--o{ calls : "assigned_staff_id"
+    user_accounts |o--o{ calls : "account_id (caller)"
+    calls |o--o{ customer_requests : "call_id"
     customers ||--o| user_accounts : "customer_id"
     user_accounts ||--o{ booking_links : "account_id"
     bookings ||--o{ booking_links : "booking_id"
+    customers |o--o{ discount_codes : "customer_id (personal code)"
+    discount_codes |o--o{ bookings : "discount_code_id"
+    discount_codes |o--o| customer_requests : "issued_code_id"
+    user_accounts |o--o{ customer_requests : "decided_by"
+    user_accounts |o--o{ customer_requests : "handled_by"
+    user_accounts ||--o{ verification_codes : "account_id"
+    services |o--o{ hotel_photos : "service_id"
     calls ||--o{ call_messages : "call_id"
     calls ||--o{ call_actions : "call_id"
     bookings |o--o{ call_actions : "booking_id"

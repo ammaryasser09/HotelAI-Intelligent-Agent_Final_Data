@@ -6,8 +6,8 @@
 -- 1. check_availability(room_type, check_in, check_out, guests)
 --    The API first validates: check_out > check_in, check_in >= hotel_today(), guests <= capacity.
 ---------------------------------------------------------------------------------------------------
--- 1a. room type, capacity and standard price
-SELECT room_type_id, room_type_name, capacity, base_price
+-- 1a. room type, capacity, standard price and photos (Nile and city view; the Suite has a Nile photo only)
+SELECT room_type_id, room_type_name, capacity, base_price, image_nile, image_city
 FROM room_types
 WHERE room_type_id = upper(:room_type) OR lower(room_type_name) = lower(:room_type);
 
@@ -52,11 +52,11 @@ ON CONFLICT DO NOTHING;
 --    then the first night (the deposit is kept). Only the deposit is collected before arrival.
 --    Non-refundable: nothing is refunded. Run after the identity check in query 2.
 ---------------------------------------------------------------------------------------------------
-SELECT booking_id, booking_status, rate_plan, total_amount, amount_paid,
+SELECT booking_id, booking_status, rate_plan, amount_due, amount_paid,
        charge, greatest(amount_paid - charge, 0) AS refund
 FROM (
   SELECT v.*,
-         CASE WHEN rate_plan = 'Non-refundable' THEN total_amount
+         CASE WHEN rate_plan = 'Non-refundable' THEN amount_due
               WHEN (check_in + time '15:00') - (hotel_today() + time '12:00') >= interval '48 hours' THEN 0
               ELSE price_per_night END AS charge
   FROM v_booking_details v
@@ -78,15 +78,25 @@ WHERE booking_id = upper(:booking_ref);
 -- 4. create_booking - after availability and the guest's "yes". booking_id, nights and total are
 --    filled by the database; the exclusion constraint refuses a room that was taken meanwhile.
 ---------------------------------------------------------------------------------------------------
+--    One discount at most, Flexible rate only: the Long Stay discount (7+ nights, pricing_tiers 'Extended Stay':
+--    total x 0.12) or a valid code (query 6), the bigger of the two. Non-refundable is already the special price:
+--    no other discount (the database refuses it). Leave discount_source / discount_code_id NULL and discount_amount 0 when none.
 INSERT INTO bookings (customer_id, room_number, room_type_id, check_in, check_out, adults, children,
-                      booking_status, booking_channel, rate_plan, price_per_night, created_at)
+                      booking_status, booking_channel, rate_plan, price_per_night,
+                      discount_source, discount_code_id, discount_amount, created_at)
 VALUES (:customer_id, :room_number, :room_type_id, :check_in, :check_out, :adults, :children,
-        'Pending', 'Voice Agent', :rate_plan, :price_per_night, now())
-RETURNING booking_id, nights, total_amount;
+        'Pending', 'Voice Agent', :rate_plan, :price_per_night,
+        :discount_source, :discount_code_id, coalesce(:discount_amount, 0), now())
+RETURNING booking_id, nights, total_amount, discount_amount, amount_due;
 
--- Flexible: the API then sends the payment link for the first-night deposit (price_per_night);
--- when the link is paid the row becomes Paid with amount_paid = price_per_night.
--- Non-refundable: the link is for the full total_amount.
+-- A code was used: count it (a personal code becomes Exhausted after its one use).
+UPDATE discount_codes SET usage_count = usage_count + 1,
+       status = CASE WHEN max_usage IS NOT NULL AND usage_count + 1 >= max_usage THEN 'Exhausted' ELSE status END
+WHERE code_id = :discount_code_id;
+
+-- Flexible: the API then sends the payment link for the deposit: price_per_night x app_settings.deposit_nights
+-- (1 night); when the link is paid the row becomes Paid with amount_paid = the deposit. The rest of amount_due
+-- is paid at the hotel. Non-refundable: the link is for the full amount_due.
 -- The booking stays Pending (room held) until the link is paid: 24 h, or 2 h when arrival is less than
 -- 24 h away (app_settings.deposit_hold_hours / deposit_hold_hours_last_minute).
 INSERT INTO payments (booking_id, payment_method, payment_status, payment_due_at, created_at)
@@ -127,8 +137,10 @@ WHERE b.booking_id = upper(:booking_ref);
 ---------------------------------------------------------------------------------------------------
 -- 6. check_discount_code(code)
 ---------------------------------------------------------------------------------------------------
-SELECT discount_code, discount_type, discount_value, status, start_date, end_date,
-       CASE WHEN max_usage IS NULL THEN NULL ELSE max_usage - usage_count END AS uses_left
+--    A personal code (customer_id set) works only for its own guest: pass the logged-in guest's customer_id.
+SELECT code_id, discount_code, discount_type, discount_value, status, start_date, end_date,
+       CASE WHEN max_usage IS NULL THEN NULL ELSE max_usage - usage_count END AS uses_left,
+       (customer_id IS NULL OR customer_id = :customer_id) AS usable_by_this_guest
 FROM discount_codes WHERE discount_code = upper(:code);
 
 ---------------------------------------------------------------------------------------------------
@@ -140,42 +152,12 @@ WHERE NOT :night_only OR night_menu ORDER BY category, price;
 SELECT price AS delivery_charge FROM services WHERE service_id = 'S002';
 
 ---------------------------------------------------------------------------------------------------
--- 8. Logging a call (dashboard data)
----------------------------------------------------------------------------------------------------
-INSERT INTO calls (channel, language) VALUES (:channel, :language) RETURNING call_id;
-INSERT INTO call_messages (call_id, turn_no, role, content, latency_ms)
-VALUES (:call_id, :turn_no, :role, :content, :latency_ms);
-INSERT INTO call_actions (call_id, tool_name, arguments, result, success, booking_id)
-VALUES (:call_id, :tool_name, CAST(:arguments AS jsonb), CAST(:result AS jsonb), :success, :booking_id);
-UPDATE calls SET status = 'escalated', escalation_reason = :reason WHERE call_id = :call_id;
-UPDATE calls SET status = 'completed', ended_at = now(), summary = :summary WHERE call_id = :call_id;
-
----------------------------------------------------------------------------------------------------
--- 9. Dashboard
----------------------------------------------------------------------------------------------------
--- calls list (newest first)
-SELECT * FROM v_call_overview ORDER BY started_at DESC LIMIT 50;
--- escalated calls waiting for a person
-SELECT * FROM v_call_overview WHERE status = 'escalated' AND assigned_to IS NULL ORDER BY started_at;
--- one call: transcript and actions
-SELECT turn_no, role, content, latency_ms, created_at FROM call_messages WHERE call_id = :call_id ORDER BY turn_no;
-SELECT tool_name, arguments, result, success, booking_id, created_at FROM call_actions WHERE call_id = :call_id ORDER BY created_at;
--- today's numbers
-SELECT count(*) AS calls,
-       count(*) FILTER (WHERE status = 'escalated') AS escalated,
-       round(100.0 * count(*) FILTER (WHERE status = 'completed') / nullif(count(*), 0), 1) AS resolved_pct
-FROM calls WHERE started_at::date = current_date;
--- occupancy on a date
-SELECT round(100.0 * count(*) / (SELECT count(*) FROM rooms), 1) AS occupancy_pct
-FROM bookings WHERE booking_status IN ('Confirmed', 'Completed') AND check_in <= :on_date AND :on_date < check_out;
-
----------------------------------------------------------------------------------------------------
 -- 8. Staff dashboard: check-in, balance and check-out (the rest of a Flexible stay is paid at the hotel)
 ---------------------------------------------------------------------------------------------------
--- 8a. arrivals today
-SELECT booking_id, first_name, last_name, room_type_name, room_number, nights, total_amount, amount_paid,
-       total_amount - amount_paid AS balance_due
-FROM v_booking_details WHERE booking_status = 'Confirmed' AND check_in = hotel_today() ORDER BY room_number;
+-- 8a. arrivals still to check in today
+SELECT booking_id, first_name, last_name, room_type_name, room_number, nights, amount_due, amount_paid,
+       amount_due - amount_paid AS balance_due
+FROM v_booking_details WHERE booking_status = 'Confirmed' AND check_in <= hotel_today() AND checked_in_at IS NULL ORDER BY room_number;
 
 -- 8b. check-in
 UPDATE bookings SET checked_in_at = now()
@@ -184,7 +166,7 @@ RETURNING booking_id, room_number;
 UPDATE rooms SET status = 'Occupied' WHERE room_number = :room_number;
 
 -- 8c. check-out: the guest pays the balance at the desk, the stay is completed and the room freed
-UPDATE payments p SET amount_paid = b.total_amount, payment_status = 'Paid', payment_method = :payment_method
+UPDATE payments p SET amount_paid = b.amount_due, payment_status = 'Paid', payment_method = :payment_method
 FROM bookings b WHERE b.booking_id = p.booking_id AND b.booking_id = upper(:booking_ref);
 UPDATE bookings SET booking_status = 'Completed', checked_out_at = now()
 WHERE booking_id = upper(:booking_ref) AND booking_status = 'Confirmed'
@@ -215,19 +197,124 @@ RETURNING booking_id, check_in, check_out, room_number, nights, total_amount;
 
 ---------------------------------------------------------------------------------------------------
 -- 10. create_request - a request, complaint or emergency raised by the agent becomes a ticket for the staff
---     (housekeeping, maintenance, room service, extra bed, Discount Request, Staff Callback, Emergency...)
+--     (housekeeping, maintenance, room service, Complaint / Special Request with a category, Discount Request,
+--     Staff Callback, Emergency...). customer_id comes from the login; a visitor who is not logged in can only
+--     raise an Emergency (or a Staff Callback), with customer_id NULL and the call_id.
 ---------------------------------------------------------------------------------------------------
-INSERT INTO customer_requests (customer_id, booking_id, request_type, request_text, request_status, priority, created_at)
-VALUES (:customer_id, :booking_id, :request_type, :request_text, 'Open',
-        CASE :request_type WHEN 'Emergency' THEN 'Critical' WHEN 'Staff Callback' THEN 'Urgent' ELSE 'Normal' END, now())
+INSERT INTO customer_requests (customer_id, booking_id, call_id, request_type, category, request_text, priority)
+VALUES (:customer_id, :booking_id, :call_id, :request_type, :category, :request_text,
+        CASE :request_type WHEN 'Emergency' THEN 'Critical' WHEN 'Staff Callback' THEN 'Urgent' ELSE 'Normal' END)
 RETURNING request_id, priority;
 
 -- 10b. staff queue: open tickets, emergencies first
-SELECT request_id, priority, request_type, request_text, customer_id, booking_id, created_at
-FROM customer_requests WHERE request_status IN ('Open', 'In Progress')
-ORDER BY CASE priority WHEN 'Critical' THEN 0 WHEN 'Urgent' THEN 1 ELSE 2 END, created_at;
+SELECT r.request_id, r.priority, r.request_type, r.category, r.request_status, r.request_text, r.customer_id, r.booking_id,
+       r.call_id, h.full_name AS handled_by, r.created_at
+FROM customer_requests r LEFT JOIN user_accounts h ON h.account_id = r.handled_by
+WHERE r.request_status IN ('Open', 'In Progress')
+ORDER BY CASE r.priority WHEN 'Critical' THEN 0 WHEN 'Urgent' THEN 1 ELSE 2 END, r.created_at;
 
 -- 10c. handoff: the guest asked for a person. Assign a free staff member to the call (live chat);
 --      when nobody is free the API opens a Staff Callback ticket (10) instead.
 UPDATE calls SET status = 'escalated', escalation_reason = :reason, assigned_staff_id = :staff_account_id
 WHERE call_id = :call_id;
+
+-- 10d. a member of staff takes a ticket
+UPDATE customer_requests SET request_status = 'In Progress', handled_by = :staff_account_id
+WHERE request_id = :request_id AND request_status = 'Open';
+
+-- 10e. done (Resolved) or finished without being done (Closed)
+UPDATE customer_requests SET request_status = :new_status, resolved_at = now(), handled_by = coalesce(handled_by, :staff_account_id)
+WHERE request_id = :request_id AND request_status IN ('Open', 'In Progress') AND :new_status IN ('Resolved', 'Closed');
+
+-- 10f. Special Request: staff approve (then it is In Progress until done, 10e) or reject it
+UPDATE customer_requests SET decision = :decision, decided_by = :staff_account_id, decided_at = now(),
+       handled_by = :staff_account_id,
+       request_status = CASE :decision WHEN 'Approved' THEN 'In Progress' ELSE 'Closed' END,
+       resolved_at = CASE :decision WHEN 'Approved' THEN NULL ELSE now() END
+WHERE request_id = :request_id AND request_type = 'Special Request' AND decision IS NULL;
+
+---------------------------------------------------------------------------------------------------
+-- 11. Discount Request: the administrator decides (dashboard). The request was opened by the agent (query 10).
+---------------------------------------------------------------------------------------------------
+-- 11a. waiting requests
+SELECT request_id, customer_id, booking_id, request_text, created_at
+FROM customer_requests WHERE request_type = 'Discount Request' AND decision IS NULL ORDER BY created_at;
+
+-- 11b. approve (one transaction): a personal one-time code for this guest, then the API emails it.
+INSERT INTO discount_codes (code_id, discount_code, discount_type, discount_value, usage_count, max_usage,
+                            start_date, end_date, status, customer_id)
+VALUES (:code_id, upper(:discount_code), :discount_type, :discount_value, 0, 1,
+        hotel_today(), hotel_today() + 30, 'Active', :customer_id)
+RETURNING code_id, discount_code;
+
+UPDATE customer_requests SET decision = 'Approved', decided_by = :admin_account_id, decided_at = now(),
+       issued_code_id = :code_id, request_status = 'Resolved', handled_by = :admin_account_id, resolved_at = now()
+WHERE request_id = :request_id AND request_type = 'Discount Request' AND decision IS NULL;
+
+-- 11c. reject
+UPDATE customer_requests SET decision = 'Rejected', decided_by = :admin_account_id, decided_at = now(),
+       request_status = 'Closed', handled_by = :admin_account_id, resolved_at = now()
+WHERE request_id = :request_id AND request_type = 'Discount Request' AND decision IS NULL;
+
+---------------------------------------------------------------------------------------------------
+-- 12. Email codes: confirm the email at sign-up, reset a forgotten password (guests only;
+--     staff passwords are reset by the administrator). Store only a hash of the 6-digit code.
+---------------------------------------------------------------------------------------------------
+-- 12a. send a code (the API emails the plain code and keeps only its hash)
+INSERT INTO verification_codes (account_id, purpose, code_hash, expires_at)
+VALUES (:account_id, :purpose, :code_hash,
+        now() + make_interval(mins => (SELECT value::int FROM app_settings WHERE key = 'otp_valid_minutes')))
+RETURNING code_id, expires_at;
+
+-- 12b. the latest code that can still be used; the API compares the hash of what the guest typed
+SELECT code_id, code_hash, attempts FROM verification_codes
+WHERE account_id = :account_id AND purpose = :purpose AND used_at IS NULL AND expires_at > now()
+  AND attempts < (SELECT value::int FROM app_settings WHERE key = 'otp_max_attempts')
+ORDER BY created_at DESC LIMIT 1;
+
+-- 12c. wrong code
+UPDATE verification_codes SET attempts = attempts + 1 WHERE code_id = :code_id;
+
+-- 12d. right code: use it once, then confirm the email (or let the API set the new password_hash)
+UPDATE verification_codes SET used_at = now() WHERE code_id = :code_id AND used_at IS NULL;
+UPDATE user_accounts SET email_verified = true WHERE account_id = :account_id;     -- verify_email
+UPDATE user_accounts SET password_hash = :new_password_hash WHERE account_id = :account_id;  -- reset_password
+
+---------------------------------------------------------------------------------------------------
+-- 13. Photos the agent can show: hotel areas (room photos come with query 1a)
+---------------------------------------------------------------------------------------------------
+SELECT photo_key, title_en, title_ar, image_path FROM hotel_photos
+WHERE :photo_key IS NULL OR photo_key = :photo_key ORDER BY photo_key;
+
+---------------------------------------------------------------------------------------------------
+-- 14. Logging a call (dashboard data). account_id = the logged-in guest, NULL for a visitor.
+---------------------------------------------------------------------------------------------------
+INSERT INTO calls (channel, language, account_id, customer_id)
+VALUES (:channel, :language, :account_id, (SELECT customer_id FROM user_accounts WHERE account_id = :account_id))
+RETURNING call_id;
+INSERT INTO call_messages (call_id, turn_no, role, content, latency_ms)
+VALUES (:call_id, :turn_no, :role, :content, :latency_ms);
+INSERT INTO call_actions (call_id, tool_name, arguments, result, success, booking_id)
+VALUES (:call_id, :tool_name, CAST(:arguments AS jsonb), CAST(:result AS jsonb), :success, :booking_id);
+UPDATE calls SET status = 'escalated', escalation_reason = :reason WHERE call_id = :call_id;
+UPDATE calls SET status = 'completed', ended_at = now(), summary = :summary WHERE call_id = :call_id;
+
+---------------------------------------------------------------------------------------------------
+-- 15. Call dashboard
+---------------------------------------------------------------------------------------------------
+-- calls list (newest first)
+SELECT * FROM v_call_overview ORDER BY started_at DESC LIMIT 50;
+-- escalated calls waiting for a person
+SELECT * FROM v_call_overview WHERE status = 'escalated' AND assigned_to IS NULL ORDER BY started_at;
+-- one call: transcript, actions and the tickets it opened
+SELECT turn_no, role, content, latency_ms, created_at FROM call_messages WHERE call_id = :call_id ORDER BY turn_no;
+SELECT tool_name, arguments, result, success, booking_id, created_at FROM call_actions WHERE call_id = :call_id ORDER BY created_at;
+SELECT request_id, request_type, priority, request_status FROM customer_requests WHERE call_id = :call_id ORDER BY created_at;
+-- today's numbers
+SELECT count(*) AS calls,
+       count(*) FILTER (WHERE status = 'escalated') AS escalated,
+       round(100.0 * count(*) FILTER (WHERE status = 'completed') / nullif(count(*), 0), 1) AS resolved_pct
+FROM calls WHERE started_at::date = hotel_today();
+-- occupancy on a date
+SELECT round(100.0 * count(*) / (SELECT count(*) FROM rooms), 1) AS occupancy_pct
+FROM bookings WHERE booking_status IN ('Confirmed', 'Completed') AND check_in <= :on_date AND :on_date < check_out;

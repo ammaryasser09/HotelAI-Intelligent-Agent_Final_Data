@@ -19,7 +19,7 @@ booking, a payment, a points balance or a code check from RAG.
 | Can I stay until 5 PM? How many points do I have? | **DB** | `loyalty_members`, `loyalty_tiers`, `fees` - query 5 |
 | Is code PEARL100 valid? | **DB** | `discount_codes` - query 6 |
 | Order a burger to my room | **DB write** | `menu_items` + delivery charge `services` S002 - query 7 |
-| I want to complain / I need a vegetarian breakfast | **DB write** | insert into `complaint_tickets` / `special_requests` |
+| I want to complain / I need a vegetarian breakfast | **DB write** | `create_request`: a ticket in `customer_requests` (`Complaint` / `Special Request` with its category) - query 10 |
 | What's the weather? Book me a flight | **REFUSE** | one polite sentence, offer hotel help |
 | I'm suing you / your staff was rude / I want compensation / delete my data / repeated misunderstanding | **ESCALATE** | hand to a person; `calls.status = 'escalated'` |
 | Fire, someone collapsed, a stranger at the door | **EMERGENCY** | first sentence: call reception +20 2 2794 5500 now |

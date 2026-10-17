@@ -2,8 +2,8 @@
 
 | الملف | فيه إيه |
 |---|---|
-| `corpus.jsonl` | الـ 44 ملف بتوع `knowledge_base/` متقطعين 146 chunk. دي اللي بتتعمل عليها embedding |
-| `hotel_faq_gold.csv` | 3,965 سؤال وإجابة بالـ 5 لغات (منهم 385 مصري)، كل واحد معاه المستند اللي جاوب منه |
+| `corpus.jsonl` | الـ 44 ملف بتوع `knowledge_base/` متقطعين 157 chunk. دي اللي بتتعمل عليها embedding |
+| `hotel_faq_gold.csv` | 3,996 سؤال وإجابة بالـ 5 لغات (منهم 392 مصري)، كل واحد معاه المستند اللي جاوب منه |
 | `faq_index.jsonl` | نفس الأسئلة بالشكل اللي الـ retriever بيقراه. **متعدلهوش بإيدك**، بيتبني من `hotel_faq_gold.csv` |
 
 ## أعمدة `hotel_faq_gold.csv`

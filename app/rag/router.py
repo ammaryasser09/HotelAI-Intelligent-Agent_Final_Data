@@ -109,7 +109,7 @@ def route(text, today=None, account_id=None):
             notes.append('Confirm with the caller which of the account\'s bookings they mean before acting on it.')
 
     code = re.search(r'\b(PEARL\d+)\b', t.upper())
-    if code: results.append(('check_discount_code', T.check_discount_code(code.group(1))))
+    if code: results.append(('check_discount_code', T.check_discount_code(code.group(1), account_id=account_id)))
     rt = next((name for pat, name in TYPES if re.search(pat, t, re.I)), None)
     dates = parse_dates(t, today)
     if rt and dates and not ref:
@@ -117,7 +117,9 @@ def route(text, today=None, account_id=None):
         if g is None:
             notes.append(f'Ask how many guests (adults and children) before quoting {rt} for {dates[0]}..{dates[1]}.')
         else:
-            results.append(('check_availability', T.check_availability(rt, str(dates[0]), str(dates[1]), g)))
+            results.append(('check_availability', T.check_availability(rt, str(dates[0]), str(dates[1]), g,
+                                                                    discount_code=code.group(1) if code else None,
+                                                                    account_id=account_id)))
     elif rt and not dates and re.search(r'عايز|عاوز|أحجز|احجز|فاضي|متاح|book|available', t, re.I) and not ref:
         notes.append(f'Ask for the check-in and check-out dates and the number of guests before checking {rt} availability.')
     return results, notes

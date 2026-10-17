@@ -5,8 +5,11 @@ hotel_name,Nile Pearl Hotel,Hotel name
 check_in_time,15:00,Standard check-in time
 check_out_time,12:00,Standard check-out time
 free_cancellation_hours,48,Flexible rate: free cancellation until this many hours before 3 PM on arrival day
+deposit_nights,1,"Flexible rate: nights paid online as the deposit; the rest is paid at the hotel"
 deposit_hold_hours,24,A new booking stays Pending (room held) this many hours for its payment link
 deposit_hold_hours_last_minute,2,Hold when arrival is less than 24 hours away
 currency,EGP,"All prices are in Egyptian Pounds, taxes included"
 reception_phone,+20 2 2794 5500,"Reception, 24/7"
 reservations_phone,+20 2 2794 5501,Reservations line
+otp_valid_minutes,10,Email verification and password-reset codes stop working after this many minutes
+otp_max_attempts,5,Wrong tries allowed for one code

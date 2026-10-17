@@ -10,7 +10,7 @@ DO $$ BEGIN EXECUTE format('ALTER DATABASE %I SET timezone TO %L', current_datab
 SET TIME ZONE 'Africa/Cairo';
 
 DROP VIEW IF EXISTS v_call_overview, v_booking_details CASCADE;
-DROP TABLE IF EXISTS call_actions, call_messages, calls, booking_links, user_accounts, staff_users, customer_feedback, special_requests, complaint_tickets, customer_requests, payments, bookings, menu_items, fees, services, discount_codes, pricing_tiers, loyalty_members, loyalty_rules, loyalty_tiers, customers, rooms, room_types, app_settings CASCADE;
+DROP TABLE IF EXISTS verification_codes, hotel_photos, call_actions, call_messages, calls, booking_links, user_accounts, staff_users, customer_feedback, special_requests, complaint_tickets, customer_requests, payments, bookings, menu_items, fees, services, discount_codes, pricing_tiers, loyalty_members, loyalty_rules, loyalty_tiers, customers, rooms, room_types, app_settings CASCADE;
 DROP FUNCTION IF EXISTS hotel_today(), free_rooms(text, date, date), check_booking_capacity() CASCADE;
 DROP SEQUENCE IF EXISTS customers_id_seq, loyalty_members_id_seq, bookings_id_seq, payments_id_seq, customer_requests_id_seq, complaint_tickets_id_seq, special_requests_id_seq, customer_feedback_id_seq;
 
@@ -20,8 +20,6 @@ CREATE SEQUENCE loyalty_members_id_seq START WITH 101;
 CREATE SEQUENCE bookings_id_seq START WITH 20001;
 CREATE SEQUENCE payments_id_seq START WITH 20001;
 CREATE SEQUENCE customer_requests_id_seq START WITH 15001;
-CREATE SEQUENCE complaint_tickets_id_seq START WITH 76;
-CREATE SEQUENCE special_requests_id_seq START WITH 126;
 CREATE SEQUENCE customer_feedback_id_seq START WITH 5001;
 
 -- Hotel settings: app_settings
@@ -115,7 +113,9 @@ CREATE TABLE discount_codes (
     start_date               DATE           NOT NULL,
     end_date                 DATE           NOT NULL,
     status                   VARCHAR(10)    NOT NULL CHECK (status IN ('Active', 'Scheduled', 'Exhausted', 'Expired')),
+    customer_id              VARCHAR(7)     REFERENCES customers,
     CHECK (end_date >= start_date),
+    CHECK (customer_id IS NULL OR max_usage = 1),
     CHECK (max_usage IS NULL OR usage_count <= max_usage),
     CHECK (discount_type <> 'PERCENTAGE' OR discount_value <= 100)
 );
@@ -167,11 +167,22 @@ CREATE TABLE bookings (
     rate_plan                VARCHAR(14)    NOT NULL CHECK (rate_plan IN ('Flexible', 'Non-refundable')),
     price_per_night          NUMERIC(10,2)  NOT NULL CHECK (price_per_night > 0),
     total_amount             NUMERIC(12,2)  GENERATED ALWAYS AS (price_per_night * (check_out - check_in)) STORED,
+    discount_source          VARCHAR(9)     CHECK (discount_source IN ('Long Stay', 'Code')),
+    discount_code_id         VARCHAR(5)     REFERENCES discount_codes,
+    discount_amount          NUMERIC(12,2)  NOT NULL DEFAULT 0 CHECK (discount_amount >= 0),
+    amount_due               NUMERIC(12,2)  GENERATED ALWAYS AS (price_per_night * (check_out - check_in) - discount_amount) STORED,
     created_at               TIMESTAMPTZ,
     cancelled_at             TIMESTAMPTZ,
     checked_in_at            TIMESTAMPTZ,
     checked_out_at           TIMESTAMPTZ,
     CHECK (check_out > check_in),
+    CHECK ((discount_source IS NULL) = (discount_amount = 0)),
+    CHECK ((discount_source = 'Code') = (discount_code_id IS NOT NULL)),
+    CHECK (discount_amount < price_per_night * (check_out - check_in)),
+    CHECK (rate_plan = 'Flexible' OR discount_source IS NULL),
+    CHECK (discount_source IS DISTINCT FROM 'Long Stay' OR check_out - check_in >= 7),
+    CHECK (checked_in_at IS NULL OR booking_status IN ('Confirmed', 'Completed')),
+    CHECK (checked_out_at IS NULL OR (booking_status = 'Completed' AND checked_in_at IS NOT NULL AND checked_out_at >= checked_in_at)),
     FOREIGN KEY (room_number, room_type_id) REFERENCES rooms (room_number, room_type_id),
     CONSTRAINT no_double_booking EXCLUDE USING gist (room_number WITH =, daterange(check_in, check_out, '[)') WITH &&) WHERE (booking_status IN ('Pending', 'Confirmed', 'Completed'))
 );
@@ -190,45 +201,42 @@ CREATE TABLE payments (
     CHECK (refund_amount <= amount_paid)
 );
 
--- Guest service: customer_requests
+-- Guest service: customer_requests (every ticket for the hotel team: in-stay requests, maintenance, complaints,
+-- special requests, discount requests, staff callbacks and emergencies)
 CREATE TABLE customer_requests (
     request_id               VARCHAR(9)     PRIMARY KEY DEFAULT 'REQ' || lpad(nextval('customer_requests_id_seq')::text, 6, '0'),
-    customer_id              VARCHAR(7)     NOT NULL REFERENCES customers,
+    customer_id              VARCHAR(7)     REFERENCES customers,
     booking_id               VARCHAR(7)     REFERENCES bookings ON DELETE SET NULL,
-    request_type             VARCHAR(25)    NOT NULL CHECK (request_type IN ('Room Service', 'Booking Inquiry', 'Housekeeping', 'Late Checkout', 'Modification Request', 'Airport Transfer', 'General Inquiry', 'Cancellation Request', 'Complaint', 'Extra Bed', 'Early Check-in', 'Payment Inquiry', 'Discount Request', 'Staff Callback', 'Emergency')),
+    call_id                  UUID,
+    request_type             VARCHAR(25)    NOT NULL CHECK (request_type IN ('Room Service', 'Booking Inquiry', 'Housekeeping', 'Late Checkout', 'Modification Request', 'Airport Transfer', 'General Inquiry', 'Cancellation Request', 'Complaint', 'Extra Bed', 'Early Check-in', 'Payment Inquiry', 'Maintenance', 'Special Request', 'Discount Request', 'Staff Callback', 'Emergency')),
+    category                 VARCHAR(25),
     priority                 VARCHAR(8)     NOT NULL DEFAULT 'Normal' CHECK (priority IN ('Normal', 'Urgent', 'Critical')),
     request_text             TEXT           NOT NULL,
-    request_status           VARCHAR(12)    NOT NULL CHECK (request_status IN ('Open', 'In Progress', 'Resolved', 'Closed')),
-    created_at               TIMESTAMPTZ    NOT NULL DEFAULT now()
-);
-
--- Guest service: complaint_tickets
-CREATE TABLE complaint_tickets (
-    ticket_id                VARCHAR(8)     PRIMARY KEY DEFAULT 'CMP' || lpad(nextval('complaint_tickets_id_seq')::text, 5, '0'),
-    customer_id              VARCHAR(7)     NOT NULL REFERENCES customers,
-    booking_id               VARCHAR(7)     REFERENCES bookings ON DELETE SET NULL,
-    complaint_type           VARCHAR(20)    NOT NULL CHECK (complaint_type IN ('Room Issue', 'Service Issue', 'Facility Issue', 'Billing Issue', 'Booking Issue')),
-    priority                 VARCHAR(10)    NOT NULL CHECK (priority IN ('Low', 'Medium', 'High', 'Critical')),
-    description              TEXT           NOT NULL,
-    status                   VARCHAR(12)    NOT NULL CHECK (status IN ('Open', 'In Progress', 'Resolved', 'Closed')),
+    request_status           VARCHAR(12)    NOT NULL DEFAULT 'Open' CHECK (request_status IN ('Open', 'In Progress', 'Resolved', 'Closed')),
+    handled_by               INTEGER,
+    decision                 VARCHAR(8)     CHECK (decision IN ('Approved', 'Rejected')),
+    decided_by               INTEGER,
+    decided_at               TIMESTAMPTZ,
+    issued_code_id           VARCHAR(5)     REFERENCES discount_codes,
     created_at               TIMESTAMPTZ    NOT NULL DEFAULT now(),
     resolved_at              TIMESTAMPTZ,
+    CHECK (customer_id IS NOT NULL OR (call_id IS NOT NULL AND request_type IN ('Emergency', 'Staff Callback'))),
+    CHECK (request_type <> 'Special Request' OR booking_id IS NOT NULL),
+    CHECK (CASE request_type
+             WHEN 'Complaint' THEN category IS NULL OR category IN ('Room Issue', 'Service Issue', 'Facility Issue', 'Billing Issue', 'Booking Issue')
+             WHEN 'Special Request' THEN category IS NOT NULL AND category IN ('Checkout Extension', 'Service Request', 'Celebration Arrangement', 'Dietary Requirement', 'Transportation', 'Accessibility Request', 'Room Preference')
+             ELSE category IS NULL END),
+    CHECK ((request_type = 'Emergency') = (priority = 'Critical')),
+    CHECK (request_type <> 'Staff Callback' OR priority = 'Urgent'),
+    CHECK (priority <> 'Urgent' OR request_type IN ('Staff Callback', 'Complaint')),
+    CHECK ((request_status = 'Open') = (handled_by IS NULL)),
+    CHECK ((request_status IN ('Resolved', 'Closed')) = (resolved_at IS NOT NULL)),
     CHECK (resolved_at IS NULL OR resolved_at >= created_at),
-    CHECK ((status IN ('Resolved', 'Closed')) = (resolved_at IS NOT NULL))
-);
-
--- Guest service: special_requests
-CREATE TABLE special_requests (
-    request_id               VARCHAR(7)     PRIMARY KEY DEFAULT 'SR' || lpad(nextval('special_requests_id_seq')::text, 5, '0'),
-    customer_id              VARCHAR(7)     NOT NULL REFERENCES customers,
-    booking_id               VARCHAR(7)     NOT NULL REFERENCES bookings ON DELETE CASCADE,
-    request_type             VARCHAR(25)    NOT NULL CHECK (request_type IN ('Checkout Extension', 'Service Request', 'Celebration Arrangement', 'Dietary Requirement', 'Transportation', 'Accessibility Request', 'Room Preference')),
-    request_text             TEXT           NOT NULL,
-    request_status           VARCHAR(10)    NOT NULL CHECK (request_status IN ('Pending', 'Approved', 'Denied', 'Cancelled', 'Fulfilled')),
-    created_at               TIMESTAMPTZ    NOT NULL DEFAULT now(),
-    fulfilled_at             TIMESTAMPTZ,
-    CHECK ((request_status = 'Fulfilled') = (fulfilled_at IS NOT NULL)),
-    CHECK (fulfilled_at IS NULL OR fulfilled_at >= created_at)
+    CHECK (decision IS NULL OR request_type IN ('Discount Request', 'Special Request')),
+    CHECK ((decision IS NULL) = (decided_at IS NULL) AND (decision IS NULL) = (decided_by IS NULL)),
+    CHECK (decision IS NULL OR request_status <> 'Open'),
+    CHECK (decided_at IS NULL OR decided_at >= created_at),
+    CHECK ((issued_code_id IS NOT NULL) = (request_type = 'Discount Request' AND decision IS NOT DISTINCT FROM 'Approved'))
 );
 
 -- Guest service: customer_feedback
@@ -267,6 +275,31 @@ CREATE TABLE booking_links (
     linked_at                TIMESTAMPTZ    NOT NULL DEFAULT now(),
     PRIMARY KEY (account_id, booking_id)
 );
+ALTER TABLE customer_requests ADD FOREIGN KEY (handled_by) REFERENCES user_accounts;
+ALTER TABLE customer_requests ADD FOREIGN KEY (decided_by) REFERENCES user_accounts;
+
+-- Accounts: verification_codes (one-time codes sent by email: confirm the email at sign-up, reset a password)
+CREATE TABLE verification_codes (
+    code_id                  BIGSERIAL      PRIMARY KEY,
+    account_id               INTEGER        NOT NULL REFERENCES user_accounts ON DELETE CASCADE,
+    purpose                  VARCHAR(14)    NOT NULL CHECK (purpose IN ('verify_email', 'reset_password')),
+    code_hash                TEXT           NOT NULL,
+    attempts                 SMALLINT       NOT NULL DEFAULT 0 CHECK (attempts BETWEEN 0 AND 5),
+    expires_at               TIMESTAMPTZ    NOT NULL,
+    used_at                  TIMESTAMPTZ,
+    created_at               TIMESTAMPTZ    NOT NULL DEFAULT now(),
+    CHECK (expires_at > created_at),
+    CHECK (used_at IS NULL OR used_at >= created_at)
+);
+
+-- Hotel: hotel_photos (photos of the hotel areas the agent can show; room photos are in room_types)
+CREATE TABLE hotel_photos (
+    photo_key                VARCHAR(20)    PRIMARY KEY,
+    title_en                 VARCHAR(40)    NOT NULL,
+    title_ar                 VARCHAR(40)    NOT NULL,
+    image_path               VARCHAR(80)    NOT NULL UNIQUE CHECK (image_path LIKE '/static/hotel/%'),
+    service_id               VARCHAR(4)     REFERENCES services
+);
 
 -- Dashboard: calls
 CREATE TABLE calls (
@@ -275,7 +308,7 @@ CREATE TABLE calls (
     language                 VARCHAR(16)    CHECK (language IN ('Arabic-Egyptian', 'Arabic', 'English', 'French', 'Russian')),
     customer_id              VARCHAR(7)     REFERENCES customers,
     booking_id               VARCHAR(7)     REFERENCES bookings,
-    identity_verified        BOOLEAN        NOT NULL DEFAULT false,
+    account_id               INTEGER        REFERENCES user_accounts,
     status                   VARCHAR(10)    NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'completed', 'escalated', 'abandoned')),
     escalation_reason        TEXT,
     assigned_staff_id        INTEGER        REFERENCES user_accounts,
@@ -297,6 +330,7 @@ CREATE TABLE call_messages (
     created_at               TIMESTAMPTZ    NOT NULL DEFAULT now(),
     UNIQUE (call_id, turn_no)
 );
+ALTER TABLE customer_requests ADD FOREIGN KEY (call_id) REFERENCES calls;
 
 -- Dashboard: call_actions
 CREATE TABLE call_actions (
@@ -314,8 +348,6 @@ ALTER SEQUENCE loyalty_members_id_seq OWNED BY loyalty_members.member_id;
 ALTER SEQUENCE bookings_id_seq OWNED BY bookings.booking_id;
 ALTER SEQUENCE payments_id_seq OWNED BY payments.payment_id;
 ALTER SEQUENCE customer_requests_id_seq OWNED BY customer_requests.request_id;
-ALTER SEQUENCE complaint_tickets_id_seq OWNED BY complaint_tickets.ticket_id;
-ALTER SEQUENCE special_requests_id_seq OWNED BY special_requests.request_id;
 ALTER SEQUENCE customer_feedback_id_seq OWNED BY customer_feedback.feedback_id;
 
 -- Indexes
@@ -327,13 +359,13 @@ CREATE INDEX idx_customers_last_name_ar ON customers (last_name_ar);
 CREATE INDEX idx_customers_phone_last4 ON customers (right(phone, 4));
 CREATE INDEX idx_requests_customer ON customer_requests (customer_id);
 CREATE INDEX idx_requests_booking ON customer_requests (booking_id);
-CREATE INDEX idx_complaints_customer ON complaint_tickets (customer_id);
-CREATE INDEX idx_complaints_status ON complaint_tickets (status);
-CREATE INDEX idx_special_booking ON special_requests (booking_id);
+CREATE INDEX idx_requests_call ON customer_requests (call_id) WHERE call_id IS NOT NULL;
 CREATE INDEX idx_feedback_customer ON customer_feedback (customer_id);
 CREATE INDEX idx_calls_started ON calls (started_at DESC);
 CREATE INDEX idx_calls_status ON calls (status);
 CREATE INDEX idx_actions_call ON call_actions (call_id);
+CREATE INDEX idx_codes_account ON verification_codes (account_id, purpose) WHERE used_at IS NULL;
+CREATE INDEX idx_requests_open ON customer_requests (priority, created_at) WHERE request_status IN ('Open', 'In Progress');
 
 -- Functions and rules
 -- "Today" of the dataset (app_settings.system_date), so SQL and the API agree on one date.
@@ -377,7 +409,8 @@ CREATE TRIGGER trg_booking_capacity BEFORE INSERT OR UPDATE OF adults, children,
 CREATE VIEW v_booking_details AS
 SELECT b.booking_id, b.booking_status, b.rate_plan, b.booking_channel,
        b.check_in, b.check_out, b.nights, b.adults, b.children,
-       b.price_per_night, b.total_amount,
+       b.price_per_night, b.total_amount, b.discount_source, b.discount_amount, b.amount_due,
+       b.checked_in_at, b.checked_out_at,
        c.customer_id, c.first_name, c.last_name, c.first_name_ar, c.last_name_ar,
        right(c.phone, 4) AS phone_last4, c.email,
        t.room_type_name, b.room_number, r.floor, r.view,
@@ -391,11 +424,12 @@ LEFT JOIN payments p ON p.booking_id = b.booking_id;
 -- Dashboard list of calls.
 CREATE VIEW v_call_overview AS
 SELECT c.call_id, c.started_at, c.ended_at, c.channel, c.language, c.status, c.escalation_reason,
-       c.identity_verified, c.booking_id, c.customer_id,
+       c.account_id, (c.account_id IS NULL) AS visitor, c.booking_id, c.customer_id,
        cu.first_name || ' ' || cu.last_name AS guest_name,
        s.full_name AS assigned_to,
        (SELECT count(*) FROM call_messages m WHERE m.call_id = c.call_id) AS turns,
        (SELECT count(*) FROM call_actions a WHERE a.call_id = c.call_id) AS actions,
+       (SELECT count(*) FROM customer_requests r WHERE r.call_id = c.call_id) AS tickets,
        (SELECT round(avg(m.latency_ms)) FROM call_messages m WHERE m.call_id = c.call_id AND m.role = 'agent') AS avg_latency_ms,
        extract(epoch FROM (c.ended_at - c.started_at))::int AS duration_seconds
 FROM calls c
@@ -475,6 +509,7 @@ COMMENT ON COLUMN discount_codes.max_usage IS 'Usage limit (NULL = unlimited)';
 COMMENT ON COLUMN discount_codes.start_date IS 'First valid day';
 COMMENT ON COLUMN discount_codes.end_date IS 'Last valid day';
 COMMENT ON COLUMN discount_codes.status IS 'Status on system_date';
+COMMENT ON COLUMN discount_codes.customer_id IS 'Personal code: only this guest can use it, once (max_usage = 1). Issued when the administrator approves a Discount Request. NULL = a public code';
 COMMENT ON TABLE services IS 'Priced hotel services (breakfast, transfers, spa, laundry, extra bed, late check-out...).';
 COMMENT ON COLUMN services.service_id IS 'S001-S016';
 COMMENT ON COLUMN services.service_name IS 'Service';
@@ -511,11 +546,15 @@ COMMENT ON COLUMN bookings.booking_status IS 'Pending (waiting for the payment l
 COMMENT ON COLUMN bookings.booking_channel IS 'Where it was booked; bookings made by the voice agent use "Voice Agent"';
 COMMENT ON COLUMN bookings.rate_plan IS 'Flexible: free cancellation until 48 h before arrival. Non-refundable: 15% cheaper, prepaid, no refund';
 COMMENT ON COLUMN bookings.price_per_night IS 'Agreed nightly rate, EGP';
-COMMENT ON COLUMN bookings.total_amount IS 'Computed: price_per_night x nights';
+COMMENT ON COLUMN bookings.total_amount IS 'Computed: price_per_night x nights (before any discount)';
+COMMENT ON COLUMN bookings.discount_source IS 'The one discount applied: Long Stay (7+ nights) or Code; NULL when none. When both apply, the bigger one is used';
+COMMENT ON COLUMN bookings.discount_code_id IS 'The code used when discount_source = Code';
+COMMENT ON COLUMN bookings.discount_amount IS 'Discount in EGP (0 when none)';
+COMMENT ON COLUMN bookings.amount_due IS 'Computed: total_amount - discount_amount, what the guest pays for the stay';
 COMMENT ON COLUMN bookings.created_at IS 'When the booking was made (set by the API for new bookings; empty in the demo data)';
 COMMENT ON COLUMN bookings.cancelled_at IS 'When it was cancelled (set by the API)';
-COMMENT ON COLUMN bookings.checked_in_at IS 'Arrival recorded by staff on the dashboard (empty in the demo data)';
-COMMENT ON COLUMN bookings.checked_out_at IS 'Departure recorded by staff, with the balance paid at the hotel (empty in the demo data)';
+COMMENT ON COLUMN bookings.checked_in_at IS 'Arrival recorded by staff on the dashboard. Demo data: every Completed stay and every in-house stay that arrived before system_date (today''s arrivals are still to check in)';
+COMMENT ON COLUMN bookings.checked_out_at IS 'Departure recorded by staff, with the balance paid at the hotel; only for Completed stays';
 COMMENT ON TABLE payments IS 'One payment record per booking: what was collected and refunded.';
 COMMENT ON COLUMN payments.payment_id IS 'P + 6 digits';
 COMMENT ON COLUMN payments.booking_id IS 'The booking';
@@ -526,34 +565,23 @@ COMMENT ON COLUMN payments.payment_due_at IS 'Deadline to pay the link of a Pend
 COMMENT ON COLUMN payments.refund_amount IS 'Refunded, EGP';
 COMMENT ON COLUMN payments.transaction_reference IS 'Gateway reference';
 COMMENT ON COLUMN payments.created_at IS 'When it was recorded (set by the API)';
-COMMENT ON TABLE customer_requests IS 'Service requests (room service, housekeeping, transfers, changes...). In-stay requests are dated inside the stay; requests without a stay have no booking.';
+COMMENT ON TABLE customer_requests IS 'Every ticket for the hotel team: service requests, maintenance, complaints, special requests, discount requests, staff callbacks and emergencies. In-stay requests are dated inside the stay; requests without a stay have no booking.';
 COMMENT ON COLUMN customer_requests.request_id IS 'REQ + 6 digits';
-COMMENT ON COLUMN customer_requests.customer_id IS 'Guest';
-COMMENT ON COLUMN customer_requests.booking_id IS 'Related booking (optional)';
+COMMENT ON COLUMN customer_requests.customer_id IS 'Guest (from the login). NULL only for an Emergency or Staff Callback raised by a visitor who is not logged in; call_id then says where it came from';
+COMMENT ON COLUMN customer_requests.booking_id IS 'Related booking (optional; required for a Special Request)';
+COMMENT ON COLUMN customer_requests.call_id IS 'The call in which the agent opened the ticket (NULL for tickets made at the desk or before the agent existed)';
 COMMENT ON COLUMN customer_requests.request_type IS 'Type';
+COMMENT ON COLUMN customer_requests.category IS 'Complaint: Room Issue, Service Issue, Facility Issue, Billing Issue or Booking Issue (NULL = not said). Special Request: Checkout Extension, Service Request, Celebration Arrangement, Dietary Requirement, Transportation, Accessibility Request or Room Preference. Other types: NULL';
+COMMENT ON COLUMN customer_requests.priority IS 'Normal; Urgent = a Staff Callback (the guest asked for a person and no one was free) or a serious complaint; Critical = Emergency only';
 COMMENT ON COLUMN customer_requests.request_text IS 'What the guest asked';
-COMMENT ON COLUMN customer_requests.request_status IS 'Status';
-COMMENT ON COLUMN customer_requests.priority IS 'Normal; Urgent = the guest asked for a person and no one was free (Staff Callback); Critical = Emergency';
+COMMENT ON COLUMN customer_requests.request_status IS 'Open (no one has taken it), In Progress, Resolved (done), Closed (finished without being done: rejected, cancelled by the guest)';
+COMMENT ON COLUMN customer_requests.handled_by IS 'Staff or admin account that took the ticket; NULL while Open';
+COMMENT ON COLUMN customer_requests.decision IS 'Discount Request (decided by the administrator) or Special Request (decided by staff): Approved or Rejected; NULL while waiting or when the guest cancelled';
+COMMENT ON COLUMN customer_requests.decided_by IS 'Account that decided';
+COMMENT ON COLUMN customer_requests.decided_at IS 'When the decision was made';
+COMMENT ON COLUMN customer_requests.issued_code_id IS 'Approved Discount Request: the personal one-time code emailed to the guest';
 COMMENT ON COLUMN customer_requests.created_at IS 'When it was made';
-COMMENT ON TABLE complaint_tickets IS 'Complaints. Room, service and facility complaints belong to a stay that happened; billing and booking complaints may have no booking.';
-COMMENT ON COLUMN complaint_tickets.ticket_id IS 'CMP + 5 digits';
-COMMENT ON COLUMN complaint_tickets.customer_id IS 'Guest';
-COMMENT ON COLUMN complaint_tickets.booking_id IS 'Related booking (optional)';
-COMMENT ON COLUMN complaint_tickets.complaint_type IS 'Type';
-COMMENT ON COLUMN complaint_tickets.priority IS 'Priority';
-COMMENT ON COLUMN complaint_tickets.description IS 'What went wrong';
-COMMENT ON COLUMN complaint_tickets.status IS 'Status';
-COMMENT ON COLUMN complaint_tickets.created_at IS 'Opened';
-COMMENT ON COLUMN complaint_tickets.resolved_at IS 'Resolved (only for Resolved / Closed)';
-COMMENT ON TABLE special_requests IS 'Special requests attached to a booking (celebrations, dietary needs, accessibility, room preferences...).';
-COMMENT ON COLUMN special_requests.request_id IS 'SR + 5 digits';
-COMMENT ON COLUMN special_requests.customer_id IS 'Guest';
-COMMENT ON COLUMN special_requests.booking_id IS 'Booking';
-COMMENT ON COLUMN special_requests.request_type IS 'Type';
-COMMENT ON COLUMN special_requests.request_text IS 'The request';
-COMMENT ON COLUMN special_requests.request_status IS 'Status';
-COMMENT ON COLUMN special_requests.created_at IS 'Made';
-COMMENT ON COLUMN special_requests.fulfilled_at IS 'Fulfilled (only for Fulfilled)';
+COMMENT ON COLUMN customer_requests.resolved_at IS 'When it was Resolved or Closed (set only then)';
 COMMENT ON TABLE customer_feedback IS 'Reviews of finished stays: one per booking.';
 COMMENT ON COLUMN customer_feedback.feedback_id IS 'FB + 6 digits';
 COMMENT ON COLUMN customer_feedback.customer_id IS 'Guest';
@@ -575,6 +603,21 @@ COMMENT ON COLUMN user_accounts.email_verified IS 'Email confirmed with the code
 COMMENT ON COLUMN user_accounts.is_active IS 'Can sign in';
 COMMENT ON COLUMN user_accounts.created_at IS 'Created';
 COMMENT ON COLUMN user_accounts.last_login_at IS 'Last sign-in';
+COMMENT ON TABLE verification_codes IS 'One-time codes sent by email to confirm the email at sign-up or to reset a password. Only a hash of the code is stored. Filled by the API.';
+COMMENT ON COLUMN verification_codes.code_id IS 'Code record id';
+COMMENT ON COLUMN verification_codes.account_id IS 'Account the code was sent to';
+COMMENT ON COLUMN verification_codes.purpose IS 'verify_email (sign-up) or reset_password';
+COMMENT ON COLUMN verification_codes.code_hash IS 'Hash of the 6-digit code (never the code itself)';
+COMMENT ON COLUMN verification_codes.attempts IS 'Wrong tries so far; the code stops working after app_settings.otp_max_attempts';
+COMMENT ON COLUMN verification_codes.expires_at IS 'Code expiry (app_settings.otp_valid_minutes after it was sent)';
+COMMENT ON COLUMN verification_codes.used_at IS 'When it was used; a code works only once';
+COMMENT ON COLUMN verification_codes.created_at IS 'When it was sent';
+COMMENT ON TABLE hotel_photos IS 'Photos of the hotel areas (pool, spa, gym, restaurant, lobby, building) that the agent can show during a call. Room photos are in room_types.';
+COMMENT ON COLUMN hotel_photos.photo_key IS 'Short name of the area';
+COMMENT ON COLUMN hotel_photos.title_en IS 'Title in English';
+COMMENT ON COLUMN hotel_photos.title_ar IS 'Title in Arabic';
+COMMENT ON COLUMN hotel_photos.image_path IS 'Path under static/hotel/';
+COMMENT ON COLUMN hotel_photos.service_id IS 'Related priced service, if any (e.g. the spa)';
 COMMENT ON TABLE booking_links IS 'Bookings made elsewhere (phone, agency, booking platform) that a guest added to the account after the reference check.';
 COMMENT ON COLUMN booking_links.account_id IS 'Guest account';
 COMMENT ON COLUMN booking_links.booking_id IS 'Booking added';
@@ -583,9 +626,9 @@ COMMENT ON TABLE calls IS 'One row per conversation with the voice agent (voice 
 COMMENT ON COLUMN calls.call_id IS 'Call id';
 COMMENT ON COLUMN calls.channel IS 'Voice call or typed chat';
 COMMENT ON COLUMN calls.language IS 'Caller''s language';
-COMMENT ON COLUMN calls.customer_id IS 'Caller, once identified';
-COMMENT ON COLUMN calls.booking_id IS 'Booking discussed, once verified';
-COMMENT ON COLUMN calls.identity_verified IS 'Booking reference + last name or phone digits matched';
+COMMENT ON COLUMN calls.customer_id IS 'The logged-in guest''s customer record (from the account); NULL for a visitor';
+COMMENT ON COLUMN calls.booking_id IS 'Main booking discussed (one in the account, or one added to it with link_booking)';
+COMMENT ON COLUMN calls.account_id IS 'Logged-in guest account that made the call; NULL = a visitor (general answers only)';
 COMMENT ON COLUMN calls.status IS 'Call status';
 COMMENT ON COLUMN calls.escalation_reason IS 'Why it was handed to a person';
 COMMENT ON COLUMN calls.assigned_staff_id IS 'Staff account that took the escalated call'; 

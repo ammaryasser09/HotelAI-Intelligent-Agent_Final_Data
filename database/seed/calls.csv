@@ -1,0 +1,18 @@
+call_id,channel,language,account_id,customer_id,booking_id,status,escalation_reason,assigned_staff_id,summary,started_at,ended_at
+d19c9b18-425b-558e-8ec2-68bfc47f8833,voice,English,158,C000263,,completed,,,Discount Request from a returning guest (approved on 15 September: code PEARL5150),2026-09-14 19:30:15,2026-09-14 19:31:02
+252dec86-4087-5dc8-b676-bb6988424c19,voice,French,349,C000571,,completed,,,Discount Request from a student (approved on 16 September: code PEARL6290),2026-09-15 21:05:33,2026-09-15 21:06:20
+ca7e9112-9797-5250-bb1b-2b278e6167a5,voice,Arabic,163,C000270,,completed,,,Discount Request for three rooms in November (rejected on 17 September),2026-09-16 13:20:47,2026-09-16 13:21:25
+3a3c5573-87ae-574f-b7f8-5701e0af0466,voice,Arabic,1987,C003522,B010781,completed,,,"Emergency (smoke) on floor 8; evacuation advice and numbers given, Critical ticket opened",2026-09-17 06:05:12,2026-09-17 06:05:46
+ff5f9a87-9c44-5eca-a359-dbedc193b77b,voice,Arabic,144,C000242,B003887,completed,,,"Payment status of B003887: deposit paid, balance at the hotel",2026-09-17 17:40:55,2026-09-17 17:41:29
+cf86e48c-cc59-5015-a115-6a1c37338aeb,voice,French,,,,abandoned,,,The caller hung up before saying what they needed,2026-09-17 20:10:44,2026-09-17 20:10:59
+5c0639b0-c4c2-523d-a354-3e8254cb9218,voice,Arabic-Egyptian,,,,completed,,,Visitor asked about a booking: asked to log in; gym question answered,2026-09-18 12:15:30,2026-09-18 12:16:02
+092d8a57-3f62-5936-a243-41216236ab97,voice,English,158,C000263,B020002,completed,,,"New booking B020002 with personal code PEARL5150: Twin, 23-26 October, Flexible",2026-09-18 14:02:26,2026-09-18 14:03:27
+3d5f7820-e698-51bb-a99a-78f75b4b9b31,voice,English,550,C000917,B016453,completed,,,Booking B016453 (made through a travel agent) added to the account,2026-09-18 16:30:02,2026-09-18 16:30:41
+1dea0079-c847-55ac-86d2-14aa240bb51b,voice,Russian,1091,C001906,B006486,completed,,,Special request on B006486: birthday decoration and a cake,2026-09-18 19:45:20,2026-09-18 19:45:52
+e08ba4e0-559b-546d-9ae6-4715c2a737c5,voice,English,,,,completed,,,"Emergency (medical) in room 410 from a caller who is not logged in; numbers given, Critical ticket opened",2026-09-18 22:41:37,2026-09-18 22:42:15
+54a26e66-6b3e-58d0-a6a6-fd392809702c,voice,Arabic-Egyptian,1294,C002273,B007628,completed,,,Complaint: noise next to room 1201 at night; reception informed,2026-09-18 23:35:08,2026-09-18 23:35:36
+3165021f-5008-58a0-913b-1877985e2dae,voice,English,236,C000383,B020001,completed,,,"New booking B020001: Double, 7-15 December, Flexible, extended-stay discount; payment link sent",2026-09-19 08:20:09,2026-09-19 08:21:22
+28ef31b4-d8f9-519e-a21a-27f0ed5c01df,voice,Arabic-Egyptian,3339,C005988,B006557,completed,,,Maintenance: the AC in room 1106 is not cooling; ticket opened,2026-09-19 09:12:04,2026-09-19 09:12:36
+2bca871c-5a31-5320-8828-d76e9138d411,voice,Arabic-Egyptian,60,C000081,,completed,,,Discount Request for a honeymoon in December (waiting for the administrator),2026-09-19 10:05:50,2026-09-19 10:06:30
+f5b77b93-118a-58d8-86c8-c847f17b19b9,voice,Arabic-Egyptian,1170,C002044,B007805,escalated,The agent misunderstood twice; the guest wants the list of charges on room 1005 and asked for a person,3,Handed to Nada Samir (live chat): list of charges on room 1005,2026-09-19 10:30:41,2026-09-19 10:34:17
+81e7f5ea-84ab-5772-a2ec-d3897054c858,voice,English,270,C000446,B002226,escalated,Guest wants to talk to someone about the charges on his bill before check-out; no one was free,,No staff free: urgent Staff Callback ticket opened (bill before check-out),2026-09-19 11:52:18,2026-09-19 11:52:58

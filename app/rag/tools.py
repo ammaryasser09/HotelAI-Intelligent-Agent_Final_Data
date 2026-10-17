@@ -28,6 +28,9 @@ def _t(name):
 def _types():
     return {r['room_type_id']: r for r in _t('room_types')}
 
+def _setting(key, default=None):
+    return next((s['value'] for s in _t('app_settings') if s['key'] == key), default)
+
 def _type_id(room_type):
     k = normalize(room_type).replace(' room', '').strip()
     for r in _types().values():
@@ -46,9 +49,34 @@ def SALUTE(c):
     if c['first_name'] in _FEMALE and fa: return f'مدام {fa}'
     return ''
 
+# ── discounts ───────────────────────────────────────────────────────────────
+# One discount at most, on the Flexible rate only: the Long Stay discount (7+ nights, pricing_tiers 'Extended Stay')
+# or a valid discount code, whichever is bigger. The Non-refundable rate is already a special price: no other discount.
+def _long_stay_multiplier():
+    return float(next(p['rate_multiplier'] for p in _t('pricing_tiers') if p['tier_name'] == 'Extended Stay'))
+
+def best_discount(total, nights, discount_code=None, account_id=None):
+    """The discount a new Flexible booking gets: {'source', 'code', 'amount'} or None, plus why a code was not used."""
+    options, code_problem = [], None
+    if nights >= 7:
+        options.append({'source': 'Long Stay', 'code': None, 'amount': round(total * (1 - _long_stay_multiplier()), 2)})
+    if discount_code:
+        c = check_discount_code(discount_code, account_id)
+        if c['ok']:
+            raw = next(x for x in _t('discount_codes') if x['discount_code'] == c['code'])
+            v = float(raw['discount_value'])
+            amt = round(total * v / 100, 2) if raw['discount_type'] == 'PERCENTAGE' else min(v, round(total - 1, 2))
+            options.append({'source': 'Code', 'code': c['code'], 'amount': amt})
+        else:
+            code_problem = c.get('reason') or c.get('status')
+    best = max(options, key=lambda o: o['amount']) if options else None
+    return best, code_problem
+
 # ── availability ────────────────────────────────────────────────────────────
-def check_availability(room_type, check_in, check_out, guests):
-    """Free rooms of a type for [check_in, check_out): children count toward capacity; only Pending/Confirmed/Completed bookings occupy a room."""
+def check_availability(room_type, check_in, check_out, guests, discount_code=None, account_id=None):
+    """Free rooms of a type for [check_in, check_out): children count toward capacity; only Pending/Confirmed/Completed bookings occupy a room.
+    Prices: the Flexible total with the one discount it gets (Long Stay for 7+ nights or a valid code, the bigger),
+    and the Non-refundable total (15% less, no other discount)."""
     t = _type_id(room_type)
     if not t: return {'ok': False, 'reason': 'UNKNOWN_ROOM_TYPE', 'room_types': [r['room_type_name'] for r in _types().values()]}
     ci, co = _d(check_in), _d(check_out)
@@ -62,6 +90,7 @@ def check_availability(room_type, check_in, check_out, guests):
             and _d(b['check_in']) < co and ci < _d(b['check_out'])}
     free = [r for r in _t('rooms') if r['room_type_id'] == t and r['room_number'] not in busy and r['status'] != 'Maintenance']
     n = (co - ci).days; base = float(rt['base_price'])
+    dep_n = min(n, int(_setting('deposit_nights', 1)))      # Flexible deposit = deposit_nights (1) paid online
     alternatives = []
     if not free:                                   # offer every other type that fits and is free
         for ot, orow in _types().items():
@@ -69,13 +98,19 @@ def check_availability(room_type, check_in, check_out, guests):
             ofree = [r for r in _t('rooms') if r['room_type_id'] == ot and r['room_number'] not in busy and r['status'] != 'Maintenance']
             if ofree: alternatives.append({'room_type': orow['room_type_name'], 'rooms_free': len(ofree),
                                            'flexible_rate_per_night': float(orow['base_price'])})
-    return {'alternatives': alternatives,'ok': True, 'room_type': rt['room_type_name'], 'check_in': str(ci), 'check_out': str(co), 'nights': n,
+    disc, code_problem = best_discount(base * n, n, discount_code, account_id)
+    due = round(base * n - (disc['amount'] if disc else 0), 2)
+    out = {'alternatives': alternatives,'ok': True, 'room_type': rt['room_type_name'], 'check_in': str(ci), 'check_out': str(co), 'nights': n,
             'rooms_free': len(free), 'nile_view_free': sum(r['view'] == 'Nile' for r in free),
             'flexible_rate_per_night': base, 'flexible_total': base * n,
-            'flexible_deposit_now': base, 'flexible_pay_at_hotel': base * (n - 1),
+            'flexible_discount': disc, 'flexible_amount_due': due,
+            'flexible_deposit_now': base * dep_n, 'flexible_pay_at_hotel': round(due - base * dep_n, 2),
             'non_refundable_total': round(base * n * 0.85, 2),
+            'discount_rule': 'one discount at most, Flexible rate only: Long Stay (7+ nights) or a valid code, the bigger; none on Non-refundable',
             'images': {'nile': rt.get('image_nile') or None, 'city': rt.get('image_city') or None},
             'note': 'standard rates; the confirmed rate for the dates is set when booking'}
+    if code_problem: out['discount_code_not_used'] = code_problem
+    return out
 
 # ── accounts and bookings ───────────────────────────────────────────────────
 # A logged-in guest (account_id) sees the bookings of the account: those under its customer plus the ones
@@ -124,7 +159,10 @@ def find_booking(booking_ref, last_name=None, phone_last4=None, account_id=None)
             'room_number': room['room_number'] if b['booking_status'] in ('Pending', 'Confirmed', 'Completed') else None,
             'check_in': b['check_in'], 'check_out': b['check_out'], 'nights': nights,
             'adults': int(b['adults']), 'children': int(b['children']), 'rate_plan': b['rate_plan'],
-            'total': _money(float(b['price_per_night']) * nights), 'payment_status': p['payment_status'],
+            'total': _money(float(b['price_per_night']) * nights),
+            'discount_source': b.get('discount_source') or None, 'discount_amount': _money(b.get('discount_amount') or 0),
+            'amount_due': _money(float(b['price_per_night']) * nights - float(b.get('discount_amount') or 0)),
+            'payment_status': p['payment_status'],
             'amount_paid': _money(p['amount_paid']), 'refund_amount': _money(p['refund_amount']),
             'payment_method': p['payment_method'], 'payment_due_at': p.get('payment_due_at') or None}
 
@@ -144,7 +182,7 @@ def quote_cancellation(booking_ref, last_name=None, phone_last4=None, when=None,
                 'amount_paid': 0.0, 'still_due': 0.0, 'rule': 'Pending booking: the payment link was not paid yet, so cancelling is free',
                 'payment_due_at': b['payment_due_at']}
     if b['rate_plan'] == 'Non-refundable':
-        charge, why = b['total'], 'Non-refundable rate: nothing is refunded'
+        charge, why = b['amount_due'], 'Non-refundable rate: nothing is refunded'
     elif arrival - when >= timedelta(hours=48):
         charge, why = 0.0, 'Flexible rate, 48 hours or more before arrival: free, the first-night deposit is refunded'
     else:
@@ -199,11 +237,24 @@ def quote_modification(booking_ref, new_check_in=None, new_check_out=None, new_r
         return {'ok': False, 'reason': 'NOT_AVAILABLE', 'advice': 'the booking stays unchanged; offer other dates or another room type'}
     ppn = float(raw['price_per_night']) if t1 == t0 else float(rt['base_price'])
     n = (co - ci).days; total = round(ppn * n, 2); paid = b['amount_paid']
-    return {'ok': True, 'booking_ref': b['booking_ref'], 'room_type': rt['room_type_name'], 'room_number': room,
+    # the booking keeps the kind of discount it has: Long Stay only while the stay is 7+ nights, a code on the new total
+    disc = 0.0
+    if raw.get('discount_source') == 'Long Stay' and n >= 7:
+        disc = round(total * (1 - _long_stay_multiplier()), 2)
+    elif raw.get('discount_source') == 'Code':
+        code = next(x for x in _t('discount_codes') if x['code_id'] == raw['discount_code_id'])
+        v = float(code['discount_value'])
+        disc = round(total * v / 100, 2) if code['discount_type'] == 'PERCENTAGE' else min(v, round(total - 1, 2))
+    new_due = round(total - disc, 2)
+    out = {'ok': True, 'booking_ref': b['booking_ref'], 'room_type': rt['room_type_name'], 'room_number': room,
             'check_in': str(ci), 'check_out': str(co), 'nights': n, 'guests': guests, 'price_per_night': ppn,
-            'old_total': b['total'], 'new_total': total, 'difference': round(total - b['total'], 2),
-            'deposit_paid': paid, 'balance_at_hotel': round(total - paid, 2),
+            'old_total': b['amount_due'], 'new_total': new_due, 'difference': round(new_due - b['amount_due'], 2),
+            'deposit_paid': paid, 'balance_at_hotel': round(new_due - paid, 2),
             'rule': 'free on the Flexible rate until 48 hours before arrival; new dates keep the agreed rate, a new room type uses its standard rate'}
+    if raw.get('discount_source'):
+        out['discount'] = {'source': raw['discount_source'], 'amount': disc,
+                           'note': 'the Long Stay discount is lost below 7 nights' if raw['discount_source'] == 'Long Stay' else 'the code applies to the new total'}
+    return out
 
 def late_checkout_quote(booking_ref, until='16:00', last_name=None, phone_last4=None, account_id=None):
     """Late check-out price per check_in_check_out.txt, including the member benefit."""
@@ -221,14 +272,19 @@ def late_checkout_quote(booking_ref, until='16:00', last_name=None, phone_last4=
     return {'ok': True, 'until': h, 'price': price, 'rule': why, 'subject_to': 'availability'}
 
 # ── codes, loyalty, menu ────────────────────────────────────────────────────
-def check_discount_code(code):
+def check_discount_code(code, account_id=None):
+    """A personal code (sent after an approved Discount Request) works only for its own guest, once."""
     c = next((x for x in _t('discount_codes') if x['discount_code'] == str(code).strip().upper()), None)
     if not c: return {'ok': False, 'reason': 'CODE_NOT_FOUND'}
+    if c.get('customer_id'):
+        a = _account(account_id) if account_id else None
+        if not a or a.get('customer_id') != c['customer_id']:
+            return {'ok': False, 'reason': 'PERSONAL_CODE_OF_ANOTHER_GUEST', 'code': c['discount_code']}
     val = f"{c['discount_value']}%" if c['discount_type'] == 'PERCENTAGE' else f"{int(float(c['discount_value'])):,} EGP"
     return {'ok': c['status'] == 'Active', 'code': c['discount_code'], 'status': c['status'], 'discount': val,
             'valid_from': c['start_date'], 'valid_to': c['end_date'],
             'uses_left': None if not c['max_usage'] else int(c['max_usage']) - int(c['usage_count']),
-            'rule': 'one code or discount per booking'}
+            'rule': 'one discount per booking: this code or the Long Stay discount (7+ nights), whichever is bigger'}
 
 def loyalty_status(booking_ref, last_name=None, phone_last4=None, account_id=None):
     b = find_booking(booking_ref, last_name, phone_last4, account_id)
@@ -257,27 +313,47 @@ def room_service_quote(items):
     return {'ok': not missing, 'lines': lines, 'not_on_menu': missing, 'delivery': fee,
             'total': sum(l['price'] for l in lines) + fee, 'eta_minutes': '30-45'}
 
-def escalate_to_human(reason, booking_ref=None, staff_available=True):
+def escalate_to_human(reason, booking_ref=None, staff_available=True, account_id=None):
     """The guest asked for a person: live chat with a free staff member, otherwise an urgent Staff Callback ticket."""
     if staff_available:
         return {'ok': True, 'handoff': 'live chat with a member of staff', 'reason': reason, 'booking_ref': booking_ref,
                 'say': 'a member of the hotel team will continue this chat with you now'}
-    t = create_request('Staff Callback', reason, booking_ref)
+    t = create_request('Staff Callback', reason, booking_ref, account_id=account_id)
     return {'ok': True, 'handoff': 'urgent ticket', 'ticket': t, 'reason': reason, 'booking_ref': booking_ref,
             'say': 'no one is free this minute; a member of staff will contact you soon in the chat or by email'}
 
 REQUEST_TYPES = ('Room Service', 'Booking Inquiry', 'Housekeeping', 'Late Checkout', 'Modification Request', 'Airport Transfer',
                  'General Inquiry', 'Cancellation Request', 'Complaint', 'Extra Bed', 'Early Check-in', 'Payment Inquiry',
-                 'Discount Request', 'Staff Callback', 'Emergency')
-def create_request(request_type, request_text, booking_ref=None):
-    """A ticket for the hotel team (query 10). Emergency = Critical, Staff Callback = Urgent. The backend inserts it."""
+                 'Maintenance', 'Special Request', 'Discount Request', 'Staff Callback', 'Emergency')
+CATEGORIES = {'Complaint': ('Room Issue', 'Service Issue', 'Facility Issue', 'Billing Issue', 'Booking Issue'),
+              'Special Request': ('Checkout Extension', 'Service Request', 'Celebration Arrangement', 'Dietary Requirement',
+                                  'Transportation', 'Accessibility Request', 'Room Preference')}
+def create_request(request_type, request_text, booking_ref=None, category=None, account_id=None):
+    """A ticket for the hotel team (query 10). Emergency = Critical, Staff Callback = Urgent. The backend inserts it with
+    the customer of the login. A visitor (account_id None) can only raise an Emergency or a Staff Callback: they are kept
+    with the call. A Special Request needs a booking and a category; a Complaint may have a category."""
     if request_type not in REQUEST_TYPES: return {'ok': False, 'reason': 'UNKNOWN_REQUEST_TYPE', 'types': list(REQUEST_TYPES)}
+    if account_id is None and request_type not in ('Emergency', 'Staff Callback'):
+        return {'ok': False, 'reason': 'NOT_LOGGED_IN', 'advice': 'ask the caller to log in on the website first'}
+    if booking_ref and str(booking_ref).strip().upper() not in _visible(account_id):
+        return {'ok': False, 'reason': 'BOOKING_NOT_IN_ACCOUNT'}
+    if category and category not in CATEGORIES.get(request_type, ()):
+        return {'ok': False, 'reason': 'UNKNOWN_CATEGORY', 'categories': list(CATEGORIES.get(request_type, ()))}
+    if request_type == 'Special Request' and (not category or not booking_ref):
+        return {'ok': False, 'reason': 'SPECIAL_REQUEST_NEEDS_BOOKING_AND_CATEGORY', 'categories': list(CATEGORIES['Special Request'])}
     priority = {'Emergency': 'Critical', 'Staff Callback': 'Urgent'}.get(request_type, 'Normal')
-    return {'ok': True, 'request_type': request_type, 'priority': priority, 'booking_ref': booking_ref,
+    return {'ok': True, 'request_type': request_type, 'category': category, 'priority': priority, 'booking_ref': booking_ref,
             'status': 'Open', 'note': 'the backend inserts it into customer_requests; Critical tickets alert the staff at once'}
 
+def hotel_photos(area=None):
+    """Photos of the hotel areas the guest can see in the call screen (pool, spa, gym, restaurant, lobby, hotel).
+    Room photos come with check_availability."""
+    rows = [r for r in _t('hotel_photos') if not area or normalize(area) in (normalize(r['photo_key']), normalize(r['title_en']), normalize(r['title_ar']))]
+    if not rows: return {'ok': False, 'reason': 'NO_PHOTO', 'areas': [r['photo_key'] for r in _t('hotel_photos')]}
+    return {'ok': True, 'photos': [{'area': r['photo_key'], 'title': r['title_en'], 'title_ar': r['title_ar'], 'image': r['image_path']} for r in rows]}
+
 TOOLS = {f.__name__: f for f in (check_availability, my_bookings, link_booking, find_booking, quote_cancellation, quote_modification, late_checkout_quote,
-                                  check_discount_code, loyalty_status, menu, room_service_quote, create_request, escalate_to_human)}
+                                  check_discount_code, loyalty_status, menu, room_service_quote, create_request, escalate_to_human, hotel_photos)}
 
 def _p(**props): return {'type': 'object', 'properties': props}
 S, I = {'type': 'string'}, {'type': 'integer'}
@@ -286,8 +362,9 @@ VERIFY = {'booking_ref': {'type': 'string', 'description': 'B followed by six di
           'phone_last4': {'type': 'string', 'description': 'last four digits of the phone on the booking'},
           'account_id': {'type': 'integer', 'description': 'logged-in guest account (filled by the backend); bookings in the account need no name check'}}
 TOOL_SCHEMAS = [
-    {'name': 'check_availability', 'description': 'Free rooms and standard price for a room type and dates.',
-     'parameters': {**_p(room_type=S, check_in={'type': 'string', 'format': 'date'}, check_out={'type': 'string', 'format': 'date'}, guests=I),
+    {'name': 'check_availability', 'description': 'Free rooms and prices for a room type and dates: Flexible with its one discount (Long Stay 7+ nights or a valid code, the bigger) and Non-refundable (no other discount).',
+     'parameters': {**_p(room_type=S, check_in={'type': 'string', 'format': 'date'}, check_out={'type': 'string', 'format': 'date'}, guests=I,
+                         discount_code=S, account_id=VERIFY['account_id']),
                     'required': ['room_type', 'check_in', 'check_out', 'guests']}},
     {'name': 'my_bookings', 'description': 'The bookings of the logged-in guest (own and linked). No further questions needed.',
      'parameters': {**_p(account_id=I), 'required': ['account_id']}},
@@ -302,16 +379,20 @@ TOOL_SCHEMAS = [
                          new_room_type=S, adults=I, children=I, **VERIFY), 'required': ['booking_ref']}},
     {'name': 'late_checkout_quote', 'description': 'Price of a late check-out until a given time (HH:MM).',
      'parameters': {**_p(until=S, **VERIFY), 'required': ['booking_ref', 'until']}},
-    {'name': 'check_discount_code', 'description': 'Whether a discount code is valid today.',
-     'parameters': {**_p(code=S), 'required': ['code']}},
+    {'name': 'check_discount_code', 'description': 'Whether a discount code is valid today (a personal code only for its own guest).',
+     'parameters': {**_p(code=S, account_id=VERIFY['account_id']), 'required': ['code']}},
     {'name': 'loyalty_status', 'description': 'Nile Pearl Rewards tier and points of the booking guest.',
      'parameters': {**_p(**VERIFY), 'required': ['booking_ref']}},
     {'name': 'menu', 'description': 'Room-service menu; night=true for the 11 PM - 6 AM menu.',
      'parameters': _p(night={'type': 'boolean'}, category=S)},
     {'name': 'room_service_quote', 'description': 'Total of a room-service order including the delivery charge.',
      'parameters': {**_p(items={'type': 'array', 'items': _p(item=S, qty=I)}), 'required': ['items']}},
-    {'name': 'create_request', 'description': 'Open a ticket for the hotel team: in-stay requests, complaints, Discount Request, Emergency (Critical).',
-     'parameters': {**_p(request_type={'type': 'string', 'enum': list(REQUEST_TYPES)}, request_text=S, booking_ref=S), 'required': ['request_type', 'request_text']}},
+    {'name': 'create_request', 'description': 'Open a ticket for the hotel team: in-stay requests, Maintenance, Complaint, Special Request (needs a booking and a category), Discount Request, Emergency (Critical).',
+     'parameters': {**_p(request_type={'type': 'string', 'enum': list(REQUEST_TYPES)}, request_text=S, booking_ref=S,
+                         category={'type': 'string', 'enum': sorted({c for v in CATEGORIES.values() for c in v})}),
+                    'required': ['request_type', 'request_text']}},
     {'name': 'escalate_to_human', 'description': 'The guest has a problem and asked for a person: live chat with staff, or an urgent ticket if no one is free.',
      'parameters': {**_p(reason=S, booking_ref=S), 'required': ['reason']}},
+    {'name': 'hotel_photos', 'description': 'Photos of the hotel areas (pool, spa, gym, restaurant, lobby, hotel) to show in the call screen.',
+     'parameters': _p(area=S)},
 ]
