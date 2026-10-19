@@ -9,3 +9,5 @@ prototype_results.csv
 prototype_languages.csv
 .ipynb_checkpoints/
 .DS_Store
+# Log files
+logs/
