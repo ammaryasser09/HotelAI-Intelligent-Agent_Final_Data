@@ -1,6 +1,5 @@
 # The RAG code and scripts run on the Python standard library (BM25 mode).
 # Dense / hybrid retrieval with BGE-M3:
 sentence-transformers>=3.0
-# Backend (FastAPI + PostgreSQL), when you start it:
-#   fastapi  uvicorn  sqlalchemy>=2.0  psycopg[binary]
+# Backend API (FastAPI + PostgreSQL): see requirements-api.txt
 # The Colab prototype installs its own extras (faster-whisper, edge-tts, bitsandbytes, accelerate).

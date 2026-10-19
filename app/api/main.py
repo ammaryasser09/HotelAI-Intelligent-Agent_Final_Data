@@ -10,7 +10,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.api.config import settings
 from app.api.logging_config import setup_logging
-from app.api.routers import health
+from app.api.routers import availability, health
 
 setup_logging()
 logger = logging.getLogger("hotel_api")
@@ -62,6 +62,7 @@ app.add_middleware(
 )
 
 app.include_router(health.router)
+app.include_router(availability.router)
 mimetypes.add_type("image/webp", ".webp")
 app.mount("/static", StaticFiles(directory=PROJECT_ROOT / "static"), name="static")
 
