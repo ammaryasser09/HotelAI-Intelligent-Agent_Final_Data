@@ -12,6 +12,7 @@ from app.api.schemas.availability import (
     AvailabilityResult,
     RoomImages,
 )
+from app.api.services.discounts import check_code
 from app.api.services.pricing import price_stay
 
 router = APIRouter(tags=["Availability"])
@@ -105,6 +106,15 @@ async def check_availability(
             for row in rows
         ]
 
+    code, code_not_used = None, None
+    if query.discount_code:
+        # customer_id comes from the login (Thursday); until then personal codes are refused
+        code = await check_code(db, query.discount_code, customer_id=None)
+        if code is None:
+            code_not_used = "CODE_NOT_FOUND"
+        elif not code.usable:
+            code_not_used = code.reason
+
     flexible, non_refundable = price_stay(
         rate_per_night=room_type["base_price"],
         nights=query.nights,
@@ -112,6 +122,7 @@ async def check_availability(
         long_stay_min_nights=settings.long_stay_min_nights,
         deposit_nights=rules["deposit_nights"] or 1,
         non_refundable_multiplier=settings.non_refundable_multiplier,
+        code=code,
     )
 
     return AvailabilityResult(
@@ -130,4 +141,5 @@ async def check_availability(
         flexible=flexible,
         non_refundable=non_refundable,
         alternatives=alternatives,
+        discount_code_not_used=code_not_used,
     )

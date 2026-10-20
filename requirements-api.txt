@@ -6,6 +6,7 @@ pydantic-settings>=2.0
 sqlalchemy[asyncio]>=2.0
 asyncpg>=0.29
 psycopg[binary]>=3.1
+slowapi>=0.1.9
 
 # Tests (run with: pytest)
 pytest>=8.0

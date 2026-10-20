@@ -1,7 +1,12 @@
+import os
+
 import pytest
 from fastapi.testclient import TestClient
 
-from app.api.main import app
+# The tests send many requests from one address: raise the limit before the app reads its settings
+os.environ["RATE_LIMIT"] = "10000/minute"
+
+from app.api.main import app  # noqa: E402
 
 
 # One client (and one event loop) for the whole test run, so the database pool is reused safely.

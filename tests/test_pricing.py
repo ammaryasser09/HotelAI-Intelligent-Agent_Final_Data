@@ -34,3 +34,23 @@ def test_long_stay_switched_off_in_database():
     flexible, _ = price_stay(Decimal("20000"), 10, None, **RULES)
     assert flexible.discount is None
     assert flexible.amount_due == 200000
+
+
+def code(discount_type, value):
+    from app.api.schemas.discounts import DiscountCodeCheck
+
+    return DiscountCodeCheck(code="TEST", usable=True, discount_type=discount_type, discount_value=float(value))
+
+
+def test_bigger_discount_wins():
+    # 10 nights: Long Stay 24,000 vs a 15% code 30,000 -> the code wins
+    flexible, non_refundable = price_stay(Decimal("20000"), 10, Decimal("0.88"), **RULES, code=code("PERCENTAGE", "15"))
+    assert flexible.discount.source == "Code"
+    assert flexible.amount_due == 170000
+    assert non_refundable.total == 170000   # Non-refundable never takes a code
+
+
+def test_fixed_code_cannot_go_below_zero():
+    flexible, _ = price_stay(Decimal("6000"), 1, Decimal("0.88"), **RULES, code=code("FIXED_AMOUNT", "9999"))
+    assert flexible.amount_due == 0
+    assert flexible.deposit_now == 0

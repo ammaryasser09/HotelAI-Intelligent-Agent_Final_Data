@@ -8,6 +8,7 @@ class AvailabilityQuery(BaseModel):
     check_in: date = Field(examples=["2026-10-03"])
     check_out: date = Field(examples=["2026-10-06"])
     guests: int = Field(default=1, ge=1, le=10)
+    discount_code: str | None = Field(default=None, min_length=3, max_length=20, examples=["PEARL100"])
 
     @model_validator(mode="after")
     def check_out_after_check_in(self):
@@ -27,6 +28,7 @@ class RoomImages(BaseModel):
 
 class Discount(BaseModel):
     source: str
+    code: str | None = None
     amount: float
 
 
@@ -64,3 +66,4 @@ class AvailabilityResult(BaseModel):
     flexible: FlexiblePrice
     non_refundable: NonRefundablePrice
     alternatives: list[Alternative]
+    discount_code_not_used: str | None = None

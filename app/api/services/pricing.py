@@ -1,12 +1,20 @@
 from decimal import ROUND_HALF_UP, Decimal
 
 from app.api.schemas.availability import Discount, FlexiblePrice, NonRefundablePrice
+from app.api.schemas.discounts import DiscountCodeCheck
 
 CENT = Decimal("0.01")
 
 
 def money(value: Decimal) -> float:
     return float(value.quantize(CENT, rounding=ROUND_HALF_UP))
+
+
+def code_amount(code: DiscountCodeCheck, total: Decimal) -> Decimal:
+    value = Decimal(str(code.discount_value))
+    if code.discount_type == "PERCENTAGE":
+        return total * value / 100
+    return min(value, total)  # FIXED_AMOUNT never goes below zero
 
 
 def price_stay(
@@ -16,17 +24,23 @@ def price_stay(
     long_stay_min_nights: int,
     deposit_nights: int,
     non_refundable_multiplier: Decimal,
+    code: DiscountCodeCheck | None = None,
 ) -> tuple[FlexiblePrice, NonRefundablePrice]:
     total = rate_per_night * nights
 
-    discount = None
-    discount_amount = Decimal(0)
+    # One discount at most, Flexible rate only: Long Stay (7+ nights) or a usable code, the bigger
+    options: list[tuple[Decimal, Discount]] = []
     if long_stay_multiplier is not None and nights >= long_stay_min_nights:
-        discount_amount = total * (1 - long_stay_multiplier)
-        discount = Discount(source="Long Stay", amount=money(discount_amount))
+        amount = total * (1 - long_stay_multiplier)
+        options.append((amount, Discount(source="Long Stay", amount=money(amount))))
+    if code is not None and code.usable:
+        amount = code_amount(code, total)
+        options.append((amount, Discount(source="Code", code=code.code, amount=money(amount))))
+
+    discount_amount, discount = max(options, key=lambda option: option[0]) if options else (Decimal(0), None)
 
     amount_due = total - discount_amount
-    deposit = rate_per_night * min(nights, deposit_nights)
+    deposit = min(rate_per_night * min(nights, deposit_nights), amount_due)
 
     flexible = FlexiblePrice(
         rate_per_night=money(rate_per_night),
