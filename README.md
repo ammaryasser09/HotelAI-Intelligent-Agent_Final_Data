@@ -34,6 +34,14 @@ python -m app.rag.evaluate --mode hybrid                # مع BGE-M3
 python -m app.rag.demo "الفطار بكام؟" --show-prompt
 ```
 
+**الـ API (FastAPI):** الخطوات كاملة في `docs/API_SETUP.md`
+```powershell
+pip install -r requirements-api.txt
+Copy-Item .env.example .env          # وحط فيه باسورد PostgreSQL والـ JWT_SECRET بتوعك
+uvicorn app.api.main:app --reload     # http://127.0.0.1:8000/docs
+pytest                                # كل الاختبارات لازم تعدّي
+```
+
 **بعد أي تعديل في `knowledge_base/` أو `rag/hotel_faq_gold.csv`:**
 ```bash
 python scripts/build_rag.py      # يعيد بناء الـ chunks والـ FAQ index
