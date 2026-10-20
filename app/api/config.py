@@ -18,6 +18,13 @@ class Settings(BaseSettings):
     jwt_secret: str
     access_token_minutes: int = 60
 
+    # Paymob payment gateway (test mode). Empty = the API uses a fake Paymob, so nobody needs keys to run it.
+    paymob_api_key: str | None = None
+    paymob_public_key: str | None = None
+    paymob_secret_key: str | None = None
+    paymob_hmac_secret: str | None = None
+    paymob_integration_id: int | None = None
+
     # Business rules that are not stored in the database (docs/BUSINESS_RULES.md)
     long_stay_min_nights: int = 7
     non_refundable_multiplier: Decimal = Decimal("0.85")
