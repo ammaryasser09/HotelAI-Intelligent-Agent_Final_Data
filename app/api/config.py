@@ -9,8 +9,14 @@ class Settings(BaseSettings):
     database_url: str
     cors_origins: list[str] = ["http://localhost:5173", "http://localhost:3000"]
 
-    # Requests one client (IP address) may send; change it in .env with RATE_LIMIT=...
+    # Requests one client (IP address) may send; change them in .env, e.g. RATE_LIMIT=100/minute
     rate_limit: str = "60/minute"
+    login_rate_limit: str = "5/minute"
+    link_rate_limit: str = "10/minute"
+
+    # Login tokens (JWT). JWT_SECRET must be set in .env and never shared or committed.
+    jwt_secret: str
+    access_token_minutes: int = 60
 
     # Business rules that are not stored in the database (docs/BUSINESS_RULES.md)
     long_stay_min_nights: int = 7

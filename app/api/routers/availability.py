@@ -6,12 +6,14 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 from app.api.config import settings
 from app.api.db import get_db
+from app.api.schemas.auth import CurrentAccount
 from app.api.schemas.availability import (
     Alternative,
     AvailabilityQuery,
     AvailabilityResult,
     RoomImages,
 )
+from app.api.security import get_optional_account
 from app.api.services.discounts import check_code
 from app.api.services.pricing import price_stay
 
@@ -52,6 +54,7 @@ ALTERNATIVES_SQL = text("""
 @router.get("/availability", response_model=AvailabilityResult)
 async def check_availability(
     query: Annotated[AvailabilityQuery, Query()],
+    account: CurrentAccount | None = Depends(get_optional_account),
     db: AsyncConnection = Depends(get_db),
 ):
     room_type = (await db.execute(ROOM_TYPE_SQL, {"room_type": query.room_type})).mappings().first()
@@ -108,8 +111,8 @@ async def check_availability(
 
     code, code_not_used = None, None
     if query.discount_code:
-        # customer_id comes from the login (Thursday); until then personal codes are refused
-        code = await check_code(db, query.discount_code, customer_id=None)
+        customer_id = account.customer_id if account else None
+        code = await check_code(db, query.discount_code, customer_id=customer_id)
         if code is None:
             code_not_used = "CODE_NOT_FOUND"
         elif not code.usable:
