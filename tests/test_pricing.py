@@ -1,0 +1,36 @@
+from decimal import Decimal
+
+from app.api.services.pricing import price_stay
+
+RULES = {
+    "long_stay_min_nights": 7,
+    "deposit_nights": 1,
+    "non_refundable_multiplier": Decimal("0.85"),
+}
+
+
+def test_suite_10_nights_gets_long_stay_discount():
+    flexible, non_refundable = price_stay(Decimal("20000"), 10, Decimal("0.88"), **RULES)
+    assert flexible.total == 200000
+    assert flexible.discount.source == "Long Stay"
+    assert flexible.discount.amount == 24000
+    assert flexible.amount_due == 176000
+    assert flexible.deposit_now == 20000
+    assert flexible.pay_at_hotel == 156000
+    assert non_refundable.total == 170000
+    assert non_refundable.pay_now == 170000
+
+
+def test_short_stay_has_no_discount():
+    flexible, non_refundable = price_stay(Decimal("8000"), 3, Decimal("0.88"), **RULES)
+    assert flexible.discount is None
+    assert flexible.amount_due == 24000
+    assert flexible.deposit_now == 8000
+    assert flexible.pay_at_hotel == 16000
+    assert non_refundable.total == 20400
+
+
+def test_long_stay_switched_off_in_database():
+    flexible, _ = price_stay(Decimal("20000"), 10, None, **RULES)
+    assert flexible.discount is None
+    assert flexible.amount_due == 200000

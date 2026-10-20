@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -6,6 +8,10 @@ class Settings(BaseSettings):
 
     database_url: str
     cors_origins: list[str] = ["http://localhost:5173", "http://localhost:3000"]
+
+    # Business rules that are not stored in the database (docs/BUSINESS_RULES.md)
+    long_stay_min_nights: int = 7
+    non_refundable_multiplier: Decimal = Decimal("0.85")
 
 
 settings = Settings()

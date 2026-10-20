@@ -1,6 +1,7 @@
 import logging
 import mimetypes
 import time
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, Request
@@ -9,6 +10,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.api.config import settings
+from app.api.db import engine
 from app.api.logging_config import setup_logging
 from app.api.routers import availability, health
 
@@ -17,7 +19,14 @@ logger = logging.getLogger("hotel_api")
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
-app = FastAPI(title="Nile Pearl Hotel API", version="0.1.0")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    yield
+    await engine.dispose()
+
+
+app = FastAPI(title="Nile Pearl Hotel API", version="0.1.0", lifespan=lifespan)
 
 
 @app.middleware("http")

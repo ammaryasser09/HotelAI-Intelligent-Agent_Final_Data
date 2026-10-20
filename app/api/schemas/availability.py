@@ -25,6 +25,32 @@ class RoomImages(BaseModel):
     city: str | None
 
 
+class Discount(BaseModel):
+    source: str
+    amount: float
+
+
+class FlexiblePrice(BaseModel):
+    rate_per_night: float
+    total: float
+    discount: Discount | None
+    amount_due: float
+    deposit_now: float
+    pay_at_hotel: float
+
+
+class NonRefundablePrice(BaseModel):
+    total: float
+    pay_now: float
+
+
+class Alternative(BaseModel):
+    room_type: str
+    capacity: int
+    rate_per_night: float
+    rooms_free: int
+
+
 class AvailabilityResult(BaseModel):
     room_type: str
     check_in: date
@@ -33,5 +59,8 @@ class AvailabilityResult(BaseModel):
     guests: int
     rooms_free: int
     nile_view_free: int
-    rate_per_night: float
+    free_room_numbers: list[int]
     images: RoomImages
+    flexible: FlexiblePrice
+    non_refundable: NonRefundablePrice
+    alternatives: list[Alternative]
