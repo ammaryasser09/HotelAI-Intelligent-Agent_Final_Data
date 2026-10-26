@@ -40,6 +40,14 @@ class Settings(BaseSettings):
     public_base_url: str | None = None
 
     # Business rules that are not stored in the database (docs/BUSINESS_RULES.md)
+    # Emails to guests: log = written to logs/emails/ (default), smtp = really sent
+    email_provider: Literal["log", "smtp"] = "log"
+    email_from: str = "Nile Pearl Hotel <reservations@nilepearl.example>"
+    smtp_host: str | None = None
+    smtp_port: int = 587
+    smtp_user: str | None = None
+    smtp_password: str | None = None
+
     # How often unpaid bookings are checked and cancelled once their hold is over (0 = never)
     expiry_check_seconds: int = 300
 
@@ -60,6 +68,11 @@ class Settings(BaseSettings):
             missing = [name for name, value in needed.items() if not value]
             if missing:
                 raise ValueError(f"PAYMENT_PROVIDER=paymob needs these in .env: {', '.join(missing)}")
+        if self.email_provider == "smtp":
+            missing = [name for name, value in {"SMTP_HOST": self.smtp_host, "SMTP_USER": self.smtp_user,
+                                                "SMTP_PASSWORD": self.smtp_password}.items() if not value]
+            if missing:
+                raise ValueError(f"EMAIL_PROVIDER=smtp needs these in .env: {', '.join(missing)}")
         return self
 
 

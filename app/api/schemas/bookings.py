@@ -117,3 +117,35 @@ class CancellationResult(BaseModel):
     payment_status: str
     charge: float
     refund: float
+
+
+class ChangeBookingRequest(BaseModel):
+    """Only what changes; anything left out stays as it is."""
+    check_in: date | None = Field(default=None, examples=["2027-11-10"])
+    check_out: date | None = Field(default=None, examples=["2027-11-15"])
+    room_type: str | None = Field(default=None, min_length=2, max_length=30, examples=[None])
+    adults: int | None = Field(default=None, ge=1, le=10, examples=[None])
+    children: int | None = Field(default=None, ge=0, le=10, examples=[None])
+
+
+class BookingChange(BaseModel):
+    """The booking after the change (the quote shows it before anything is saved)."""
+    booking_id: str
+    booking_status: str
+    room_type: str
+    room_number: int
+    view: str
+    check_in: date
+    check_out: date
+    nights: int
+    adults: int
+    children: int
+    price_per_night: float
+    total_amount: float
+    discount: Discount | None
+    amount_due: float
+    amount_paid: float          # what the hotel holds after the change
+    pay_now: float              # Pending booking: the deposit its payment link asks for
+    pay_at_hotel: float
+    refund: float               # a confirmed booking that got cheaper than what was paid
+    payment_url: str | None = None

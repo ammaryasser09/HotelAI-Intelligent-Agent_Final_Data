@@ -11,6 +11,8 @@ os.environ["LINK_RATE_LIMIT"] = "10000/minute"
 os.environ["PAYMENT_PROVIDER"] = "mock"
 # No background expiry while testing: the tests run it themselves, on their own bookings only
 os.environ["EXPIRY_CHECK_SECONDS"] = "0"
+# Emails are never really sent by the tests (see the outbox fixture below)
+os.environ["EMAIL_PROVIDER"] = "log"
 os.environ.setdefault("JWT_SECRET", "test-only-secret-not-used-anywhere-else")
 
 from app.api.main import app  # noqa: E402
@@ -21,3 +23,17 @@ from app.api.main import app  # noqa: E402
 def client():
     with TestClient(app) as test_client:
         yield test_client
+
+
+@pytest.fixture(autouse=True)
+def outbox(monkeypatch):
+    """Every test: emails to guests are collected in this list instead of being sent or written to logs/."""
+    from app.api.services import email
+
+    sent = []
+
+    async def keep(to, subject, body):
+        sent.append({"to": to, "subject": subject, "body": body})
+
+    monkeypatch.setattr(email, "deliver", keep)
+    return sent

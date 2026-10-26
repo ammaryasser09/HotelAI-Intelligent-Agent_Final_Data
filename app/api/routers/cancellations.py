@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
@@ -9,6 +9,7 @@ from app.api.schemas.auth import CurrentAccount
 from app.api.schemas.bookings import CancellationQuote, CancellationResult
 from app.api.security import get_current_guest
 from app.api.services.bookings import HOTEL_NOW
+from app.api.services.email import notify
 from app.api.services.payments import PaymentProviderError, refund_payment
 from app.api.services.pricing import money
 
@@ -108,6 +109,7 @@ async def cancellation_quote(
 @router.post("/me/bookings/{booking_id}/cancel", response_model=CancellationResult)
 async def cancel_booking(
     booking_id: str,
+    background: BackgroundTasks,
     guest: CurrentAccount = Depends(get_current_guest),
     db: AsyncConnection = Depends(get_db),
 ):
@@ -128,6 +130,7 @@ async def cancel_booking(
     if booking["discount_code_id"]:
         await db.execute(CODE_BACK_SQL, {"code_id": booking["discount_code_id"]})
     await db.commit()
+    background.add_task(notify, booking["booking_id"], "cancelled")
 
     return CancellationResult(booking_id=booking["booking_id"], booking_status="Cancelled",
                               payment_status=payment_status, charge=money(charge), refund=money(refund))

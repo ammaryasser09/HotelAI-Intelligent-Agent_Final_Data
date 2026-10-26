@@ -1,7 +1,7 @@
 import logging
 from decimal import Decimal
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse
 from sqlalchemy.ext.asyncio import AsyncConnection
 
@@ -9,6 +9,7 @@ from app.api.config import settings
 from app.api.db import get_db
 from app.api.schemas.bookings import PaymentResult
 from app.api.services.bookings import amount_to_pay_now, confirm_payment, payment_state
+from app.api.services.email import notify
 from app.api.services.payments import booking_of, paymob_reference, paymob_signature_is_valid
 from app.api.services.pricing import money
 
@@ -62,11 +63,12 @@ async def mock_payment_page(booking_id: str, db: AsyncConnection = Depends(get_d
 
 
 @router.post("/payments/mock/{booking_id}/pay", response_model=PaymentResult, dependencies=[Depends(mock_only)])
-async def mock_pay(booking_id: str, db: AsyncConnection = Depends(get_db)):
+async def mock_pay(booking_id: str, background: BackgroundTasks, db: AsyncConnection = Depends(get_db)):
     """Stands in for Paymob telling us the guest paid (the webhook)."""
     state = await payable(db, booking_id)
     amount = amount_to_pay_now(state)
     await confirm_payment(db, state["booking_id"], amount)
+    background.add_task(notify, state["booking_id"], "confirmed")   # sent after the answer, never delays it
     return PaymentResult(booking_id=state["booking_id"], booking_status="Confirmed",
                          payment_status="Paid", amount_paid=money(amount))
 
@@ -74,7 +76,8 @@ async def mock_pay(booking_id: str, db: AsyncConnection = Depends(get_db)):
 # ---------- the real Paymob (PAYMENT_PROVIDER=paymob) ----------
 
 @router.post("/payments/paymob/webhook", dependencies=[Depends(paymob_only)])
-async def paymob_webhook(request: Request, hmac: str = Query(default=""), db: AsyncConnection = Depends(get_db)):
+async def paymob_webhook(request: Request, background: BackgroundTasks, hmac: str = Query(default=""),
+                         db: AsyncConnection = Depends(get_db)):
     """Paymob calls this after every payment attempt (the notification_url)."""
     try:
         payload = await request.json()
@@ -103,6 +106,7 @@ async def paymob_webhook(request: Request, hmac: str = Query(default=""), db: As
             logger.warning("Paymob: %s paid %s, less than asked, not confirmed", booking_ref, paid)
         else:
             await confirm_payment(db, booking_ref, paid, paymob_reference(obj["id"]))
+            background.add_task(notify, booking_ref, "confirmed")
             logger.info("Paymob: booking %s confirmed", booking_ref)
     else:
         # e.g. the booking was cancelled for non-payment a moment before: the money must go back

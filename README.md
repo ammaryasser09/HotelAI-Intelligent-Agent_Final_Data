@@ -166,7 +166,7 @@ FastAPI + async SQLAlchemy (asyncpg) on the PostgreSQL database. Code is in `app
 | `rate_limit.py` | Requests allowed per minute |
 | `routers/` | Endpoints |
 | `schemas/` | Request and response models (Pydantic) |
-| `services/` | Pricing, discount codes, bookings, and the payment link |
+| `services/` | Pricing, discount codes, bookings, payments (Paymob link, signature check, refunds), the expiry job, and guest emails |
 
 ### Endpoints
 
@@ -184,8 +184,14 @@ FastAPI + async SQLAlchemy (asyncpg) on the PostgreSQL database. Code is in `app
 | `GET` | `/me/bookings` | 🔒 Guest: the account's bookings, own and linked, newest first |
 | `POST` | `/me/bookings/link` | 🔒 Guest: add a booking made elsewhere (reference + last name, English or Arabic, or the last 4 phone digits) |
 | `POST` | `/bookings` | 🔒 Guest: book a room. The booking is `Pending` and the room is held until the payment link is paid |
-| `GET` | `/payments/mock/{booking_id}` | The fake payment page (until Paymob is connected) |
+| `GET` | `/me/bookings/{booking_id}/cancellation` | 🔒 Guest: what cancelling now would cost (charge and refund). Changes nothing |
+| `POST` | `/me/bookings/{booking_id}/cancel` | 🔒 Guest: cancel on those terms; the refund goes back to the card through Paymob |
+| `GET` | `/me/bookings/{booking_id}/change` | 🔒 Guest: the booking after a change (dates, room type, guests) and its price. Changes nothing |
+| `POST` | `/me/bookings/{booking_id}/change` | 🔒 Guest: apply the change (send only what changes) |
+| `GET` | `/payments/mock/{booking_id}` | The fake payment page (`PAYMENT_PROVIDER=mock`) |
 | `POST` | `/payments/mock/{booking_id}/pay` | Stands in for Paymob: the payment becomes `Paid`, the booking `Confirmed` |
+| `POST` | `/payments/paymob/webhook` | Paymob reports a payment here (`PAYMENT_PROVIDER=paymob`); refused unless its HMAC signature matches |
+| `GET` | `/payments/paymob/return` | Where Paymob sends the guest back after paying (shows the booking status) |
 | `GET` | `/static/...` | Room and hotel images |
 
 🔒 = needs `Authorization: Bearer <token>`. In `/docs`: log in, copy `access_token`, and press **Authorize**.
@@ -201,15 +207,20 @@ If no room is free, it returns **alternatives**: other room types that fit the g
 
 ### Behavior
 
-- **Errors** return a `reason` code the frontend can act on: `UNKNOWN_ROOM_TYPE`, `CHECK_IN_IN_THE_PAST`, `CAPACITY_EXCEEDED`, `CODE_NOT_FOUND`, `PHOTO_NOT_FOUND`, `TOO_MANY_REQUESTS`, `INVALID_CREDENTIALS`, `NOT_LOGGED_IN`, `INVALID_TOKEN`, `TOKEN_EXPIRED`, `GUESTS_ONLY`, `BOOKING_NOT_FOUND_OR_NOT_VERIFIED`, `NO_ROOM_AVAILABLE`, `ROOM_JUST_TAKEN`, `NOT_WAITING_FOR_PAYMENT`, `PAYMENT_EXPIRED`.
+- **Errors** return a `reason` code the frontend can act on: `UNKNOWN_ROOM_TYPE`, `CHECK_IN_IN_THE_PAST`, `CAPACITY_EXCEEDED`, `CODE_NOT_FOUND`, `PHOTO_NOT_FOUND`, `TOO_MANY_REQUESTS`, `INVALID_CREDENTIALS`, `NOT_LOGGED_IN`, `INVALID_TOKEN`, `TOKEN_EXPIRED`, `GUESTS_ONLY`, `BOOKING_NOT_FOUND_OR_NOT_VERIFIED`, `NO_ROOM_AVAILABLE`, `ROOM_JUST_TAKEN`, `NOT_WAITING_FOR_PAYMENT`, `PAYMENT_EXPIRED`, `PAYMENT_PROVIDER_ERROR`, `INVALID_SIGNATURE`, `BOOKING_NOT_FOUND`, `NOT_CANCELLABLE`, `TOO_LATE_TO_CANCEL`, `REFUND_FAILED`, `NOT_CHANGEABLE`, `TOO_LATE_TO_CHANGE`, `NON_REFUNDABLE_CANNOT_CHANGE`, `CHANGE_ON_BOOKING_PLATFORM`, `NOTHING_TO_CHANGE`, `CHECK_OUT_NOT_AFTER_CHECK_IN`.
 - **Rate limit:** 60 requests per minute per IP address; login 5 and booking links 10. Change them with `RATE_LIMIT`, `LOGIN_RATE_LIMIT`, `LINK_RATE_LIMIT` in `.env`.
 - **Booking:** one transaction: the booking, the code use, and the payment row are saved together or not at all. If another guest takes the room in the same moment, the next free room is tried.
+- **Hotel clock:** payment deadlines use the hotel's "today" (`app_settings.system_date`) at the current time, so the demo bookings and new ones follow the same rules.
+- **Unpaid bookings:** every 5 minutes (`EXPIRY_CHECK_SECONDS`) a `Pending` booking past its payment deadline is cancelled, its payment becomes `Expired`, the room is free again, and a discount code it used is given back.
+- **Cancel:** Flexible is free until 48 h before 3 PM on arrival day (the deposit comes back), then the first night is kept; Non-refundable gives nothing back. The hotel never keeps more than it was paid. Not on the arrival day.
+- **Change:** new dates keep the agreed nightly price, another room type uses its own base price; the discount is worked out again (7+ nights get Long Stay; a code it beats is given back). A stay cheaper than what was paid gets the difference back; a `Pending` booking gets a new payment link. Not for Non-refundable or Booking Platform bookings.
+- **Emails:** confirmed, changed, cancelled, and not-paid-in-time emails go to the guest after the answer is sent; a failed email is only logged. `EMAIL_PROVIDER=log` (default) writes them to `logs/emails/` instead of sending.
 - **Logs:** every request is logged to the console and to `logs/api.log` (rotating: 5 MB × 3 files).
 - **CORS:** allows `http://localhost:5173` and `http://localhost:3000` by default.
 
 > [!NOTE]
 > **Demo login:** every account's password is `NilePearl@2026` (guest with bookings: `paul.fischer500@example.com`).
-> **Payments:** `PAYMENT_PROVIDER=mock` (the default) uses the fake payment page, so nobody needs Paymob keys. Paymob test mode is next.
+> **Payments:** `PAYMENT_PROVIDER=mock` (the default) uses the fake payment page, so nobody needs Paymob keys. For Paymob test mode, put the keys and `PUBLIC_BASE_URL` (an ngrok link to port 8000) in `.env`, set `PAYMENT_PROVIDER=paymob`, and run `scripts\tunnel` (Windows) for the ngrok link.
 
 ---
 
@@ -407,7 +418,7 @@ PostgreSQL 16 with **23 tables**. Column details are in [`database/DATA_DICTIONA
 | `database/tests/run_checks.sql` | 39 data integrity checks | `psql -d hotelai -f tests/run_checks.sql` (from `database/`) |
 | `database/tests/constraint_checks.sql` | 16 checks that the database refuses invalid data | `psql -d hotelai -f tests/constraint_checks.sql` (from `database/`) |
 | `scripts/check_data.py` | RAG files, FAQ, and knowledge base vs database | `python scripts/check_data.py` |
-| `tests/` | 38 API tests: availability, pricing, discounts, hotel info, login, my bookings, booking + payment | `pytest` (the database must be running) |
+| `tests/` | 63 API tests: availability, pricing, discounts, hotel info, login, my bookings, booking + payment, Paymob (signature, link, refund), expiry, cancel, change, emails | `pytest` (the database must be running) |
 | `app/prototype/test_agent.py` | Agent behavior on the realistic questions and 5 languages, including login/logout | See the prototype README |
 
 Every line must say `PASS`, and `check_data.py` must pass **10/10**.
@@ -426,8 +437,12 @@ Every line must say `PASS`, and `check_data.py` must pass **10/10**.
 - Rate limiting (60 requests/minute).
 - Login (bcrypt + JWT), `GET /me/bookings`, `POST /me/bookings/link`; personal codes work for their own guest.
 - `POST /bookings`: a `Pending` booking that holds the room, the deposit or full payment, and a payment link (fake Paymob page for now) that confirms it.
+- Paymob test mode: checkout link, webhook with HMAC check, return page, refunds; `scripts/tunnel.cmd` for ngrok.
+- Unpaid bookings are cancelled automatically when their payment deadline passes (hotel clock).
+- Cancellation quote and cancel with refund; change booking (dates, room type, guests) with a quote.
+- Guest emails (confirmed, changed, cancelled, not paid in time), written to `logs/emails/` by default.
 - Load test script (`scripts/load_test_api.py`) and `.env.example`.
-- pytest suite (38 tests).
+- pytest suite (63 tests).
 
 ### v8 — Final data
 

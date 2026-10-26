@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 from app.api.config import settings
 from app.api.db import engine
 from app.api.services.bookings import HOTEL_NOW
+from app.api.services.email import notify
 
 logger = logging.getLogger("hotel_api")
 
@@ -44,6 +45,7 @@ async def expire_unpaid_bookings(db: AsyncConnection, only: list[str] | None = N
     await db.commit()
     for booking_id in cancelled:
         logger.info("Booking %s cancelled: its payment link was not paid in time", booking_id)
+        await notify(booking_id, "expired", db)
     return list(cancelled)
 
 
