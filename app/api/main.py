@@ -1,7 +1,8 @@
+import asyncio
 import logging
 import mimetypes
 import time
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 from pathlib import Path
 
 from fastapi import FastAPI, Request
@@ -16,6 +17,7 @@ from app.api.db import engine
 from app.api.logging_config import setup_logging
 from app.api.rate_limit import limiter, rate_limit_exceeded
 from app.api.routers import auth, availability, bookings, discounts, health, hotel, my_bookings, payments
+from app.api.services.expiry import expiry_job
 
 setup_logging()
 logger = logging.getLogger("hotel_api")
@@ -25,7 +27,12 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    job = asyncio.create_task(expiry_job()) if settings.expiry_check_seconds > 0 else None
     yield
+    if job:
+        job.cancel()
+        with suppress(asyncio.CancelledError):
+            await job
     await engine.dispose()
 
 

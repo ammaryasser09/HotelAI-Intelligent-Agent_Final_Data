@@ -1,6 +1,7 @@
 from decimal import Decimal
 from typing import Literal
 
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -30,10 +31,33 @@ class Settings(BaseSettings):
     paymob_secret_key: str | None = None
     paymob_hmac_secret: str | None = None
     paymob_integration_id: int | None = None
+    paymob_intention_url: str = "https://accept.paymob.com/v1/intention/"
+    paymob_checkout_url: str = "https://eg.checkout.paymob.com/"
+
+    # The address Paymob can reach this API at (the ngrok link while it runs on a laptop)
+    public_base_url: str | None = None
 
     # Business rules that are not stored in the database (docs/BUSINESS_RULES.md)
+    # How often unpaid bookings are checked and cancelled once their hold is over (0 = never)
+    expiry_check_seconds: int = 300
+
     long_stay_min_nights: int = 7
     non_refundable_multiplier: Decimal = Decimal("0.85")
+
+    @model_validator(mode="after")
+    def paymob_needs_its_keys(self):
+        if self.payment_provider == "paymob":
+            needed = {
+                "PAYMOB_SECRET_KEY": self.paymob_secret_key,
+                "PAYMOB_PUBLIC_KEY": self.paymob_public_key,
+                "PAYMOB_HMAC_SECRET": self.paymob_hmac_secret,
+                "PAYMOB_INTEGRATION_ID": self.paymob_integration_id,
+                "PUBLIC_BASE_URL": self.public_base_url,
+            }
+            missing = [name for name, value in needed.items() if not value]
+            if missing:
+                raise ValueError(f"PAYMENT_PROVIDER=paymob needs these in .env: {', '.join(missing)}")
+        return self
 
 
 settings = Settings()

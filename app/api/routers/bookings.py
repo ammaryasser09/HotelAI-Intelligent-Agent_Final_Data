@@ -11,9 +11,15 @@ from app.api.routers.availability import FREE_ROOMS_SQL, HOTEL_RULES_SQL, ROOM_T
 from app.api.schemas.auth import CurrentAccount
 from app.api.schemas.bookings import BookingCreated, CreateBookingRequest
 from app.api.security import get_current_guest
+from app.api.services.bookings import HOTEL_NOW
 from app.api.services.discounts import check_code
-from app.api.services.payments import create_payment_link
+from app.api.services.payments import PaymentProviderError, create_payment_link
 from app.api.services.pricing import CENT, money, price_stay
+
+# Paymob needs the guest's name, email and phone on the payment page
+GUEST_CONTACT_SQL = text("""
+    SELECT first_name, last_name, email, phone FROM customers WHERE customer_id = :customer_id
+""")
 
 router = APIRouter(tags=["Bookings"])
 
@@ -36,11 +42,11 @@ USE_CODE_SQL = text("""
 """)
 
 # queries.sql 4: the payment row. Held 24 h, or 2 h when arrival (3 PM) is less than 24 h away on the hotel clock
-INSERT_PAYMENT_SQL = text("""
+INSERT_PAYMENT_SQL = text(f"""
     INSERT INTO payments (booking_id, payment_method, payment_status, payment_due_at, created_at)
     VALUES (:booking_id, :payment_method, 'Pending',
-            now() + make_interval(hours => CASE
-                WHEN (CAST(:check_in AS date) + time '15:00') - (hotel_today() + localtime) < interval '24 hours'
+            {HOTEL_NOW} + make_interval(hours => CASE
+                WHEN (CAST(:check_in AS date) + time '15:00') - {HOTEL_NOW} < interval '24 hours'
                 THEN (SELECT value::int FROM app_settings WHERE key = 'deposit_hold_hours_last_minute')
                 ELSE (SELECT value::int FROM app_settings WHERE key = 'deposit_hold_hours') END),
             now())
@@ -148,7 +154,13 @@ async def create_booking(
         pay_now = min(price_per_night * min(body.nights, rules["deposit_nights"] or 1), amount_due)
     else:
         pay_now = amount_due
-    payment_url = await create_payment_link(request, booking["booking_id"], pay_now)
+    contact = (await db.execute(GUEST_CONTACT_SQL, {"customer_id": guest.customer_id})).mappings().one()
+    try:
+        payment_url = await create_payment_link(request, booking["booking_id"], pay_now, contact)
+    except PaymentProviderError:
+        # nothing was committed yet: the booking, the code use and the payment row all disappear
+        await db.rollback()
+        raise HTTPException(status_code=502, detail={"reason": "PAYMENT_PROVIDER_ERROR"})
     await db.commit()
 
     return BookingCreated(

@@ -3,10 +3,14 @@ from decimal import Decimal
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
+# The hotel clock: today's date from app_settings (frozen while the demo data is in use) at the current time.
+# Payment holds are set and checked on this clock, so the demo bookings and new ones follow the same rules.
+HOTEL_NOW = "(hotel_today() + localtime)"
+
 # What is still to be paid for a booking, and by when
-PAYMENT_STATE_SQL = text("""
+PAYMENT_STATE_SQL = text(f"""
     SELECT b.booking_id, b.booking_status, b.rate_plan, b.price_per_night, b.nights, b.amount_due,
-           p.payment_status, p.payment_due_at, (p.payment_due_at < now()) AS overdue,
+           p.payment_status, p.payment_due_at, (p.payment_due_at < {HOTEL_NOW}) AS overdue,
            (SELECT value::int FROM app_settings WHERE key = 'deposit_nights') AS deposit_nights
     FROM bookings b
     JOIN payments p USING (booking_id)
