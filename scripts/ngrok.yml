@@ -1,0 +1,6 @@
+# Extra ngrok settings for testing Paymob on a laptop. No secrets here: the authtoken stays in your own ngrok config.
+# Use it only if ngrok says "failed to fetch CRL" (some networks block the certificate check). Run:
+#   scripts\tunnel   (it runs: ngrok http 8000 with your own config plus this file)
+version: "3"
+agent:
+  crl_noverify: true
