@@ -1,5 +1,6 @@
 import pytest
 from sqlalchemy import create_engine, text
+from sqlalchemy.engine import make_url
 
 from app.api.config import settings
 
@@ -84,7 +85,7 @@ def test_link_booking_with_arabic_last_name(client, guest_token):
         ids = [b["booking_id"] for b in client.get("/me/bookings", headers=bearer(guest_token)).json()]
         assert "B000004" in ids
     finally:
-        engine = create_engine(settings.database_url.replace("+asyncpg", "+psycopg"))
+        engine = create_engine(make_url(settings.database_url).set(drivername="postgresql+psycopg"))
         with engine.begin() as connection:
             connection.execute(text("DELETE FROM booking_links WHERE account_id = 299 AND booking_id = 'B000004'"))
         engine.dispose()

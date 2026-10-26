@@ -1,5 +1,6 @@
 import pytest
 from sqlalchemy import create_engine, text
+from sqlalchemy.engine import make_url
 
 from app.api.config import settings
 from tests.test_auth import GUEST, bearer, login
@@ -9,7 +10,7 @@ STAY = {"room_type": "Double", "check_in": "2027-11-10", "check_out": "2027-11-1
 
 
 def database():
-    return create_engine(settings.database_url.replace("+asyncpg", "+psycopg"))
+    return create_engine(make_url(settings.database_url).set(drivername="postgresql+psycopg"))
 
 
 @pytest.fixture(scope="module")

@@ -83,7 +83,8 @@ Children count toward capacity. An extra bed (2,500 EGP/night) does not raise ca
 |---|---|
 | `requirements.txt` | RAG dependencies (the BM25 mode needs only the Python standard library) |
 | `requirements-api.txt` | Backend API and test dependencies |
-| `.env` | Database connection for the API. Not committed to git |
+| `.env` | The API's secrets: database URL, `JWT_SECRET`, Paymob keys. Not committed to git |
+| `.env.example` | The same settings with no secrets: copy it to `.env` and fill it in |
 | `pytest.ini` | Test settings |
 | `CHANGES_v7.md` | Old v7 change notes (Arabic) |
 
@@ -111,11 +112,15 @@ Run these from the **project root** (the API reads `.env` from the current folde
 ```bash
 pip install -r requirements-api.txt
 
-# Create .env in the project root with:
-# DATABASE_URL=postgresql://hotelai:hotelai@localhost:5432/hotelai
+# Settings: copy the example, then put your database URL and a secret in .env
+cp .env.example .env            # Windows PowerShell: Copy-Item .env.example .env
+python -c "import secrets; print(secrets.token_urlsafe(48))"   # paste it as JWT_SECRET=
 
 uvicorn app.api.main:app --reload
 ```
+
+- With the Docker database: `DATABASE_URL=postgresql+psycopg://hotelai:hotelai@localhost:5432/hotelai`
+- Step by step on Windows (in Arabic): [`docs/API_SETUP.md`](docs/API_SETUP.md)
 
 Open <http://localhost:8000/docs> to try every endpoint. Details are in [Backend API](#backend-api).
 
@@ -157,9 +162,11 @@ FastAPI + async SQLAlchemy (asyncpg) on the PostgreSQL database. Code is in `app
 | `main.py` | App setup: CORS, rate limiting, request logging, error handler, `/static` |
 | `config.py` | Settings read from `.env` |
 | `db.py` | Database connection pool |
+| `security.py` | Password check (bcrypt) and login tokens (JWT) |
+| `rate_limit.py` | Requests allowed per minute |
 | `routers/` | Endpoints |
 | `schemas/` | Request and response models (Pydantic) |
-| `services/` | Pricing and discount-code logic |
+| `services/` | Pricing, discount codes, bookings, and the payment link |
 
 ### Endpoints
 
@@ -171,8 +178,17 @@ FastAPI + async SQLAlchemy (asyncpg) on the PostgreSQL database. Code is in `app
 | `GET` | `/room-types` | All room types: description, capacity, size, base price, photos |
 | `GET` | `/hotel-photos` | Hotel area photos. Optional `photo_key`: `hotel`, `lobby`, `pool`, `spa`, `gym`, `restaurant` |
 | `GET` | `/menu` | Room-service menu and the delivery charge. Optional `night_only` and `category` |
-| `GET` | `/discount-codes/{code}` | Whether a discount code can be used today |
+| `GET` | `/discount-codes/{code}` | Whether a discount code can be used today (a personal code only by its own guest, logged in) |
+| `POST` | `/auth/login` | Email + password → a login token (JWT, 60 minutes) |
+| `GET` | `/auth/me` | The logged-in account |
+| `GET` | `/me/bookings` | 🔒 Guest: the account's bookings, own and linked, newest first |
+| `POST` | `/me/bookings/link` | 🔒 Guest: add a booking made elsewhere (reference + last name, English or Arabic, or the last 4 phone digits) |
+| `POST` | `/bookings` | 🔒 Guest: book a room. The booking is `Pending` and the room is held until the payment link is paid |
+| `GET` | `/payments/mock/{booking_id}` | The fake payment page (until Paymob is connected) |
+| `POST` | `/payments/mock/{booking_id}/pay` | Stands in for Paymob: the payment becomes `Paid`, the booking `Confirmed` |
 | `GET` | `/static/...` | Room and hotel images |
+
+🔒 = needs `Authorization: Bearer <token>`. In `/docs`: log in, copy `access_token`, and press **Authorize**.
 
 **`GET /availability` parameters:** `room_type` (name or ID), `check_in`, `check_out`, `guests` (1–10, default 1), and an optional `discount_code`.
 
@@ -185,13 +201,15 @@ If no room is free, it returns **alternatives**: other room types that fit the g
 
 ### Behavior
 
-- **Errors** return a `reason` code the frontend can act on: `UNKNOWN_ROOM_TYPE`, `CHECK_IN_IN_THE_PAST`, `CAPACITY_EXCEEDED`, `CODE_NOT_FOUND`, `PHOTO_NOT_FOUND`, `TOO_MANY_REQUESTS`.
-- **Rate limit:** 60 requests per minute per IP address. Change it with `RATE_LIMIT` in `.env`.
+- **Errors** return a `reason` code the frontend can act on: `UNKNOWN_ROOM_TYPE`, `CHECK_IN_IN_THE_PAST`, `CAPACITY_EXCEEDED`, `CODE_NOT_FOUND`, `PHOTO_NOT_FOUND`, `TOO_MANY_REQUESTS`, `INVALID_CREDENTIALS`, `NOT_LOGGED_IN`, `INVALID_TOKEN`, `TOKEN_EXPIRED`, `GUESTS_ONLY`, `BOOKING_NOT_FOUND_OR_NOT_VERIFIED`, `NO_ROOM_AVAILABLE`, `ROOM_JUST_TAKEN`, `NOT_WAITING_FOR_PAYMENT`, `PAYMENT_EXPIRED`.
+- **Rate limit:** 60 requests per minute per IP address; login 5 and booking links 10. Change them with `RATE_LIMIT`, `LOGIN_RATE_LIMIT`, `LINK_RATE_LIMIT` in `.env`.
+- **Booking:** one transaction: the booking, the code use, and the payment row are saved together or not at all. If another guest takes the room in the same moment, the next free room is tried.
 - **Logs:** every request is logged to the console and to `logs/api.log` (rotating: 5 MB × 3 files).
 - **CORS:** allows `http://localhost:5173` and `http://localhost:3000` by default.
 
 > [!NOTE]
-> **Login is not in the API yet.** Until it is, personal discount codes answer `PERSONAL_CODE_LOGIN_REQUIRED`.
+> **Demo login:** every account's password is `NilePearl@2026` (guest with bookings: `paul.fischer500@example.com`).
+> **Payments:** `PAYMENT_PROVIDER=mock` (the default) uses the fake payment page, so nobody needs Paymob keys. Paymob test mode is next.
 
 ---
 
@@ -389,7 +407,7 @@ PostgreSQL 16 with **23 tables**. Column details are in [`database/DATA_DICTIONA
 | `database/tests/run_checks.sql` | 39 data integrity checks | `psql -d hotelai -f tests/run_checks.sql` (from `database/`) |
 | `database/tests/constraint_checks.sql` | 16 checks that the database refuses invalid data | `psql -d hotelai -f tests/constraint_checks.sql` (from `database/`) |
 | `scripts/check_data.py` | RAG files, FAQ, and knowledge base vs database | `python scripts/check_data.py` |
-| `tests/` | 23 API tests: availability, pricing, discounts, hotel info | `pytest` (the database must be running) |
+| `tests/` | 38 API tests: availability, pricing, discounts, hotel info, login, my bookings, booking + payment | `pytest` (the database must be running) |
 | `app/prototype/test_agent.py` | Agent behavior on the realistic questions and 5 languages, including login/logout | See the prototype README |
 
 Every line must say `PASS`, and `check_data.py` must pass **10/10**.
@@ -406,7 +424,10 @@ Every line must say `PASS`, and `check_data.py` must pass **10/10**.
 - `GET /availability`: validation, free rooms, Nile-view count, photos, alternatives, and Flexible / Non-refundable pricing with the one discount.
 - `GET /room-types`, `/hotel-photos`, `/menu`, and `/discount-codes/{code}`.
 - Rate limiting (60 requests/minute).
-- pytest suite (23 tests).
+- Login (bcrypt + JWT), `GET /me/bookings`, `POST /me/bookings/link`; personal codes work for their own guest.
+- `POST /bookings`: a `Pending` booking that holds the room, the deposit or full payment, and a payment link (fake Paymob page for now) that confirms it.
+- Load test script (`scripts/load_test_api.py`) and `.env.example`.
+- pytest suite (38 tests).
 
 ### v8 — Final data
 
