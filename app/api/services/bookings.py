@@ -19,7 +19,8 @@ PAYMENT_STATE_SQL = text(f"""
 
 # queries.sql 4b: the payment gateway reports the link as paid
 PAID_SQL = text("""
-    UPDATE payments SET payment_status = 'Paid', amount_paid = :amount
+    UPDATE payments SET payment_status = 'Paid', amount_paid = :amount,
+           transaction_reference = coalesce(CAST(:reference AS uuid), transaction_reference)
     WHERE booking_id = upper(:booking_ref) AND payment_status = 'Pending'
 """)
 CONFIRM_SQL = text("""
@@ -40,8 +41,9 @@ async def payment_state(db: AsyncConnection, booking_ref: str):
     return (await db.execute(PAYMENT_STATE_SQL, {"booking_ref": booking_ref})).mappings().first()
 
 
-async def confirm_payment(db: AsyncConnection, booking_ref: str, amount: Decimal) -> None:
-    """Payment received: the payment becomes Paid and the booking Confirmed, both or neither."""
-    await db.execute(PAID_SQL, {"booking_ref": booking_ref, "amount": amount})
+async def confirm_payment(db: AsyncConnection, booking_ref: str, amount: Decimal, reference: str | None = None) -> None:
+    """Payment received: the payment becomes Paid and the booking Confirmed, both or neither.
+    reference: the gateway's transaction (needed later to refund it); the mock has none."""
+    await db.execute(PAID_SQL, {"booking_ref": booking_ref, "amount": amount, "reference": reference})
     await db.execute(CONFIRM_SQL, {"booking_ref": booking_ref})
     await db.commit()

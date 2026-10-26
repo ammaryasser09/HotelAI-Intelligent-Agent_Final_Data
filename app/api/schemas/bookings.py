@@ -96,3 +96,24 @@ class PaymentResult(BaseModel):
     booking_status: str
     payment_status: str
     amount_paid: float
+
+
+class CancellationQuote(BaseModel):
+    """What cancelling now would cost. Nothing is changed by asking."""
+    booking_id: str
+    booking_status: str
+    rate_plan: str
+    check_in: date
+    free_cancellation_until: datetime | None   # hotel time; None for Non-refundable (never free)
+    is_free: bool
+    amount_paid: float                          # what the hotel holds now
+    charge: float                               # what the hotel keeps if cancelled now
+    refund: float                               # what goes back to the guest's card
+
+
+class CancellationResult(BaseModel):
+    booking_id: str
+    booking_status: str
+    payment_status: str
+    charge: float
+    refund: float

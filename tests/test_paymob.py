@@ -20,14 +20,20 @@ def paymob(monkeypatch):
     monkeypatch.setattr(settings, "payment_provider", "paymob")
     monkeypatch.setattr(settings, "paymob_hmac_secret", SECRET)
     monkeypatch.setattr(settings, "paymob_secret_key", "sk_test_fake")
+    monkeypatch.setattr(settings, "paymob_api_key", "api_key_fake")
     monkeypatch.setattr(settings, "paymob_public_key", "pk_test_fake")
     monkeypatch.setattr(settings, "paymob_integration_id", 123456)
     monkeypatch.setattr(settings, "public_base_url", "https://example.ngrok-free.app")
-    fake = {"down": False}
+    fake = {"down": False, "refunds": []}
 
     def fake_paymob(request: httpx.Request):
         if fake["down"]:
             raise httpx.ConnectError("no internet")
+        if str(request.url) == settings.paymob_auth_url:
+            return httpx.Response(201, json={"token": "auth_token_fake"})
+        if str(request.url) == settings.paymob_refund_url:
+            fake["refunds"].append(json.loads(request.read()))
+            return httpx.Response(201, json={"type": "TRANSACTION", "obj": {"id": 1, "success": True}})
         fake["sent"] = {"auth": request.headers["Authorization"], "body": request.read()}
         return httpx.Response(201, json={"client_secret": "csk_test_123", "intention_order_id": 1})
 
@@ -129,3 +135,31 @@ def test_webhook_confirms_only_a_correctly_signed_successful_payment(client, tok
 
 def test_paymob_endpoints_are_hidden_in_mock_mode(client):
     assert client.post("/payments/paymob/webhook", json={}).status_code == 404
+
+
+def test_cancelling_a_paymob_booking_sends_the_money_back_through_paymob(client, token, made, paymob):
+    booking_id = book(client, token, made).json()["booking_id"]
+    paid = transaction(booking_id, 800000)                       # Paymob's transaction id is 987654
+    client.post("/payments/paymob/webhook", params={"hmac": sign(paid)}, json={"type": "TRANSACTION", "obj": paid})
+
+    cancelled = client.post(f"/me/bookings/{booking_id}/cancel", headers=bearer(token))
+    assert cancelled.status_code == 200, cancelled.text
+    assert cancelled.json()["refund"] == 8000                    # far from arrival: free, all of it back
+    assert paymob["refunds"] == [{"auth_token": "auth_token_fake", "transaction_id": 987654, "amount_cents": 800000}]
+
+    # Paymob then calls back about the refund itself: accepted, nothing changes
+    refund = {**transaction(booking_id, 800000), "id": 987655, "has_parent_transaction": True}
+    assert client.post("/payments/paymob/webhook", params={"hmac": sign(refund)},
+                       json={"type": "TRANSACTION", "obj": refund}).status_code == 200
+    assert status_of(client, token, booking_id) == "Cancelled"
+
+
+def test_refund_refused_by_paymob_leaves_the_booking_as_it_was(client, token, made, paymob):
+    booking_id = book(client, token, made).json()["booking_id"]
+    paid = transaction(booking_id, 800000)
+    client.post("/payments/paymob/webhook", params={"hmac": sign(paid)}, json={"type": "TRANSACTION", "obj": paid})
+
+    paymob["down"] = True
+    response = client.post(f"/me/bookings/{booking_id}/cancel", headers=bearer(token))
+    assert response.status_code == 502 and response.json()["detail"]["reason"] == "REFUND_FAILED"
+    assert status_of(client, token, booking_id) == "Confirmed"

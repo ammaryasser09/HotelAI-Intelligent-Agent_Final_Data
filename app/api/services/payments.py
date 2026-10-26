@@ -91,3 +91,44 @@ def booking_of(obj: dict) -> str:
     """special_reference "B020001-1a2b3c4d" comes back as order.merchant_order_id."""
     reference = (obj.get("order") or {}).get("merchant_order_id") or ""
     return reference.split("-")[0]
+
+
+# payments.transaction_reference only takes a UUID, so Paymob's transaction number is kept inside one:
+# 987654 -> 00000000-0000-0000-0000-0000000f1206. The demo data's random UUIDs are never that small.
+def paymob_reference(transaction_id) -> str:
+    return str(uuid.UUID(int=int(transaction_id)))
+
+
+def paymob_transaction_id(reference) -> int | None:
+    number = uuid.UUID(str(reference)).int
+    return number if number < 2**63 else None
+
+
+async def refund_payment(booking_id: str, amount: Decimal, reference) -> None:
+    """Sends money back to the guest's card. Paid through Paymob: Paymob refunds it.
+    Paid with the fake Paymob, or a demo booking: there is no real card payment, so it is only recorded."""
+    if amount <= 0:
+        return
+    transaction_id = paymob_transaction_id(reference)
+    if settings.payment_provider != "paymob" or transaction_id is None:
+        logger.info("Refund of %s EGP for %s recorded (no real card payment to send it back to)", amount, booking_id)
+        return
+
+    try:
+        async with httpx.AsyncClient(timeout=20) as client:
+            # the refund API still uses Paymob's older login: API key -> short-lived auth token
+            auth = await client.post(settings.paymob_auth_url, json={"api_key": settings.paymob_api_key})
+            auth.raise_for_status()
+            response = await client.post(settings.paymob_refund_url, json={
+                "auth_token": auth.json()["token"],
+                "transaction_id": transaction_id,
+                "amount_cents": int((amount * 100).to_integral_value()),
+            })
+            response.raise_for_status()
+    except (httpx.HTTPError, KeyError, ValueError) as error:
+        logger.error("Paymob refund for %s failed: %s", booking_id, error)
+        raise PaymentProviderError("refund failed") from error
+    if str(response.json().get("obj", {}).get("success")).lower() != "true":
+        logger.error("Paymob refused the refund for %s: %s", booking_id, response.text[:500])
+        raise PaymentProviderError("refund refused")
+    logger.info("Paymob refunded %s EGP for %s", amount, booking_id)

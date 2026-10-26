@@ -33,6 +33,8 @@ class Settings(BaseSettings):
     paymob_integration_id: int | None = None
     paymob_intention_url: str = "https://accept.paymob.com/v1/intention/"
     paymob_checkout_url: str = "https://eg.checkout.paymob.com/"
+    paymob_auth_url: str = "https://accept.paymob.com/api/auth/tokens"
+    paymob_refund_url: str = "https://accept.paymob.com/api/acceptance/void_refund/refund"
 
     # The address Paymob can reach this API at (the ngrok link while it runs on a laptop)
     public_base_url: str | None = None
@@ -48,6 +50,7 @@ class Settings(BaseSettings):
     def paymob_needs_its_keys(self):
         if self.payment_provider == "paymob":
             needed = {
+                "PAYMOB_API_KEY": self.paymob_api_key,
                 "PAYMOB_SECRET_KEY": self.paymob_secret_key,
                 "PAYMOB_PUBLIC_KEY": self.paymob_public_key,
                 "PAYMOB_HMAC_SECRET": self.paymob_hmac_secret,
