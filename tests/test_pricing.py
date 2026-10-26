@@ -50,7 +50,9 @@ def test_bigger_discount_wins():
     assert non_refundable.total == 170000   # Non-refundable never takes a code
 
 
-def test_fixed_code_cannot_go_below_zero():
+def test_fixed_code_never_takes_the_whole_stay():
+    # the database refuses a discount equal to the total, so at least 0.01 EGP is left
     flexible, _ = price_stay(Decimal("6000"), 1, Decimal("0.88"), **RULES, code=code("FIXED_AMOUNT", "9999"))
-    assert flexible.amount_due == 0
-    assert flexible.deposit_now == 0
+    assert flexible.discount.amount == 5999.99
+    assert flexible.amount_due == 0.01
+    assert flexible.deposit_now == 0.01

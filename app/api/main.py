@@ -15,7 +15,7 @@ from app.api.config import settings
 from app.api.db import engine
 from app.api.logging_config import setup_logging
 from app.api.rate_limit import limiter, rate_limit_exceeded
-from app.api.routers import auth, availability, discounts, health, hotel, my_bookings
+from app.api.routers import auth, availability, bookings, discounts, health, hotel, my_bookings, payments
 
 setup_logging()
 logger = logging.getLogger("hotel_api")
@@ -84,6 +84,8 @@ app.include_router(hotel.router)
 app.include_router(discounts.router)
 app.include_router(auth.router)
 app.include_router(my_bookings.router)
+app.include_router(bookings.router)
+app.include_router(payments.router)
 mimetypes.add_type("image/webp", ".webp")
 app.mount("/static", StaticFiles(directory=PROJECT_ROOT / "static"), name="static")
 

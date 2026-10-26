@@ -1,10 +1,13 @@
 from decimal import Decimal
+from typing import Literal
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=".env", env_file_encoding="utf-8", extra="ignore", env_ignore_empty=True
+    )
 
     database_url: str
     cors_origins: list[str] = ["http://localhost:5173", "http://localhost:3000"]
@@ -18,7 +21,10 @@ class Settings(BaseSettings):
     jwt_secret: str
     access_token_minutes: int = 60
 
-    # Paymob payment gateway (test mode). Empty = the API uses a fake Paymob, so nobody needs keys to run it.
+    # Payments: "mock" = the fake Paymob built into the API (no keys needed), "paymob" = Paymob test mode
+    payment_provider: Literal["mock", "paymob"] = "mock"
+
+    # Paymob payment gateway (test mode). Only used when PAYMENT_PROVIDER=paymob.
     paymob_api_key: str | None = None
     paymob_public_key: str | None = None
     paymob_secret_key: str | None = None

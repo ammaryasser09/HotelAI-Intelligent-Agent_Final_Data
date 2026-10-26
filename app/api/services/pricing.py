@@ -14,7 +14,7 @@ def code_amount(code: DiscountCodeCheck, total: Decimal) -> Decimal:
     value = Decimal(str(code.discount_value))
     if code.discount_type == "PERCENTAGE":
         return total * value / 100
-    return min(value, total)  # FIXED_AMOUNT never goes below zero
+    return min(value, total - CENT)  # the database needs the discount to stay below the total
 
 
 def price_stay(
