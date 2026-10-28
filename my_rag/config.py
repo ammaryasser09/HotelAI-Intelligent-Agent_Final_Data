@@ -17,3 +17,8 @@ FAQ_FILE = ROOT / "rag" / "hotel_faq_gold.csv"
 INDEX_DIR = ROOT / "my_rag" / "index"
 CHUNKS_FILE = INDEX_DIR / "chunks.jsonl"
 VECTORS_FILE = INDEX_DIR / "vectors.npy"
+
+SEARCH_TOP_K = 5
+RETRIEVE_N = 20
+RRF_K = 60
+BM25_WEIGHT = 0.0
