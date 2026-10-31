@@ -12,3 +12,5 @@ prototype_languages.csv
 .DS_Store
 # Log files
 logs/
+models/
+
