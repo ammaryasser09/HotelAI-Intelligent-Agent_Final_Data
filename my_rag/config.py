@@ -23,7 +23,7 @@ RETRIEVE_N = 20
 RRF_K = 60
 BM25_WEIGHT = 0.0
 
-OOS_MARGIN = 0.05
+OOS_MARGIN = 0.07
 EXTRA_OOS_ANCHORS = [
     "سعر اليورو النهارده كام؟",
     "البورصة عاملة إيه النهارده؟",
