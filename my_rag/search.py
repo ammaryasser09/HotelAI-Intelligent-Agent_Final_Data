@@ -1,8 +1,12 @@
+import csv
 import json
 import re
 import numpy as np
 from rank_bm25 import BM25Okapi
-from my_rag.config import CHUNKS_FILE, VECTORS_FILE, BM25_K1, BM25_B, SEARCH_TOP_K, RETRIEVE_N, RRF_K, BM25_WEIGHT
+from my_rag.config import (
+    CHUNKS_FILE, VECTORS_FILE, FAQ_FILE, BM25_K1, BM25_B, SEARCH_TOP_K, RETRIEVE_N, RRF_K, BM25_WEIGHT,
+    OOS_MARGIN, EXTRA_OOS_ANCHORS,
+)
 from my_rag.chunking import load_model
 
 DIACRITICS = re.compile(r"[\u0610-\u061a\u064b-\u065f\u0670\u0640]")
@@ -38,17 +42,42 @@ _model = load_model()
 _model.encode(["warm up"], normalize_embeddings=True)
 
 
+def _load_anchors():
+    anchors = []
+    with open(FAQ_FILE, encoding="utf-8") as f:
+        for row in csv.DictReader(f):
+            if row["source_doc"] == "out_of_scope_policy" and row["split"] == "train":
+                anchors.append(row["question"])
+    return anchors + EXTRA_OOS_ANCHORS
+
+
+_anchor_vecs = _model.encode(_load_anchors(), normalize_embeddings=True).astype(np.float32)
+
+
+def _encode(question):
+    return _model.encode([question], normalize_embeddings=True)[0].astype(np.float32)
+
+
+def is_outside(question, q=None):
+    if q is None:
+        q = _encode(question)
+    chunk_best = float(np.max(_vectors @ q))
+    anchor_best = float(np.max(_anchor_vecs @ q))
+    return anchor_best - chunk_best > OOS_MARGIN
+
+
 def _bm25_scores(question):
     return _bm25.get_scores(tokenize(question))
 
 
-def _dense_scores(question):
-    q = _model.encode([question], normalize_embeddings=True)[0].astype(np.float32)
+def _dense_scores(question, q=None):
+    if q is None:
+        q = _encode(question)
     return _vectors @ q
 
 
-def hybrid_rank(question, n=RETRIEVE_N):
-    dense = _dense_scores(question)
+def hybrid_rank(question, n=RETRIEVE_N, q=None):
+    dense = _dense_scores(question, q)
     lists = [(1.0, dense)]
     if BM25_WEIGHT > 0:
         lists.append((BM25_WEIGHT, _bm25_scores(question)))
@@ -80,7 +109,10 @@ def search(question: str, top_k: int = SEARCH_TOP_K) -> list[dict]:
     try:
         if not question or not question.strip():
             return []
-        best, dense = hybrid_rank(question)
+        q = _encode(question)
+        if is_outside(question, q):
+            return []
+        best, dense = hybrid_rank(question, q=q)
         results = []
         seen = set()
         for i in best:
