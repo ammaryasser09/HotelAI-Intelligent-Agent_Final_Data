@@ -1,9 +1,9 @@
 NILE PEARL HOTEL
 CANCELLATION PROCESS
 
-1. Provide Reservation Details
+1. Find the Booking
 
-The guest gives the booking reference and the last name on the booking.
+The guest logs in and chooses the booking from their account. A booking made by phone, by email, through a travel agent or on a booking platform is first added to the account with its booking reference and the last name on it (see Reservation Security).
 
 2. Check the Rate Plan
 

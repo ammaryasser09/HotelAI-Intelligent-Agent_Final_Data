@@ -19,6 +19,11 @@ results = search("الأوضة الديلوكس بتاخد كام فرد؟", top
 The first import downloads BGE-M3 (~2GB, once) into `models/` and loads it.
 Import once at server start, not inside every request.
 
+## Used by the agent
+
+`app/llm/knowledge.py` (branch `llm-agent`) calls `search()` inside the `search_hotel_info` tool:
+`found: False` when `search()` returns `[]`, otherwise the `text` and `source` of each result.
+
 ## Contract
 
 ```python
@@ -106,9 +111,8 @@ Measured on `evaluation/realistic_test_egyptian.csv` (105 real questions with a 
 |---|---|
 | correct file in top 5 (Recall@5) | **90%** |
 | correct file in top 20 (Recall@20) | **98%** |
-| average time per question (RTX 3060 laptop) | **0.02s** |
-| slowest question (RTX 3060 laptop) | 0.031s |
-| average / slowest time (MacBook Air, 8GB) | 0.032s / 0.114s |
+| average / slowest time (RTX 3060 laptop) | **0.016s** / 0.022s |
+| average / slowest time (MacBook Air, 8GB) | **0.032s** / 0.114s |
 | off-topic questions blocked | **27 / 27** |
 
 ## Results by language
@@ -146,17 +150,4 @@ Kept 0.07. The anchors catch about 2/3 of new off-topic questions, so `[]` is a 
 | Hybrid BM25 + BGE-M3 (7 weight settings) | every BM25 weight lowered accuracy (weight 1.0 → 79%) | `BM25_WEIGHT = 0.0` |
 | Cosine threshold for off-topic | could not separate in-scope and off-topic questions | replaced with anchors |
 | Reranker `bge-reranker-v2-m3` | 88% → 92% (+4), 5x slower, weak on Egyptian Arabic | not used (rule: +5 and < 0.5s) |
-| `OOS_MARGIN` 0.05 / 0.06 / 0.07 / 0.08 | in-scope questions blocked up to 0.057, off-topic starts at 0.083 | `0.07` (middle of the gap) |
-| 7 Egyptian FAQ rewordings (جولد، بوينتس، شيشة) with the same existing answers | 89% → 90%, Recall@20 97% → 98%, still 27/27 blocked | kept |
-| Warm-up with 1 short sentence vs sentences of 1–64 words | Mac slowest question 0.804s → 0.114s | warm-up 1–64 words |
-
-## Known limits
-
-- Very short slang questions with no topic (e.g. `أوصل للجولد إزاي؟`) are not understood. The LLM should write a clear query (see the tip above).
-- One sentence with several questions returns results for only part of it. The LLM should split it.
-- About 1 in 3 new off-topic questions is not blocked; the LLM prompt must refuse them too.
-- Some old answers still ask for booking reference + last name to change a booking, which conflicts with the login design (waiting for team decision). Linking a booking made outside (phone, agency, Booking.com) still uses reference + last name.
-
-## Team
-
-RAG team: Ammar & Sondos.
+| `OOS_MARGIN` 0.05 / 0.06 / 0.07 / 0.08 | in-scope questions blocked up to 0.057,
