@@ -1,17 +1,28 @@
 import asyncio
+import inspect
 import time
 from google import genai
 from google.genai import types
-from app.llm.config import GEMINI_API_KEY, MODEL, THINKING_LEVEL
+from app.llm.config import GEMINI_API_KEY, MODEL, THINKING_LEVEL, ACCOUNT_ID
 from app.llm.prompts import LIVE_PROMPT
 from app.llm.tools import DECLARATIONS, FUNCTIONS
+from app.rag.tools import _account
 
 client = genai.Client(api_key=GEMINI_API_KEY)
+
+
+def session_note():
+    if ACCOUNT_ID is None:
+        return "SESSION: the caller is a visitor, not logged in."
+    account = _account(ACCOUNT_ID)
+    name = account["full_name"] if account else "unknown"
+    return f"SESSION: the caller is logged in as {name}."
+
 
 CONFIG = {
     "response_modalities": ["AUDIO"],
     "output_audio_transcription": {},
-    "system_instruction": LIVE_PROMPT,
+    "system_instruction": LIVE_PROMPT + "\n\n" + session_note(),
     "tools": [{"function_declarations": DECLARATIONS}],
 }
 if "extended-thinking" in MODEL:
@@ -34,10 +45,16 @@ def describe(msg):
 
 async def run_tool(session, call):
     print(f"\n[tool {since()}] {call.name} {call.args}")
+    fn = FUNCTIONS[call.name]
+    args = dict(call.args)
+    if "account_id" in inspect.signature(fn).parameters:
+        args["account_id"] = None if ACCOUNT_ID is None else str(ACCOUNT_ID)
     try:
-        result = await asyncio.to_thread(FUNCTIONS[call.name], **call.args)
+        result = await asyncio.to_thread(fn, **args)
     except Exception as e:
         result = {"ok": False, "reason": str(e)}
+    if call.name != "search_hotel_info":
+        print(f"[result] {result}")
     await session.send_tool_response(function_responses=[
         types.FunctionResponse(id=call.id, name=call.name, response={"result": result})
     ])
