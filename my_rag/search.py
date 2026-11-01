@@ -39,8 +39,8 @@ for _c in _chunks:
     _corpus.append(tokenize(_c["text"]))
 _bm25 = BM25Okapi(_corpus, k1=BM25_K1, b=BM25_B)
 _model = load_model()
-_model.encode(["warm up"], normalize_embeddings=True)
-
+for n in range(1, 65):
+    _model.encode(["hotel " * n], normalize_embeddings=True)
 
 def _load_anchors():
     anchors = []
