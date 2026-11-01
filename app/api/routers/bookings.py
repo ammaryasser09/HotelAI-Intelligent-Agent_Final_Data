@@ -11,6 +11,7 @@ from app.api.routers.availability import FREE_ROOMS_SQL, HOTEL_RULES_SQL, ROOM_T
 from app.api.schemas.auth import CurrentAccount
 from app.api.schemas.bookings import BookingCreated, CreateBookingRequest
 from app.api.security import get_current_guest
+from app.api.services.accounts import check_age
 from app.api.services.bookings import HOTEL_NOW
 from app.api.services.discounts import check_code
 from app.api.services.payments import PaymentProviderError, create_payment_link
@@ -20,6 +21,10 @@ from app.api.services.pricing import CENT, money, price_stay
 GUEST_CONTACT_SQL = text("""
     SELECT first_name, last_name, email, phone FROM customers WHERE customer_id = :customer_id
 """)
+
+# the 18+ rule: the date of birth is asked before the first booking, then kept
+DATE_OF_BIRTH_SQL = text("SELECT date_of_birth FROM customers WHERE customer_id = :customer_id")
+SAVE_DATE_OF_BIRTH_SQL = text("UPDATE customers SET date_of_birth = :born WHERE customer_id = :customer_id")
 
 router = APIRouter(tags=["Bookings"])
 
@@ -76,6 +81,13 @@ async def create_booking(
         raise refuse(400, "CHECK_IN_IN_THE_PAST", today=str(rules["today"]))
     if body.guests > room_type["capacity"]:
         raise refuse(400, "CAPACITY_EXCEEDED", capacity=room_type["capacity"])
+    saved_born = (await db.execute(DATE_OF_BIRTH_SQL, {"customer_id": guest.customer_id})).scalar_one()
+    born = saved_born or body.date_of_birth
+    if born is None:
+        raise refuse(400, "DATE_OF_BIRTH_REQUIRED")
+    check_age(born, rules["today"])
+    if saved_born is None:   # saved with the booking (same transaction), never asked again
+        await db.execute(SAVE_DATE_OF_BIRTH_SQL, {"born": born, "customer_id": guest.customer_id})
 
     # 2. the price: one discount at most, and only on the Flexible rate
     base = room_type["base_price"]

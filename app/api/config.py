@@ -17,6 +17,8 @@ class Settings(BaseSettings):
     rate_limit: str = "60/minute"
     login_rate_limit: str = "5/minute"
     link_rate_limit: str = "10/minute"
+    signup_rate_limit: str = "5/minute"
+    code_rate_limit: str = "3/minute"   # sending / checking email codes
 
     # Login tokens (JWT). JWT_SECRET must be set in .env and never shared or committed.
     jwt_secret: str
@@ -50,6 +52,8 @@ class Settings(BaseSettings):
 
     # How often unpaid bookings are checked and cancelled once their hold is over (0 = never)
     expiry_check_seconds: int = 300
+
+    min_guest_age: int = 18            # asked before the first booking
 
     long_stay_min_nights: int = 7
     non_refundable_multiplier: Decimal = Decimal("0.85")

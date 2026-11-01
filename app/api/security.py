@@ -25,6 +25,11 @@ async def verify_password(password: str, password_hash: str | None) -> bool:
     return matches and password_hash is not None
 
 
+async def hash_password(password: str) -> str:
+    hashed = await run_in_threadpool(bcrypt.hashpw, password.encode()[:72], bcrypt.gensalt())
+    return hashed.decode()
+
+
 def create_access_token(account: AccountInfo) -> tuple[str, int]:
     expires_in = settings.access_token_minutes * 60
     now = datetime.now(timezone.utc)
@@ -32,6 +37,7 @@ def create_access_token(account: AccountInfo) -> tuple[str, int]:
         "sub": str(account.account_id),
         "role": account.role,
         "customer_id": account.customer_id,
+        "email_verified": account.email_verified,
         "iat": now,
         "exp": now + timedelta(seconds=expires_in),
     }
@@ -53,6 +59,7 @@ def _read_token(credentials: HTTPAuthorizationCredentials) -> CurrentAccount:
         account_id=int(payload["sub"]),
         role=payload["role"],
         customer_id=payload.get("customer_id"),
+        email_verified=payload.get("email_verified", False),
     )
 
 
@@ -75,4 +82,7 @@ async def get_optional_account(
 async def get_current_guest(account: CurrentAccount = Depends(get_current_account)) -> CurrentAccount:
     if account.role != "Guest":
         raise HTTPException(status_code=403, detail={"reason": "GUESTS_ONLY"})
+    if not account.email_verified:
+        # a new account sees and makes bookings only after proving the email is theirs
+        raise HTTPException(status_code=403, detail={"reason": "EMAIL_NOT_VERIFIED"})
     return account

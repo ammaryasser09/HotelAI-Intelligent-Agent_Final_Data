@@ -7,6 +7,8 @@ from fastapi.testclient import TestClient
 os.environ["RATE_LIMIT"] = "10000/minute"
 os.environ["LOGIN_RATE_LIMIT"] = "10000/minute"
 os.environ["LINK_RATE_LIMIT"] = "10000/minute"
+os.environ["SIGNUP_RATE_LIMIT"] = "10000/minute"
+os.environ["CODE_RATE_LIMIT"] = "10000/minute"
 # The tests pay through the fake Paymob, whatever .env says (they turn the real one on only where needed)
 os.environ["PAYMENT_PROVIDER"] = "mock"
 # No background expiry while testing: the tests run it themselves, on their own bookings only

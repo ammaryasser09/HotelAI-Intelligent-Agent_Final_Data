@@ -52,6 +52,8 @@ class CreateBookingRequest(BaseModel):
     discount_code: str | None = Field(default=None, min_length=3, max_length=20, examples=[None])
     payment_method: Literal["Credit Card", "Debit Card", "Digital Wallet"] = "Credit Card"
     channel: Literal["Website", "Voice Agent", "Mobile App"] = "Website"
+    # asked before the guest's first booking only (18+); ignored once it is saved
+    date_of_birth: date | None = Field(default=None, examples=[None])
 
     @model_validator(mode="after")
     def check_out_after_check_in(self):

@@ -1,4 +1,5 @@
 import logging
+import re
 import smtplib
 from datetime import datetime
 from email.message import EmailMessage
@@ -92,7 +93,8 @@ async def deliver(to: str, subject: str, body: str) -> None:
         await run_in_threadpool(_send_smtp, message)   # smtplib waits on the network: keep it off the event loop
         return
     EMAIL_DIR.mkdir(parents=True, exist_ok=True)
-    name = f"{datetime.now():%Y%m%d-%H%M%S-%f}-{subject.split()[2]}.txt"
+    booking = re.search(r"B\d{6}", subject)
+    name = f"{datetime.now():%Y%m%d-%H%M%S-%f}-{booking.group() if booking else 'code'}.txt"
     (EMAIL_DIR / name).write_text(f"To: {to}\nSubject: {subject}\n\n{body}\n", encoding="utf-8")
 
 
@@ -112,3 +114,26 @@ async def notify(booking_id: str, kind: str, db: AsyncConnection | None = None) 
         logger.info("Email '%s' sent for %s", kind, booking_id)
     except Exception:
         logger.exception("Email '%s' for %s could not be sent", kind, booking_id)
+
+
+CODE_EMAILS = {
+    "verify_email": ("Your Nile Pearl Hotel verification code",
+                     "Welcome to Nile Pearl Hotel! To confirm your email, enter this code:"),
+    "reset_password": ("Reset your Nile Pearl Hotel password",
+                       "Someone asked to reset your password. If it was you, enter this code:"),
+}
+
+
+async def send_code(to: str, first_name: str, code: str, purpose: str, minutes: int) -> None:
+    """Emails a 6-digit code. Like notify(), a failure is only logged."""
+    subject, opening = CODE_EMAILS[purpose]
+    body = "\n".join([
+        f"Dear {first_name},", "", opening, "", f"    {code}", "",
+        f"It works for {minutes} minutes. Never share it: hotel staff will never ask you for it.",
+        "If you did not ask for this, you can ignore this email.", "", "Nile Pearl Hotel",
+    ])
+    try:
+        await deliver(to, subject, body)
+        logger.info("Email code '%s' sent", purpose)
+    except Exception:
+        logger.exception("Email code '%s' could not be sent", purpose)
