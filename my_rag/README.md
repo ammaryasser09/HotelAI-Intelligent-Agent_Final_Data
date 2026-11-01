@@ -35,6 +35,19 @@ def search(question: str, top_k: int = 5) -> list[dict]
 - Never raises an error. Worst case it returns `[]`.
 - Languages: Egyptian, Gulf, Modern Standard Arabic, English, French, Russian.
 
+## Tip for the LLM team: write a clear query
+
+Do not pass the guest's words as they are. Write the query yourself, with the topic in it:
+
+| guest said | send to `search()` |
+|---|---|
+| أوصل للجولد إزاي؟ | إزاي أوصل لمستوى Gold في برنامج الولاء؟ |
+| عايز دبل من 5 لـ 8، وفي جراج؟ والفطار بكام؟ | 3 calls: double room capacity / parking / breakfast price |
+| بكام السويت تلات ليالي؟ | suite price per night |
+
+Measured: `أوصل للجولد إزاي؟` returns `[]`, while `إزاي أوصل لمستوى Gold في برنامج الولاء؟` returns `loyalty_programs.txt` in all top 3.
+English queries score highest because the knowledge base is written in English.
+
 ## How it works
 
 ```
@@ -42,8 +55,8 @@ question → BGE-M3 vector → outside the hotel? → yes: []
                                               → no: top 20 closest chunks → remove duplicates → top 5
 ```
 
-1. **Index** (`chunking.py`): 44 knowledge-base files split by numbered sections (230 chunks) + 2,618 training FAQ answers = **2,848 chunks**, each turned into a 1024-number vector by BGE-M3 and saved in `index/`.
-2. **Out-of-scope check** (`search.py`): the question is compared with example off-topic questions (anchors). If it is closer to them than to any hotel chunk by more than `OOS_MARGIN`, we return `[]`.
+1. **Index** (`chunking.py`): 44 knowledge-base files split by numbered sections (230 chunks) + 2,625 training FAQ answers = **2,855 chunks**, each turned into a 1024-number vector by BGE-M3 and saved in `index/`.
+2. **Out-of-scope check** (`search.py`): the question is compared with example off-topic questions (anchors). If it is closer to them than to any hotel chunk by more than `OOS_MARGIN` (0.07), we return `[]`.
 3. **Retrieval** (`search.py`): cosine similarity between the question vector and all chunk vectors.
 4. **Dedup**: chunks with the same `fact_id` or the same answer text are kept once.
 
@@ -57,7 +70,17 @@ question → BGE-M3 vector → outside the hotel? → yes: []
 | `chunking.py` | builds the index (`index/chunks.jsonl`, `index/vectors.npy`) |
 | `search.py` | the `search()` function used by the LLM team |
 | `evaluate.py` | measures accuracy and speed |
+| `test_search.py` | contract tests + 10 test questions in 6 languages |
 | `notebooks/` | every experiment with its results |
+
+## Run the tests
+
+```bash
+pip install pytest
+python -m pytest my_rag/test_search.py -v
+```
+
+Expected: `14 passed`.
 
 ## Rebuild after changing the data
 
@@ -66,7 +89,10 @@ If any file in `knowledge_base/` or `rag/hotel_faq_gold.csv` changes:
 ```bash
 python -m my_rag.chunking
 python -m my_rag.evaluate
+python -m pytest my_rag/test_search.py -v
 ```
+
+Close running notebooks first: a notebook kernel keeps models in GPU memory and slows everything down.
 
 ## Results
 
@@ -74,10 +100,10 @@ Measured on `evaluation/realistic_test_egyptian.csv` (105 real questions with a 
 
 | metric | value |
 |---|---|
-| correct file in top 5 (Recall@5) | **88%** |
-| correct file in top 20 (Recall@20) | **97%** |
-| average time per question (RTX 3060) | **~0.02s** |
-| slowest question | 0.055s |
+| correct file in top 5 (Recall@5) | **90%** |
+| correct file in top 20 (Recall@20) | **98%** |
+| average time per question (RTX 3060 laptop) | **0.02s** |
+| slowest question | 0.031s |
 | off-topic questions blocked | **27 / 27** |
 
 ## Decisions (all measured)
@@ -87,12 +113,14 @@ Measured on `evaluation/realistic_test_egyptian.csv` (105 real questions with a 
 | Hybrid BM25 + BGE-M3 (7 weight settings) | every BM25 weight lowered accuracy (weight 1.0 → 79%) | `BM25_WEIGHT = 0.0` |
 | Cosine threshold for off-topic | could not separate in-scope and off-topic questions | replaced with anchors |
 | Reranker `bge-reranker-v2-m3` | 88% → 92% (+4), 5x slower, weak on Egyptian Arabic | not used (rule: +5 and < 0.5s) |
+| `OOS_MARGIN` 0.05 / 0.06 / 0.07 / 0.08 | in-scope questions blocked up to 0.057, off-topic starts at 0.083 | `0.07` (middle of the gap) |
+| 7 Egyptian FAQ rewordings (جولد، بوينتس، شيشة) with the same existing answers | 89% → 90%, Recall@20 97% → 98%, still 27/27 blocked | kept |
 
-## Known data gaps
+## Known limits
 
-- Egyptian questions about loyalty tiers have no answer yet.
-- Shisha / hookah is not covered in the smoking policy.
-- Some old answers still ask for booking reference + last name, which conflicts with the login design.
+- Very short slang questions with no topic (e.g. `أوصل للجولد إزاي؟`) are not understood. The LLM should write a clear query (see the tip above).
+- One sentence with several questions returns results for only part of it. The LLM should split it.
+- Some old answers still ask for booking reference + last name to change a booking, which conflicts with the login design (waiting for team decision). Linking a booking made outside (phone, agency, Booking.com) still uses reference + last name.
 
 ## Team
 
