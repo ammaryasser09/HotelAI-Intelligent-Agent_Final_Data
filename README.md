@@ -181,6 +181,11 @@ FastAPI + async SQLAlchemy (asyncpg) on the PostgreSQL database. Code is in `app
 | `GET` | `/discount-codes/{code}` | Whether a discount code can be used today (a personal code only by its own guest, logged in) |
 | `POST` | `/auth/login` | Email + password → a login token (JWT, 60 minutes) |
 | `GET` | `/auth/me` | The logged-in account |
+| `POST` | `/auth/signup` | New guest account (first/last name, email, phone, password; nationality and date of birth optional). Logs in at once and emails a 6-digit code |
+| `POST` | `/auth/verify-email` | 🔒 The emailed code → a new token. Bookings, requests and loyalty open only after this (`EMAIL_NOT_VERIFIED` before) |
+| `POST` | `/auth/verify-email/resend` | 🔒 A new code |
+| `POST` | `/auth/forgot-password` | Emails a reset code to a guest (same answer for any email; staff ask the admin) |
+| `POST` | `/auth/reset-password` | Email + code + new password → logged in |
 | `GET` | `/me/bookings` | 🔒 Guest: the account's bookings, own and linked, newest first |
 | `POST` | `/me/bookings/link` | 🔒 Guest: add a booking made elsewhere (reference + last name, English or Arabic, or the last 4 phone digits) |
 | `POST` | `/bookings` | 🔒 Guest: book a room. The booking is `Pending` and the room is held until the payment link is paid |
@@ -192,6 +197,10 @@ FastAPI + async SQLAlchemy (asyncpg) on the PostgreSQL database. Code is in `app
 | `POST` | `/payments/mock/{booking_id}/pay` | Stands in for Paymob: the payment becomes `Paid`, the booking `Confirmed` |
 | `POST` | `/payments/paymob/webhook` | Paymob reports a payment here (`PAYMENT_PROVIDER=paymob`); refused unless its HMAC signature matches |
 | `GET` | `/payments/paymob/return` | Where Paymob sends the guest back after paying (shows the booking status) |
+| `POST` | `/requests` | 🔒 Guest: a request that becomes a staff ticket (Housekeeping, Maintenance, Room Service, Complaint, Special Request, Discount Request, Staff Callback...). Emergency = Critical, Staff Callback = Urgent |
+| `POST` | `/requests/emergency` | Anyone, logged in or not: a Critical ticket, plus the emergency numbers (ambulance 123, police 122, fire 180, reception) |
+| `GET` | `/me/requests` | 🔒 Guest: their requests and status (an approved discount request shows its code) |
+| `GET` | `/me/loyalty` | 🔒 Guest: Nile Pearl Rewards tier, points and what they are worth, late check-out time |
 | `GET` | `/static/...` | Room and hotel images |
 
 🔒 = needs `Authorization: Bearer <token>`. In `/docs`: log in, copy `access_token`, and press **Authorize**.
@@ -207,13 +216,15 @@ If no room is free, it returns **alternatives**: other room types that fit the g
 
 ### Behavior
 
-- **Errors** return a `reason` code the frontend can act on: `UNKNOWN_ROOM_TYPE`, `CHECK_IN_IN_THE_PAST`, `CAPACITY_EXCEEDED`, `CODE_NOT_FOUND`, `PHOTO_NOT_FOUND`, `TOO_MANY_REQUESTS`, `INVALID_CREDENTIALS`, `NOT_LOGGED_IN`, `INVALID_TOKEN`, `TOKEN_EXPIRED`, `GUESTS_ONLY`, `BOOKING_NOT_FOUND_OR_NOT_VERIFIED`, `NO_ROOM_AVAILABLE`, `ROOM_JUST_TAKEN`, `NOT_WAITING_FOR_PAYMENT`, `PAYMENT_EXPIRED`, `PAYMENT_PROVIDER_ERROR`, `INVALID_SIGNATURE`, `BOOKING_NOT_FOUND`, `NOT_CANCELLABLE`, `TOO_LATE_TO_CANCEL`, `REFUND_FAILED`, `NOT_CHANGEABLE`, `TOO_LATE_TO_CHANGE`, `NON_REFUNDABLE_CANNOT_CHANGE`, `CHANGE_ON_BOOKING_PLATFORM`, `NOTHING_TO_CHANGE`, `CHECK_OUT_NOT_AFTER_CHECK_IN`.
+- **Errors** return a `reason` code the frontend can act on: `UNKNOWN_ROOM_TYPE`, `CHECK_IN_IN_THE_PAST`, `CAPACITY_EXCEEDED`, `CODE_NOT_FOUND`, `PHOTO_NOT_FOUND`, `TOO_MANY_REQUESTS`, `INVALID_CREDENTIALS`, `NOT_LOGGED_IN`, `INVALID_TOKEN`, `TOKEN_EXPIRED`, `GUESTS_ONLY`, `BOOKING_NOT_FOUND_OR_NOT_VERIFIED`, `NO_ROOM_AVAILABLE`, `ROOM_JUST_TAKEN`, `NOT_WAITING_FOR_PAYMENT`, `PAYMENT_EXPIRED`, `PAYMENT_PROVIDER_ERROR`, `INVALID_SIGNATURE`, `BOOKING_NOT_FOUND`, `NOT_CANCELLABLE`, `TOO_LATE_TO_CANCEL`, `REFUND_FAILED`, `NOT_CHANGEABLE`, `TOO_LATE_TO_CHANGE`, `NON_REFUNDABLE_CANNOT_CHANGE`, `CHANGE_ON_BOOKING_PLATFORM`, `NOTHING_TO_CHANGE`, `CHECK_OUT_NOT_AFTER_CHECK_IN`, `EMAIL_ALREADY_REGISTERED`, `PHONE_ALREADY_REGISTERED`, `EMAIL_NOT_VERIFIED`, `ALREADY_VERIFIED`, `WRONG_CODE` (with `attempts_left`), `CODE_EXPIRED`, `DATE_OF_BIRTH_REQUIRED`, `TOO_YOUNG`, `BOOKING_REQUIRED`, `WRONG_CATEGORY`, `NO_CATEGORY_FOR_THIS_TYPE`, `CALL_NOT_FOUND`.
 - **Rate limit:** 60 requests per minute per IP address; login 5 and booking links 10. Change them with `RATE_LIMIT`, `LOGIN_RATE_LIMIT`, `LINK_RATE_LIMIT` in `.env`.
 - **Booking:** one transaction: the booking, the code use, and the payment row are saved together or not at all. If another guest takes the room in the same moment, the next free room is tried.
 - **Hotel clock:** payment deadlines use the hotel's "today" (`app_settings.system_date`) at the current time, so the demo bookings and new ones follow the same rules.
 - **Unpaid bookings:** every 5 minutes (`EXPIRY_CHECK_SECONDS`) a `Pending` booking past its payment deadline is cancelled, its payment becomes `Expired`, the room is free again, and a discount code it used is given back.
 - **Cancel:** Flexible is free until 48 h before 3 PM on arrival day (the deposit comes back), then the first night is kept; Non-refundable gives nothing back. The hotel never keeps more than it was paid. Not on the arrival day.
 - **Change:** new dates keep the agreed nightly price, another room type uses its own base price; the discount is worked out again (7+ nights get Long Stay; a code it beats is given back). A stay cheaper than what was paid gets the difference back; a `Pending` booking gets a new payment link. Not for Non-refundable or Booking Platform bookings.
+- **Accounts:** a guest who booked before without an account (phone, agency) and signs up with the same email gets the same guest record, so their bookings appear once the email is confirmed. Email codes: 6 digits, 10 minutes, 5 tries, stored only as a keyed hash (HMAC).
+- **18+:** the first booking asks for `date_of_birth` (or it is given at sign-up); it is kept after that.
 - **Emails:** confirmed, changed, cancelled, and not-paid-in-time emails go to the guest after the answer is sent; a failed email is only logged. `EMAIL_PROVIDER=log` (default) writes them to `logs/emails/` instead of sending.
 - **Logs:** every request is logged to the console and to `logs/api.log` (rotating: 5 MB × 3 files).
 - **CORS:** allows `http://localhost:5173` and `http://localhost:3000` by default.
@@ -418,7 +429,8 @@ PostgreSQL 16 with **23 tables**. Column details are in [`database/DATA_DICTIONA
 | `database/tests/run_checks.sql` | 39 data integrity checks | `psql -d hotelai -f tests/run_checks.sql` (from `database/`) |
 | `database/tests/constraint_checks.sql` | 16 checks that the database refuses invalid data | `psql -d hotelai -f tests/constraint_checks.sql` (from `database/`) |
 | `scripts/check_data.py` | RAG files, FAQ, and knowledge base vs database | `python scripts/check_data.py` |
-| `tests/` | 63 API tests: availability, pricing, discounts, hotel info, login, my bookings, booking + payment, Paymob (signature, link, refund), expiry, cancel, change, emails | `pytest` (the database must be running) |
+| `tests/` | 73 API tests: availability, pricing, discounts, hotel info, login, sign-up + email codes, my bookings, booking + payment, Paymob (signature, link, refund), expiry, cancel, change, emails, requests, loyalty | `pytest` (the database must be running) |
+| `scripts/check_endpoints.py` | Calls every endpoint of the running API once and prints OK / FAIL | `python scripts/check_endpoints.py` (with uvicorn running) |
 | `app/prototype/test_agent.py` | Agent behavior on the realistic questions and 5 languages, including login/logout | See the prototype README |
 
 Every line must say `PASS`, and `check_data.py` must pass **10/10**.
@@ -442,7 +454,10 @@ Every line must say `PASS`, and `check_data.py` must pass **10/10**.
 - Cancellation quote and cancel with refund; change booking (dates, room type, guests) with a quote.
 - Guest emails (confirmed, changed, cancelled, not paid in time), written to `logs/emails/` by default.
 - Load test script (`scripts/load_test_api.py`) and `.env.example`.
-- pytest suite (63 tests).
+- Sign up, email verification and password reset with 6-digit codes; the 18+ rule before the first booking.
+- Guest requests (tickets), emergencies for anyone, my requests, loyalty status.
+- `scripts/check_endpoints.py`: a quick check of every endpoint against the running API.
+- pytest suite (73 tests).
 
 ### v8 — Final data
 

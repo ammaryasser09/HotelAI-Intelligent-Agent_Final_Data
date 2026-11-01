@@ -86,3 +86,16 @@ async def get_current_guest(account: CurrentAccount = Depends(get_current_accoun
         # a new account sees and makes bookings only after proving the email is theirs
         raise HTTPException(status_code=403, detail={"reason": "EMAIL_NOT_VERIFIED"})
     return account
+
+
+async def get_current_staff(account: CurrentAccount = Depends(get_current_account)) -> CurrentAccount:
+    """The staff dashboard: Staff and Admin."""
+    if account.role not in ("Staff", "Admin"):
+        raise HTTPException(status_code=403, detail={"reason": "STAFF_ONLY"})
+    return account
+
+
+async def get_current_admin(account: CurrentAccount = Depends(get_current_account)) -> CurrentAccount:
+    if account.role != "Admin":
+        raise HTTPException(status_code=403, detail={"reason": "ADMIN_ONLY"})
+    return account

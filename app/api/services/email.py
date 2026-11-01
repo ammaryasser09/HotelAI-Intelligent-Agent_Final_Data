@@ -137,3 +137,21 @@ async def send_code(to: str, first_name: str, code: str, purpose: str, minutes: 
         logger.info("Email code '%s' sent", purpose)
     except Exception:
         logger.exception("Email code '%s' could not be sent", purpose)
+
+
+async def send_discount_decision(to: str, first_name: str, code: str | None, offer: str | None, valid_to) -> None:
+    """The admin's answer to a Discount Request: the personal code, or a polite no."""
+    if code:
+        subject = "Your Nile Pearl Hotel discount code"
+        middle = [f"Good news: your discount request was approved. Your personal code gives {offer}:", "",
+                  f"    {code}", "", f"Use it on your next booking by {valid_to:%d %b %Y}. It works once, for you only."]
+    else:
+        subject = "About your discount request"
+        middle = ["Thank you for your request. We are sorry, we cannot offer a discount this time.",
+                  "Our Long Stay rate (7 nights or more) and our offers are always available on our website."]
+    body = "\n".join([f"Dear {first_name},", "", *middle, "", "Nile Pearl Hotel"])
+    try:
+        await deliver(to, subject, body)
+        logger.info("Discount decision email sent")
+    except Exception:
+        logger.exception("Discount decision email could not be sent")

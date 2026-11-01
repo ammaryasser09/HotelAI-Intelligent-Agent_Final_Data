@@ -17,7 +17,7 @@ from app.api.db import engine
 from app.api.logging_config import setup_logging
 from app.api.rate_limit import limiter, rate_limit_exceeded
 from app.api.routers import (auth, availability, bookings, cancellations, changes, discounts, health, hotel,
-                             my_bookings, payments, requests)
+                             my_bookings, payments, requests, staff)
 from app.api.services.expiry import expiry_job
 
 setup_logging()
@@ -95,6 +95,7 @@ app.include_router(my_bookings.router)
 app.include_router(cancellations.router)
 app.include_router(changes.router)
 app.include_router(requests.router)
+app.include_router(staff.router)
 app.include_router(bookings.router)
 app.include_router(payments.router)
 mimetypes.add_type("image/webp", ".webp")
