@@ -32,6 +32,8 @@ class DeskResult(BaseModel):
     booking_status: str
     room_number: int
     balance_paid: float = 0
+    points_earned: int = 0          # Nile Pearl Rewards members earn points at check-out
+    new_tier: str | None = None     # set when the stay moved the member up a tier
 
 
 class Ticket(BaseModel):

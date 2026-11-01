@@ -32,6 +32,7 @@ SUBJECTS = {
     "changed": "Your booking {id} has been changed",
     "cancelled": "Your booking {id} has been cancelled",
     "expired": "Your booking {id} was cancelled: payment not received",
+    "no_show": "Your booking {id}: we missed you",
 }
 OPENINGS = {
     "confirmed": "Thank you, your payment was received and your booking is confirmed.",
@@ -39,6 +40,8 @@ OPENINGS = {
     "cancelled": "Your booking has been cancelled as you asked.",
     "expired": ("We did not receive the payment in time, so the booking was cancelled and the room released. "
                 "You are welcome to book again."),
+    "no_show": ("You did not arrive for this booking, so it was closed as a no-show and the room released. "
+                "As in our policy, the deposit is not refunded. We hope to welcome you another time."),
 }
 
 

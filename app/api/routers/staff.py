@@ -11,7 +11,7 @@ from app.api.schemas.auth import CurrentAccount
 from app.api.schemas.staff import (ApproveDiscount, CheckOutRequest, CloseTicket, DeskBooking, DeskResult,
                                    DiscountDecision, DiscountRequestOut, Ticket, TicketDecision)
 from app.api.security import get_current_admin, get_current_staff
-from app.api.services.email import send_discount_decision
+from app.api.services.email import notify, send_discount_decision
 
 router = APIRouter(tags=["Staff dashboard"])
 
@@ -39,7 +39,7 @@ IN_HOUSE_SQL = text(f"""
 """)
 DESK_STATE_SQL = text("""
     SELECT b.booking_id, b.booking_status, b.room_number, b.checked_in_at, b.check_in > hotel_today() AS arrives_later,
-           b.amount_due - (p.amount_paid - p.refund_amount) AS balance_due
+           b.customer_id, b.amount_due, b.amount_due - (p.amount_paid - p.refund_amount) AS balance_due
     FROM bookings b JOIN payments p USING (booking_id)
     WHERE b.booking_id = upper(:booking_id)
     FOR UPDATE OF b, p
@@ -56,6 +56,33 @@ BALANCE_SQL = text("""
 CHECK_OUT_SQL = text("""
     UPDATE bookings SET booking_status = 'Completed', checked_out_at = now() WHERE booking_id = :booking_id
 """)
+# Nile Pearl Rewards (loyalty_rules): 1 point per 10 EGP of the stay, plus the tier's bonus (Gold +50%...)
+EARN_POINTS_SQL = text("""
+    WITH member AS (
+        SELECT m.member_id, m.tier, t.points_bonus_pct, t.min_nights_per_year
+        FROM loyalty_members m JOIN loyalty_tiers t USING (tier)
+        WHERE m.customer_id = :customer_id AND m.status = 'Active'
+        FOR UPDATE OF m
+    ), earned AS (
+        SELECT member_id, tier, min_nights_per_year,
+               floor(floor(:amount / (SELECT value FROM loyalty_rules WHERE rule = 'earn_rate'))
+                     * (100 + points_bonus_pct) / 100)::int AS points
+        FROM member
+    )
+    UPDATE loyalty_members m SET points_balance = m.points_balance + e.points, total_stays = m.total_stays + 1
+    FROM earned e WHERE m.member_id = e.member_id
+    RETURNING e.points, e.tier, e.min_nights_per_year
+""")
+# the best tier the nights stayed this (hotel) year reach; members only ever move up
+BEST_TIER_SQL = text("""
+    SELECT tier, min_nights_per_year FROM loyalty_tiers
+    WHERE min_nights_per_year <= (SELECT coalesce(sum(nights), 0) FROM bookings
+                                  WHERE customer_id = :customer_id AND booking_status = 'Completed'
+                                    AND extract(year FROM check_out) = extract(year FROM hotel_today()))
+    ORDER BY min_nights_per_year DESC LIMIT 1
+""")
+NEW_TIER_SQL = text("UPDATE loyalty_members SET tier = :tier WHERE customer_id = :customer_id")
+NO_SHOW_SQL = text("UPDATE bookings SET booking_status = 'No-show' WHERE booking_id = :booking_id")
 
 
 async def desk_state(db: AsyncConnection, booking_id: str):
@@ -101,9 +128,38 @@ async def check_out(booking_id: str, body: CheckOutRequest, staff: CurrentAccoun
     await db.execute(BALANCE_SQL, {"booking_id": state["booking_id"], "payment_method": body.payment_method})
     await db.execute(CHECK_OUT_SQL, {"booking_id": state["booking_id"]})
     await db.execute(ROOM_STATUS_SQL, {"status": "Available", "room_number": state["room_number"]})
+    points, new_tier = await earn_points(db, state["customer_id"], state["amount_due"])
     await db.commit()
     return DeskResult(booking_id=state["booking_id"], booking_status="Completed", room_number=state["room_number"],
-                      balance_paid=float(state["balance_due"]))
+                      balance_paid=float(state["balance_due"]), points_earned=points, new_tier=new_tier)
+
+
+async def earn_points(db: AsyncConnection, customer_id: str, amount) -> tuple[int, str | None]:
+    """Points for a completed stay (members only), then a tier upgrade if the year's nights reach one."""
+    earned = (await db.execute(EARN_POINTS_SQL, {"customer_id": customer_id, "amount": amount})).mappings().first()
+    if earned is None:
+        return 0, None
+    best = (await db.execute(BEST_TIER_SQL, {"customer_id": customer_id})).mappings().first()
+    if best and best["min_nights_per_year"] > earned["min_nights_per_year"]:
+        await db.execute(NEW_TIER_SQL, {"tier": best["tier"], "customer_id": customer_id})
+        return earned["points"], best["tier"]
+    return earned["points"], None
+
+
+@router.post("/staff/bookings/{booking_id}/no-show", response_model=DeskResult)
+async def no_show(booking_id: str, background: BackgroundTasks, staff: CurrentAccount = Depends(get_current_staff),
+                  db: AsyncConnection = Depends(get_db)):
+    """The guest did not come (marked on the arrival day's night audit or later): the deposit is kept,
+    nothing more is charged, and the room is free again for the coming nights."""
+    state = await desk_state(db, booking_id)
+    if state["checked_in_at"]:
+        raise refuse(409, "ALREADY_CHECKED_IN")
+    if state["arrives_later"]:
+        raise refuse(409, "NOT_ARRIVAL_DAY_YET")
+    await db.execute(NO_SHOW_SQL, {"booking_id": state["booking_id"]})
+    await db.commit()
+    background.add_task(notify, state["booking_id"], "no_show")
+    return DeskResult(booking_id=state["booking_id"], booking_status="No-show", room_number=state["room_number"])
 
 
 # ---------- tickets (queries.sql 10b, 10d, 10e, 10f) ----------

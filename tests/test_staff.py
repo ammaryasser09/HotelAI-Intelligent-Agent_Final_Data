@@ -164,3 +164,62 @@ def test_the_admin_answers_discount_requests(client, token, staff_token, admin_t
     assert rejected.json()["decision"] == "Rejected" and outbox[-1]["subject"] == "About your discount request"
     assert client.post(f"/admin/discount-requests/{second}/approve", headers=bearer(admin_token),
                        json={"discount_type": "PERCENTAGE", "discount_value": 120}).status_code == 422
+
+
+@pytest.fixture
+def member_for_a_day():
+    """Makes a guest a Standard member of Nile Pearl Rewards for the test, then removes the membership."""
+    made = []
+
+    def join(customer_id):
+        engine = database()
+        with engine.begin() as connection:
+            connection.execute(text("""INSERT INTO loyalty_members (customer_id, tier, join_date, points_balance, total_stays, status)
+                                       VALUES (:c, 'Standard', hotel_today(), 0, 0, 'Active')"""), {"c": customer_id})
+        engine.dispose()
+        made.append(customer_id)
+
+    yield join
+    engine = database()
+    with engine.begin() as connection:
+        connection.execute(text("DELETE FROM loyalty_members WHERE customer_id = ANY(:c)"), {"c": made})
+    engine.dispose()
+
+
+def test_members_earn_points_at_check_out(client, staff_token, stay_put_back, member_for_a_day):
+    guest = client.get("/staff/arrivals", headers=bearer(staff_token)).json()[0]
+    stay_put_back(guest["booking_id"])
+    engine = database()
+    with engine.connect() as connection:
+        customer_id = connection.execute(text("SELECT customer_id FROM bookings WHERE booking_id = :b"),
+                                         {"b": guest["booking_id"]}).scalar_one()
+    engine.dispose()
+    member_for_a_day(customer_id)
+
+    client.post(f"/staff/bookings/{guest['booking_id']}/check-in", headers=bearer(staff_token))
+    out = client.post(f"/staff/bookings/{guest['booking_id']}/check-out", headers=bearer(staff_token), json={}).json()
+    assert out["points_earned"] == int(guest["amount_due"] // 10)          # Standard: 1 point per 10 EGP, no bonus
+
+    engine = database()
+    with engine.connect() as connection:
+        member = connection.execute(text("SELECT tier, points_balance, total_stays FROM loyalty_members WHERE customer_id = :c"),
+                                    {"c": customer_id}).mappings().one()
+    engine.dispose()
+    assert (member["points_balance"], member["total_stays"]) == (out["points_earned"], 1)
+    assert member["tier"] == (out["new_tier"] or "Standard")
+
+
+def test_no_show_keeps_the_deposit_and_frees_the_room(client, token, made, staff_token, stay_put_back, outbox):
+    guest = client.get("/staff/arrivals", headers=bearer(staff_token)).json()[0]
+    stay_put_back(guest["booking_id"])
+    marked = client.post(f"/staff/bookings/{guest['booking_id']}/no-show", headers=bearer(staff_token))
+    assert marked.status_code == 200, marked.text
+    assert marked.json()["booking_status"] == "No-show"
+    assert outbox[-1]["subject"] == f"Your booking {guest['booking_id']}: we missed you"
+    late = client.post(f"/staff/bookings/{guest['booking_id']}/check-in", headers=bearer(staff_token))
+    assert late.json()["detail"]["reason"] == "NOT_CONFIRMED"
+
+    future = book(client, token, made).json()["booking_id"]
+    client.post(f"/payments/mock/{future}/pay")
+    early = client.post(f"/staff/bookings/{future}/no-show", headers=bearer(staff_token))
+    assert early.status_code == 409 and early.json()["detail"]["reason"] == "NOT_ARRIVAL_DAY_YET"
