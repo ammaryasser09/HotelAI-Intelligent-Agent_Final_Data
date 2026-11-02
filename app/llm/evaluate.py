@@ -12,7 +12,7 @@ from app.llm.tools import DECLARATIONS, FUNCTIONS
 from app.rag.tools import _account
 
 QUESTIONS = "evaluation/realistic_test_egyptian.csv"
-WAIT_AFTER_TURN = 5
+WAIT_AFTER_TURN = 8
 MAX_SECONDS = 45
 
 client = genai.Client(api_key=GEMINI_API_KEY)
@@ -52,8 +52,8 @@ def facts_score(expected, answer):
     return f"{len(found)}/{len(wanted)}"
 
 
-def tool_check(expected, called):
-    if not expected:
+def tool_check(expected, called, route):
+    if not expected or route.startswith("CLARIFY"):
         return "-"
     if expected not in FUNCTIONS:
         return "tool not built"
@@ -113,11 +113,12 @@ async def ask(row):
     return {
         "test_id": row["test_id"],
         "category": row["category"],
+        "route": row["route"],
         "question": row["question"],
         "answer": answer,
         "tools_called": " | ".join(state["tools"]),
         "expected_tool": row["expected_tool"],
-        "tool_ok": tool_check(row["expected_tool"], state["names"]),
+        "tool_ok": tool_check(row["expected_tool"], state["names"], row["route"]),
         "expected_facts": row["expected_facts"],
         "facts_numbers": facts_score(row["expected_facts"], answer),
         "first_words_s": "" if state["first"] is None else f"{state['first']:.1f}",
@@ -147,7 +148,7 @@ async def main():
               f"   facts: {r.get('facts_numbers', '-')}   first words: {r.get('first_words_s', '-')}s")
         results.append(r)
         await asyncio.sleep(2)
-    fields = ["test_id", "category", "question", "answer", "tools_called", "expected_tool",
+    fields = ["test_id", "category", "route", "question", "answer", "tools_called", "expected_tool",
               "tool_ok", "expected_facts", "facts_numbers", "first_words_s",
               "correct", "invented", "notes"]
     with open(out, "w", encoding="utf-8-sig", newline="") as f:
@@ -165,4 +166,3 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
-    
