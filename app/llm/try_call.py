@@ -1,12 +1,19 @@
 import asyncio
 import inspect
+import sys
+import threading
 import time
 from google import genai
 from google.genai import types
-from app.llm.config import GEMINI_API_KEY, MODEL, THINKING_LEVEL, ACCOUNT_ID
+from app.llm.config import GEMINI_API_KEY, MODEL, THINKING_LEVEL, ACCOUNT_ID, VOICE
 from app.llm.prompts import LIVE_PROMPT
 from app.llm.tools import DECLARATIONS, FUNCTIONS
 from app.rag.tools import _account
+
+VOICE_MODE = len(sys.argv) > 1 and sys.argv[1] == "voice"
+MIC_RATE = 16000
+SPEAKER_RATE = 24000
+CHUNK = 1600
 
 client = genai.Client(api_key=GEMINI_API_KEY)
 
@@ -22,13 +29,18 @@ def session_note():
 CONFIG = {
     "response_modalities": ["AUDIO"],
     "output_audio_transcription": {},
+    "speech_config": {"voice_config": {"prebuilt_voice_config": {"voice_name": VOICE}}},
     "system_instruction": LIVE_PROMPT + "\n\n" + session_note(),
     "tools": [{"function_declarations": DECLARATIONS}],
 }
+if VOICE_MODE:
+    CONFIG["input_audio_transcription"] = {}
 if "extended-thinking" in MODEL:
     CONFIG["thinking_config"] = {"thinking_level": THINKING_LEVEL}
 
-STATE = {"sent": time.time(), "speaking": False}
+STATE = {"sent": time.time(), "speaking": False, "hearing": False}
+PLAYBACK = bytearray()
+LOCK = threading.Lock()
 
 
 def since():
@@ -38,9 +50,17 @@ def since():
 def describe(msg):
     d = msg.model_dump(exclude_none=True)
     sc = d.get("server_content", {})
-    extra = [k for k in d if k != "server_content"]
-    extra += [k for k in sc if k not in ("model_turn", "output_transcription")]
+    extra = [k for k in d if k not in ("server_content", "data", "usage_metadata")]
+    extra += [k for k in sc if k not in ("model_turn", "output_transcription", "input_transcription")]
     return f"{extra} status={sc.get('interaction_status')}" if extra else None
+
+
+def play(outdata, frames, time_info, status):
+    need = frames * 2
+    with LOCK:
+        chunk = bytes(PLAYBACK[:need])
+        del PLAYBACK[:need]
+    outdata[:] = chunk + b"\x00" * (need - len(chunk))
 
 
 async def run_tool(session, call):
@@ -66,15 +86,31 @@ async def listen(session):
             info = describe(response)
             if info:
                 print(f"\n[debug {since()}] {info}")
+            if VOICE_MODE and response.data:
+                with LOCK:
+                    PLAYBACK.extend(response.data)
             content = response.server_content
+            if content and content.interrupted:
+                with LOCK:
+                    PLAYBACK.clear()
+                print("\n[interrupted]", flush=True)
+                STATE["speaking"] = False
+            if content and content.input_transcription and content.input_transcription.text:
+                if not STATE["hearing"]:
+                    STATE["sent"] = time.time()
+                    print("\nYou: ", end="")
+                    STATE["hearing"] = True
+                print(content.input_transcription.text, end="", flush=True)
             if content and content.output_transcription and content.output_transcription.text:
                 if not STATE["speaking"]:
                     print("\nNour: ", end="")
                     STATE["speaking"] = True
+                    STATE["hearing"] = False
                 print(content.output_transcription.text, end="", flush=True)
             if content and content.turn_complete:
                 STATE["speaking"] = False
-                print("\nYou: ", end="", flush=True)
+                STATE["hearing"] = False
+                print("\n" if VOICE_MODE else "\nYou: ", end="", flush=True)
             if response.tool_call:
                 for call in response.tool_call.function_calls:
                     await run_tool(session, call)
@@ -89,14 +125,36 @@ async def talk(session):
         await session.send_realtime_input(text=text)
 
 
+async def speak(session):
+    import sounddevice as sd
+    loop = asyncio.get_running_loop()
+    mic = asyncio.Queue()
+
+    def record(indata, frames, time_info, status):
+        loop.call_soon_threadsafe(mic.put_nowait, bytes(indata))
+
+    with sd.RawInputStream(samplerate=MIC_RATE, channels=1, dtype="int16", blocksize=CHUNK, callback=record), \
+            sd.RawOutputStream(samplerate=SPEAKER_RATE, channels=1, dtype="int16", callback=play):
+        print("Speak now (Ctrl+C to hang up)")
+        while True:
+            data = await mic.get()
+            await session.send_realtime_input(audio=types.Blob(data=data, mime_type=f"audio/pcm;rate={MIC_RATE}"))
+
+
 async def main():
-    print(f"Model: {MODEL}")
+    print(f"Model: {MODEL}  voice: {VOICE}  mode: {'voice' if VOICE_MODE else 'text'}")
     async with client.aio.live.connect(model=MODEL, config=CONFIG) as session:
-        print("Nour is on the line (type exit to hang up)\nYou: ", end="", flush=True)
         listener = asyncio.create_task(listen(session))
-        await talk(session)
+        if VOICE_MODE:
+            await speak(session)
+        else:
+            print("Nour is on the line (type exit to hang up)\nYou: ", end="", flush=True)
+            await talk(session)
         listener.cancel()
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("\nCall ended")
