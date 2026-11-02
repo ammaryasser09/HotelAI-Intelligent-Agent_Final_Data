@@ -11,9 +11,12 @@ from app.llm.prompts import LIVE_PROMPT
 from app.llm.tools import DECLARATIONS, FUNCTIONS
 from app.rag.tools import _account
 
-QUESTIONS = "evaluation/realistic_test_egyptian.csv"
+QUESTIONS = sys.argv[4] if len(sys.argv) > 4 else "evaluation/realistic_test_egyptian.csv"
+MODEL_NAME = sys.argv[3] if len(sys.argv) > 3 and sys.argv[3] != "-" else MODEL
 WAIT_AFTER_TURN = 8
 MAX_SECONDS = 45
+ARABIC_DIGITS = str.maketrans("\u0660\u0661\u0662\u0663\u0664\u0665\u0666\u0667\u0668\u0669", "0123456789")
+SCRIPT_OF = {"eg": "arabic", "msa": "arabic", "en": "latin", "fr": "latin", "ru": "cyrillic"}
 
 client = genai.Client(api_key=GEMINI_API_KEY)
 
@@ -33,14 +36,14 @@ def make_config(account_id):
         "system_instruction": LIVE_PROMPT + "\n\n" + session_note(account_id),
         "tools": [{"function_declarations": DECLARATIONS}],
     }
-    if "extended-thinking" in MODEL:
+    if "extended-thinking" in MODEL_NAME:
         config["thinking_config"] = {"thinking_level": THINKING_LEVEL}
     return config
 
 
 def numbers(text):
-    text = text.translate(str.maketrans("٠١٢٣٤٥٦٧٨٩", "0123456789"))
-    text = re.sub(r"(?<=\d)[,٬](?=\d{3})", "", text)
+    text = text.translate(ARABIC_DIGITS)
+    text = re.sub(r"(?<=\d)[,\u066c](?=\d{3})", "", text)
     return set(re.findall(r"\d+(?:\.\d+)?", text))
 
 
@@ -58,6 +61,21 @@ def tool_check(expected, called, route):
     if expected not in FUNCTIONS:
         return "tool not built"
     return "yes" if expected in called else "no"
+
+
+def script(text):
+    counts = {
+        "arabic": len(re.findall(r"[\u0600-\u06ff]", text)),
+        "cyrillic": len(re.findall(r"[\u0400-\u04ff]", text)),
+        "latin": len(re.findall(r"[A-Za-z\u00c0-\u017f]", text)),
+    }
+    return max(counts, key=counts.get) if any(counts.values()) else ""
+
+
+def lang_check(lang, answer):
+    if lang not in SCRIPT_OF:
+        return "-"
+    return "yes" if script(answer) == SCRIPT_OF[lang] else "no"
 
 
 async def run_tool(session, call, account_id, state):
@@ -94,10 +112,10 @@ async def listen(session, account_id, state):
 
 
 async def ask(row):
-    account_id = row["account_id"].strip()
+    account_id = row.get("account_id", "").strip()
     state = {"text": [], "tools": [], "names": [], "turns": 0,
              "first": None, "sent": time.time(), "last": time.time()}
-    async with client.aio.live.connect(model=MODEL, config=make_config(account_id)) as session:
+    async with client.aio.live.connect(model=MODEL_NAME, config=make_config(account_id)) as session:
         listener = asyncio.create_task(listen(session, account_id, state))
         state["sent"] = time.time()
         await session.send_realtime_input(text=row["question"])
@@ -114,11 +132,13 @@ async def ask(row):
         "test_id": row["test_id"],
         "category": row["category"],
         "route": row["route"],
+        "lang": row.get("lang", ""),
         "question": row["question"],
         "answer": answer,
         "tools_called": " | ".join(state["tools"]),
         "expected_tool": row["expected_tool"],
         "tool_ok": tool_check(row["expected_tool"], state["names"], row["route"]),
+        "lang_ok": lang_check(row.get("lang", ""), answer),
         "expected_facts": row["expected_facts"],
         "facts_numbers": facts_score(row["expected_facts"], answer),
         "first_words_s": "" if state["first"] is None else f"{state['first']:.1f}",
@@ -131,10 +151,12 @@ async def ask(row):
 async def main():
     start = int(sys.argv[1]) if len(sys.argv) > 1 else 0
     count = int(sys.argv[2]) if len(sys.argv) > 2 else 5
-    with open(QUESTIONS, encoding="utf-8") as f:
+    with open(QUESTIONS, encoding="utf-8-sig") as f:
         rows = list(csv.DictReader(f))[start:start + count]
-    out = f"evaluation/results_{MODEL}_{start + 1}-{start + len(rows)}.csv"
-    print(f"Model: {MODEL}  questions {start + 1} to {start + len(rows)}  ->  {out}")
+    stamp = time.strftime("%m%d-%H%M")
+    tag = "languages_" if "languages" in QUESTIONS else ""
+    out = f"evaluation/results_{tag}{MODEL_NAME}_{start + 1}-{start + len(rows)}_{stamp}.csv"
+    print(f"Model: {MODEL_NAME}  questions {start + 1} to {start + len(rows)}  ->  {out}")
     results = []
     for i, row in enumerate(rows, 1):
         print(f"\n[{i}/{len(rows)}] {row['test_id']} {row['question']}")
@@ -145,23 +167,28 @@ async def main():
                  "question": row["question"], "answer": f"ERROR {e}"}
         print(f"  Nour: {r.get('answer')}")
         print(f"  tools: {r.get('tools_called') or '-'}   tool_ok: {r.get('tool_ok', '-')}"
-              f"   facts: {r.get('facts_numbers', '-')}   first words: {r.get('first_words_s', '-')}s")
+              f"   lang_ok: {r.get('lang_ok', '-')}   facts: {r.get('facts_numbers', '-')}"
+              f"   first words: {r.get('first_words_s', '-')}s")
         results.append(r)
         await asyncio.sleep(2)
-    fields = ["test_id", "category", "route", "question", "answer", "tools_called", "expected_tool",
-              "tool_ok", "expected_facts", "facts_numbers", "first_words_s",
-              "correct", "invented", "notes"]
+    fields = ["test_id", "category", "route", "lang", "question", "answer", "tools_called",
+              "expected_tool", "tool_ok", "lang_ok", "expected_facts", "facts_numbers",
+              "first_words_s", "correct", "invented", "notes"]
     with open(out, "w", encoding="utf-8-sig", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=fields)
         writer.writeheader()
         writer.writerows(results)
     tools = [r for r in results if r.get("tool_ok") in ("yes", "no")]
-    ok = sum(r["tool_ok"] == "yes" for r in tools)
+    langs = [r for r in results if r.get("lang_ok") in ("yes", "no")]
     times = [float(r["first_words_s"]) for r in results if r.get("first_words_s")]
+    errors = sum(1 for r in results if r.get("answer", "").startswith("ERROR"))
     print(f"\nSaved {out}")
-    print(f"Right tool: {ok}/{len(tools)}")
+    print(f"Right tool: {sum(r['tool_ok'] == 'yes' for r in tools)}/{len(tools)}")
+    if langs:
+        print(f"Right language: {sum(r['lang_ok'] == 'yes' for r in langs)}/{len(langs)}")
     if times:
         print(f"Average time to first words: {sum(times) / len(times):.1f}s")
+    print(f"Errors: {errors}")
 
 
 if __name__ == "__main__":
