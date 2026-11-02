@@ -4,6 +4,7 @@ __pycache__/
 venv/
 .env
 .env.*
+!.env.example
 app/rag/index/
 prototype_results.csv
 prototype_languages.csv
