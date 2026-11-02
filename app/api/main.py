@@ -7,6 +7,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.openapi.utils import get_openapi
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from slowapi.errors import RateLimitExceeded
@@ -107,3 +108,19 @@ app.mount("/static", StaticFiles(directory=PROJECT_ROOT / "static"), name="stati
 @app.get("/", tags=["Health"])
 def root():
     return {"message": "Nile Pearl Hotel API is running"}
+
+
+def openapi_schema():
+    """The description /docs is drawn from. With DOCS_ONLY set, only those paths are listed;
+    every endpoint still works, it is only left off the page (e.g. to show a few in a presentation)."""
+    if app.openapi_schema:
+        return app.openapi_schema
+    schema = get_openapi(title=app.title, version=app.version, routes=app.routes)
+    shown = {path.strip() for path in settings.docs_only.split(",") if path.strip()}
+    if shown:
+        schema["paths"] = {path: operations for path, operations in schema["paths"].items() if path in shown}
+    app.openapi_schema = schema
+    return schema
+
+
+app.openapi = openapi_schema
