@@ -1,0 +1,4 @@
+﻿test_id,category,route,lang,question,answer,tools_called,expected_tool,tool_ok,lang_ok,expected_facts,facts_numbers,first_words_s,correct,invented,notes
+RT083,specific_booking,CLARIFY,,حجزي رقم B000007 اتأكد ولا لأ؟,للأسف يا فندم الحجز ده مش ظاهر في حسابي. ممكن حضرتك تديني البيانات عشان أربطه بحسابك؟,my_bookings {},link_booking,-,-,say the booking is not in the account and ask for the last name on it or the last 4 digits of its phone number to add it,0/1,1.9,,,
+RT084,specific_booking,DATABASE,,حجزي B000007، عايز أتأكد من المواعيد,"أهلاً يا أستاذ نور، حجز حضرتك رقم B000007 مؤكد من 26 فبراير لحد 3 مارس 2027. صح كده يا فندم؟
+أي خدمة تانية أقدر أساعد حضرتك فيها؟",find_booking {'booking_ref': 'B000007'},find_booking,yes,-,"status=Confirmed; 2027-02-26..2027-03-03; Deluxe; rate_plan=Flexible; total=67,523.20; payment=Paid; paid=13,504.64; refunded=0.00",2/7,1.8,,,
