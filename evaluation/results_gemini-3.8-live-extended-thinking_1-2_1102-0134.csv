@@ -1,0 +1,3 @@
+﻿test_id,category,route,lang,question,answer,tools_called,expected_tool,tool_ok,lang_ok,expected_facts,facts_numbers,first_words_s,trace,correct,invented,notes
+RT001,information,RAG,,الفندق فين بالظبط؟,هشوفلك عنوان الفندق بالظبط.أنا آسفة جداً، حصل عطل في النظام وماقدرتش أطلع العنوان حالياً.,,,-,-,"14 Corniche El Nil Street, Garden City, Cairo",0/1,1.1,msg session_resumption_update > turn 3.0s IN_PROGRESS > turn 9.0s IDLE,,,
+RT002,information,RAG,,انتوا بعيد عن المطار قد ايه؟,ثانية واحدة أشوفلك المسافة من الفندق للمطار.,,,-,-,about 25 km; 35-60 minutes by car,0/3,1.2,msg session_resumption_update > turn 4.3s IN_PROGRESS,,,

@@ -15,7 +15,7 @@ QUESTIONS = sys.argv[4] if len(sys.argv) > 4 else "evaluation/realistic_test_egy
 MODEL_NAME = sys.argv[3] if len(sys.argv) > 3 and sys.argv[3] != "-" else MODEL
 WAIT_AFTER_TURN = 8
 MAX_SECONDS = 90
-QUIET_LIMIT = 30
+QUIET_LIMIT = 60
 DONE = ("NONE", "IDLE", "INTERACTION_STATUS_UNSPECIFIED")
 ARABIC_DIGITS = str.maketrans("\u0660\u0661\u0662\u0663\u0664\u0665\u0666\u0667\u0668\u0669", "0123456789")
 SCRIPT_OF = {"eg": "arabic", "msa": "arabic", "en": "latin", "fr": "latin", "ru": "cyrillic"}
@@ -102,6 +102,12 @@ async def listen(session, account_id, state):
         async for response in session.receive():
             state["last"] = time.time()
             content = response.server_content
+            other = [k for k in response.model_dump(exclude_none=True) if k not in ("server_content", "tool_call", "usage_metadata")]
+            parts = content.model_turn.parts if content and content.model_turn and content.model_turn.parts else []
+            kinds = sorted({k for part in parts for k in part.model_dump(exclude_none=True) if k != "inline_data"})
+            note = " ".join(["msg " + ",".join(other)] * bool(other) + ["part " + ",".join(kinds)] * bool(kinds))
+            if note and (not state["trace"] or state["trace"][-1] != note):
+                state["trace"].append(note)
             if content and content.output_transcription and content.output_transcription.text:
                 if state["first"] is None:
                     state["first"] = time.time() - state["sent"]
