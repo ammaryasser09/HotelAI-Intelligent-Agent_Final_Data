@@ -11,6 +11,8 @@ from app.llm.tools import DECLARATIONS, FUNCTIONS
 from app.rag.tools import _account
 
 VOICE_MODE = len(sys.argv) > 1 and sys.argv[1] == "voice"
+MUTE_WHILE_SPEAKING = "speaker" in sys.argv[2:]
+QUIET = ("session_resumption_update", "voice_activity", "generation_complete", "interrupted", "turn_complete", "tool_call")
 MIC_RATE = 16000
 SPEAKER_RATE = 24000
 CHUNK = 1600
@@ -35,10 +37,13 @@ CONFIG = {
 }
 if VOICE_MODE:
     CONFIG["input_audio_transcription"] = {}
+    CONFIG["realtime_input_config"] = {
+        "automatic_activity_detection": {"start_of_speech_sensitivity": types.StartSensitivity.START_SENSITIVITY_LOW}
+    }
 if "extended-thinking" in MODEL:
     CONFIG["thinking_config"] = {"thinking_level": THINKING_LEVEL}
 
-STATE = {"sent": time.time(), "speaking": False, "hearing": False}
+STATE = {"sent": time.time(), "speaking": False, "hearing": False, "played": 0.0}
 PLAYBACK = bytearray()
 LOCK = threading.Lock()
 
@@ -50,8 +55,8 @@ def since():
 def describe(msg):
     d = msg.model_dump(exclude_none=True)
     sc = d.get("server_content", {})
-    extra = [k for k in d if k not in ("server_content", "data", "usage_metadata")]
-    extra += [k for k in sc if k not in ("model_turn", "output_transcription", "input_transcription")]
+    extra = [k for k in d if k not in ("server_content", "data", "usage_metadata") + QUIET]
+    extra += [k for k in sc if k not in ("model_turn", "output_transcription", "input_transcription") + QUIET]
     return f"{extra} status={sc.get('interaction_status')}" if extra else None
 
 
@@ -60,6 +65,8 @@ def play(outdata, frames, time_info, status):
     with LOCK:
         chunk = bytes(PLAYBACK[:need])
         del PLAYBACK[:need]
+    if chunk:
+        STATE["played"] = time.time()
     outdata[:] = chunk + b"\x00" * (need - len(chunk))
 
 
@@ -81,6 +88,13 @@ async def run_tool(session, call):
 
 
 async def listen(session):
+    try:
+        await hear(session)
+    except Exception as e:
+        print(f"\n[call closed] {e}")
+
+
+async def hear(session):
     while True:
         async for response in session.receive():
             info = describe(response)
@@ -135,9 +149,11 @@ async def speak(session):
 
     with sd.RawInputStream(samplerate=MIC_RATE, channels=1, dtype="int16", blocksize=CHUNK, callback=record), \
             sd.RawOutputStream(samplerate=SPEAKER_RATE, channels=1, dtype="int16", callback=play):
-        print("Speak now (Ctrl+C to hang up)")
+        print("Speak now (Ctrl+C to hang up)" + ("  mic is muted while Nour speaks" if MUTE_WHILE_SPEAKING else ""))
         while True:
             data = await mic.get()
+            if MUTE_WHILE_SPEAKING and time.time() - STATE["played"] < 0.5:
+                data = b"\x00" * len(data)
             await session.send_realtime_input(audio=types.Blob(data=data, mime_type=f"audio/pcm;rate={MIC_RATE}"))
 
 
