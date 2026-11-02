@@ -8,8 +8,7 @@ from google import genai
 from google.genai import types
 from app.llm.config import GEMINI_API_KEY, MODEL, THINKING_LEVEL
 from app.llm.prompts import LIVE_PROMPT
-from app.llm.tools import DECLARATIONS as BASE_DECLARATIONS, FUNCTIONS as BASE_FUNCTIONS
-from app.llm.booking_tools import BOOKING_DECLARATIONS, BOOKING_FUNCTIONS
+from app.llm.tools import DECLARATIONS, FUNCTIONS
 from app.rag.tools import _account
 
 QUESTIONS = sys.argv[4] if len(sys.argv) > 4 else "evaluation/realistic_test_egyptian.csv"
@@ -18,9 +17,6 @@ WAIT_AFTER_TURN = 8
 MAX_SECONDS = 45
 ARABIC_DIGITS = str.maketrans("\u0660\u0661\u0662\u0663\u0664\u0665\u0666\u0667\u0668\u0669", "0123456789")
 SCRIPT_OF = {"eg": "arabic", "msa": "arabic", "en": "latin", "fr": "latin", "ru": "cyrillic"}
-
-DECLARATIONS = BASE_DECLARATIONS + BOOKING_DECLARATIONS
-FUNCTIONS = {**BASE_FUNCTIONS, **BOOKING_FUNCTIONS}
 
 client = genai.Client(api_key=GEMINI_API_KEY)
 
