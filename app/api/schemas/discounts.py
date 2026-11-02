@@ -1,6 +1,6 @@
 from datetime import date
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class DiscountCodeCheck(BaseModel):
@@ -13,3 +13,4 @@ class DiscountCodeCheck(BaseModel):
     valid_from: date | None = None
     valid_to: date | None = None
     uses_left: int | None = None
+    code_id: str | None = Field(default=None, exclude=True)  # used inside the API, never sent

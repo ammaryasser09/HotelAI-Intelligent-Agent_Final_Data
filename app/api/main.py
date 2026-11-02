@@ -1,7 +1,8 @@
+import asyncio
 import logging
 import mimetypes
 import time
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 from pathlib import Path
 
 from fastapi import FastAPI, Request
@@ -15,7 +16,9 @@ from app.api.config import settings
 from app.api.db import engine
 from app.api.logging_config import setup_logging
 from app.api.rate_limit import limiter, rate_limit_exceeded
-from app.api.routers import auth, availability, discounts, health, hotel, my_bookings
+from app.api.routers import (admin, auth, availability, bookings, calls, cancellations, changes, discounts, health,
+                             hotel, my_bookings, payments, requests, staff)
+from app.api.services.expiry import expiry_job
 
 setup_logging()
 logger = logging.getLogger("hotel_api")
@@ -25,7 +28,12 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    job = asyncio.create_task(expiry_job()) if settings.expiry_check_seconds > 0 else None
     yield
+    if job:
+        job.cancel()
+        with suppress(asyncio.CancelledError):
+            await job
     await engine.dispose()
 
 
@@ -84,6 +92,14 @@ app.include_router(hotel.router)
 app.include_router(discounts.router)
 app.include_router(auth.router)
 app.include_router(my_bookings.router)
+app.include_router(cancellations.router)
+app.include_router(changes.router)
+app.include_router(requests.router)
+app.include_router(staff.router)
+app.include_router(admin.router)
+app.include_router(calls.router)
+app.include_router(bookings.router)
+app.include_router(payments.router)
 mimetypes.add_type("image/webp", ".webp")
 app.mount("/static", StaticFiles(directory=PROJECT_ROOT / "static"), name="static")
 
