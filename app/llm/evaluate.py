@@ -14,7 +14,9 @@ from app.rag.tools import _account
 QUESTIONS = sys.argv[4] if len(sys.argv) > 4 else "evaluation/realistic_test_egyptian.csv"
 MODEL_NAME = sys.argv[3] if len(sys.argv) > 3 and sys.argv[3] != "-" else MODEL
 WAIT_AFTER_TURN = 8
-MAX_SECONDS = 45
+MAX_SECONDS = 90
+QUIET_LIMIT = 30
+DONE = ("NONE", "IDLE", "INTERACTION_STATUS_UNSPECIFIED")
 ARABIC_DIGITS = str.maketrans("\u0660\u0661\u0662\u0663\u0664\u0665\u0666\u0667\u0668\u0669", "0123456789")
 SCRIPT_OF = {"eg": "arabic", "msa": "arabic", "en": "latin", "fr": "latin", "ru": "cyrillic"}
 
@@ -106,14 +108,20 @@ async def listen(session, account_id, state):
                 state["text"].append(content.output_transcription.text)
             if content and content.turn_complete:
                 state["turns"] += 1
+                status = content.interaction_status
+                state["status"] = status.value if status else "NONE"
+                state["trace"].append(f"turn {time.time() - state['sent']:.1f}s {state['status']}")
+            if response.tool_call_cancellation:
+                state["trace"].append("cancel")
             if response.tool_call:
                 for call in response.tool_call.function_calls:
+                    state["trace"].append(f"tool {time.time() - state['sent']:.1f}s {call.name}")
                     await run_tool(session, call, account_id, state)
 
 
 async def ask(row):
     account_id = row.get("account_id", "").strip()
-    state = {"text": [], "tools": [], "names": [], "turns": 0,
+    state = {"text": [], "tools": [], "names": [], "turns": 0, "status": "NONE", "trace": [],
              "first": None, "sent": time.time(), "last": time.time()}
     async with client.aio.live.connect(model=MODEL_NAME, config=make_config(account_id)) as session:
         listener = asyncio.create_task(listen(session, account_id, state))
@@ -122,7 +130,9 @@ async def ask(row):
         while True:
             await asyncio.sleep(0.5)
             now = time.time()
-            if state["turns"] and state["text"] and now - state["last"] > WAIT_AFTER_TURN:
+            if state["turns"] and state["text"] and state["status"] in DONE and now - state["last"] > WAIT_AFTER_TURN:
+                break
+            if now - state["last"] > QUIET_LIMIT:
                 break
             if now - state["sent"] > MAX_SECONDS:
                 break
@@ -142,6 +152,7 @@ async def ask(row):
         "expected_facts": row["expected_facts"],
         "facts_numbers": facts_score(row["expected_facts"], answer),
         "first_words_s": "" if state["first"] is None else f"{state['first']:.1f}",
+        "trace": " > ".join(state["trace"]),
         "correct": "",
         "invented": "",
         "notes": "",
@@ -169,11 +180,12 @@ async def main():
         print(f"  tools: {r.get('tools_called') or '-'}   tool_ok: {r.get('tool_ok', '-')}"
               f"   lang_ok: {r.get('lang_ok', '-')}   facts: {r.get('facts_numbers', '-')}"
               f"   first words: {r.get('first_words_s', '-')}s")
+        print(f"  trace: {r.get('trace', '-')}")
         results.append(r)
         await asyncio.sleep(2)
     fields = ["test_id", "category", "route", "lang", "question", "answer", "tools_called",
               "expected_tool", "tool_ok", "lang_ok", "expected_facts", "facts_numbers",
-              "first_words_s", "correct", "invented", "notes"]
+              "first_words_s", "trace", "correct", "invented", "notes"]
     with open(out, "w", encoding="utf-8-sig", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=fields)
         writer.writeheader()
