@@ -5,7 +5,7 @@ from app.api.schemas.discounts import DiscountCodeCheck
 
 # queries.sql 6
 DISCOUNT_CODE_SQL = text("""
-    SELECT discount_code, discount_type, discount_value, status, start_date, end_date, customer_id,
+    SELECT code_id, discount_code, discount_type, discount_value, status, start_date, end_date, customer_id,
            CASE WHEN max_usage IS NULL THEN NULL ELSE max_usage - usage_count END AS uses_left,
            hotel_today() AS today
     FROM discount_codes
@@ -37,4 +37,5 @@ async def check_code(db: AsyncConnection, code: str, customer_id: str | None = N
         valid_from=row["start_date"],
         valid_to=row["end_date"],
         uses_left=row["uses_left"],
+        code_id=row["code_id"],
     )

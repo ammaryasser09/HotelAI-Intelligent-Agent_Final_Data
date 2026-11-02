@@ -63,7 +63,7 @@ question → BGE-M3 vector → outside the hotel? → yes: []
                                               → no: top 20 closest chunks → remove duplicates → top 5
 ```
 
-1. **Index** (`chunking.py`): 44 knowledge-base files split by numbered sections (230 chunks) + 2,625 training FAQ answers = **2,855 chunks**, each turned into a 1024-number vector by BGE-M3 and saved in `index/`.
+1. **Index** (`chunking.py`): 44 knowledge-base files split by numbered sections (230 chunks) + 2,631 training FAQ answers = **2,861 chunks**, each turned into a 1024-number vector by BGE-M3 and saved in `index/`.
 2. **Out-of-scope check** (`search.py`): the question is compared with example off-topic questions (anchors). If it is closer to them than to any hotel chunk by more than `OOS_MARGIN` (0.07), we return `[]`.
 3. **Retrieval** (`search.py`): cosine similarity between the question vector and all chunk vectors.
 4. **Dedup**: chunks with the same `fact_id` or the same answer text are kept once.
@@ -112,7 +112,7 @@ Measured on `evaluation/realistic_test_egyptian.csv` (105 real questions with a 
 | correct file in top 5 (Recall@5) | **90%** |
 | correct file in top 20 (Recall@20) | **98%** |
 | average / slowest time (RTX 3060 laptop) | **0.016s** / 0.022s |
-| average / slowest time (MacBook Air, 8GB) | **0.032s** / 0.114s |
+| average / slowest time (MacBook Air, 8GB) | **0.024s** / 0.09s |
 | off-topic questions blocked | **27 / 27** |
 
 ## Results by language
@@ -150,4 +150,19 @@ Kept 0.07. The anchors catch about 2/3 of new off-topic questions, so `[]` is a 
 | Hybrid BM25 + BGE-M3 (7 weight settings) | every BM25 weight lowered accuracy (weight 1.0 → 79%) | `BM25_WEIGHT = 0.0` |
 | Cosine threshold for off-topic | could not separate in-scope and off-topic questions | replaced with anchors |
 | Reranker `bge-reranker-v2-m3` | 88% → 92% (+4), 5x slower, weak on Egyptian Arabic | not used (rule: +5 and < 0.5s) |
-| `OOS_MARGIN` 0.05 / 0.06 / 0.07 / 0.08 | in-scope questions blocked up to 0.057,
+| `OOS_MARGIN` 0.05 / 0.06 / 0.07 / 0.08 | in-scope questions blocked up to 0.057, off-topic starts at 0.083 | `0.07` (middle of the gap) |
+| 7 Egyptian FAQ rewordings (جولد، بوينتس، شيشة) with the same existing answers | 89% → 90%, Recall@20 97% → 98%, still 27/27 blocked | kept |
+| Warm-up with 1 short sentence vs sentences of 1–64 words | Mac slowest question 0.804s → 0.114s | warm-up 1–64 words |
+| Old answers asking for booking reference + last name to cancel or change a booking (19 answers in 5 languages + `cancellation_process.txt`) | replaced with "log in and choose the booking from your account"; Recall unchanged (90%) | fixed (linking an outside booking still uses reference + last name) |
+| English/French queries about the distance to the pyramids were blocked (the anchor "Which pyramids should I visit and how much are the tickets?" won) | added 6 rewordings (3 English, 2 French, 1 Russian) with the existing "What is near the hotel?" answers; the LLM team's query now passes, all other numbers unchanged | fixed |
+
+## Known limits
+
+- Very short slang questions with no topic (e.g. `أوصل للجولد إزاي؟`) are not understood. The LLM should write a clear query (see the tip above).
+- One sentence with several questions returns results for only part of it. The LLM should split it.
+- About 1 in 3 new off-topic questions is not blocked; the LLM prompt must refuse them too.
+- Some in-scope questions are close to the off-topic margin (e.g. the English pyramids distance question passes at 0.062 vs 0.07). If `search()` returns `[]` for a hotel question, the LLM should offer staff, not refuse.
+
+## Team
+
+RAG team: Ammar & Sondos.
