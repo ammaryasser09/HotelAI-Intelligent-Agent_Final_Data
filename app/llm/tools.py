@@ -32,8 +32,7 @@ HOTEL_PHOTOS = types.FunctionDeclaration(
 
 SEARCH_HOTEL_INFO = types.FunctionDeclaration(
     name="search_hotel_info",
-    description="Search the hotel's information: policies, prices, opening hours, services, facilities, rooms and location. Only for questions about Nile Pearl Hotel; never search for unrelated topics such as sports, weather, politics or places outside the hotel, decline those yourself. Write the query yourself in English with the topic in it, never the guest's words as they are. If the guest asks several things, call it once for each question.",
-    behavior="NON_BLOCKING",
+    description="Search the hotel's information: policies, prices, opening hours, services, facilities, rooms and location, including distances to the airport and landmarks and what is near the hotel. Only for questions about Nile Pearl Hotel and a stay there; never search for unrelated topics such as sports, weather or politics, decline those yourself. Write the query yourself in English with the topic in it, never the guest's words as they are. If the guest asks several things, call it once for each question.",    behavior="NON_BLOCKING",
     parameters={
         "type": "OBJECT",
         "properties": {
