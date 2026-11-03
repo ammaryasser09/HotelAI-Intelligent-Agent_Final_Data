@@ -20,7 +20,7 @@ from app.api.rate_limit import limiter, rate_limit_exceeded
 from app.api.routers import (admin, auth, availability, bookings, calls, cancellations, changes, discounts, health,
                              hotel, my_bookings, payments, requests, staff)
 from app.api.services.expiry import expiry_job
-
+from scalar_fastapi import get_scalar_api_reference, Theme
 setup_logging()
 logger = logging.getLogger("hotel_api")
 
@@ -124,3 +124,11 @@ def openapi_schema():
 
 
 app.openapi = openapi_schema
+@app.get("/scalar", include_in_schema=False)
+async def scalar_docs():
+    return get_scalar_api_reference(
+        openapi_url=app.openapi_url,
+        title=app.title,
+        theme=Theme.MOON,
+        dark_mode=True,
+    )

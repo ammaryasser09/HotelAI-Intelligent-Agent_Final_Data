@@ -1,6 +1,7 @@
 # Backend API (FastAPI + PostgreSQL)
 # Install with:  pip install -r requirements-api.txt
 fastapi>=0.110
+scalar-fastapi<=0.1.0
 uvicorn[standard]>=0.29
 pydantic-settings>=2.0
 sqlalchemy[asyncio]>=2.0
