@@ -16,6 +16,8 @@ QUIET = ("session_resumption_update", "voice_activity", "generation_complete", "
 MIC_RATE = 16000
 SPEAKER_RATE = 24000
 CHUNK = 1600
+PREBUFFER = SPEAKER_RATE * 2 // 4
+OUT_BLOCK = 2400
 
 client = genai.Client(api_key=GEMINI_API_KEY)
 
@@ -43,7 +45,7 @@ if VOICE_MODE:
 if "extended-thinking" in MODEL:
     CONFIG["thinking_config"] = {"thinking_level": THINKING_LEVEL}
 
-STATE = {"sent": time.time(), "speaking": False, "hearing": False, "played": 0.0}
+STATE = {"sent": time.time(), "speaking": False, "hearing": False, "played": 0.0, "arrived": 0.0, "primed": False}
 PLAYBACK = bytearray()
 LOCK = threading.Lock()
 
@@ -63,8 +65,15 @@ def describe(msg):
 def play(outdata, frames, time_info, status):
     need = frames * 2
     with LOCK:
-        chunk = bytes(PLAYBACK[:need])
-        del PLAYBACK[:need]
+        ready = len(PLAYBACK) >= PREBUFFER or (PLAYBACK and time.time() - STATE["arrived"] > 0.3)
+        if not STATE["primed"] and ready:
+            STATE["primed"] = True
+        chunk = b""
+        if STATE["primed"]:
+            chunk = bytes(PLAYBACK[:need])
+            del PLAYBACK[:need]
+            if len(chunk) < need:
+                STATE["primed"] = False
     if chunk:
         STATE["played"] = time.time()
     outdata[:] = chunk + b"\x00" * (need - len(chunk))
@@ -100,15 +109,17 @@ async def hear(session):
             info = describe(response)
             if info:
                 print(f"\n[debug {since()}] {info}")
-            if VOICE_MODE and response.data:
-                with LOCK:
-                    PLAYBACK.extend(response.data)
             content = response.server_content
             if content and content.interrupted:
                 with LOCK:
                     PLAYBACK.clear()
+                    STATE["primed"] = False
                 print("\n[interrupted]", flush=True)
                 STATE["speaking"] = False
+            elif VOICE_MODE and response.data:
+                with LOCK:
+                    PLAYBACK.extend(response.data)
+                    STATE["arrived"] = time.time()
             if content and content.input_transcription and content.input_transcription.text:
                 if not STATE["hearing"]:
                     STATE["sent"] = time.time()
@@ -148,7 +159,7 @@ async def speak(session):
         loop.call_soon_threadsafe(mic.put_nowait, bytes(indata))
 
     with sd.RawInputStream(samplerate=MIC_RATE, channels=1, dtype="int16", blocksize=CHUNK, callback=record), \
-            sd.RawOutputStream(samplerate=SPEAKER_RATE, channels=1, dtype="int16", callback=play):
+            sd.RawOutputStream(samplerate=SPEAKER_RATE, channels=1, dtype="int16", blocksize=OUT_BLOCK, latency="high", callback=play):
         print("Speak now (Ctrl+C to hang up)" + ("  mic is muted while Nour speaks" if MUTE_WHILE_SPEAKING else ""))
         while True:
             data = await mic.get()
