@@ -3,6 +3,7 @@ import os
 import urllib.error
 import urllib.request
 from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 import jwt
 import psycopg
 from google.genai import types
@@ -240,6 +241,14 @@ def _api(method, path, account_id, body=None):
         return {"ok": False, "reason": "BOOKING_SYSTEM_DOWN", "advice": "ask the caller to call reception"}
 
 
+def _cairo_time(result):
+    if result.get("payment_due_at"):
+        due = datetime.fromisoformat(result["payment_due_at"].replace("Z", "+00:00")).astimezone(ZoneInfo("Africa/Cairo"))
+        result["pay_before"] = due.strftime("%d %B %Y, %H:%M") + " Cairo time"
+        del result["payment_due_at"]
+    return result
+
+
 def make_booking(room_type, check_in, check_out, adults, children=0, rate_plan="Flexible",
                  discount_code=None, date_of_birth=None, account_id=None):
     body = {"room_type": room_type, "check_in": check_in, "check_out": check_out, "adults": int(adults),
@@ -248,7 +257,7 @@ def make_booking(room_type, check_in, check_out, adults, children=0, rate_plan="
         body["discount_code"] = discount_code
     if date_of_birth:
         body["date_of_birth"] = date_of_birth
-    return _api("POST", "/bookings", account_id, body)
+    return _cairo_time(_api("POST", "/bookings", account_id, body))
 
 
 def change_booking(booking_ref, new_check_in=None, new_check_out=None, new_room_type=None,
@@ -258,7 +267,7 @@ def change_booking(booking_ref, new_check_in=None, new_check_out=None, new_room_
     body = {k: v for k, v in body.items() if v is not None}
     if not body:
         return {"ok": False, "reason": "NOTHING_TO_CHANGE"}
-    return _api("POST", f"/me/bookings/{booking_ref.strip().upper()}/change", account_id, body)
+    return _cairo_time(_api("POST", f"/me/bookings/{booking_ref.strip().upper()}/change", account_id, body))
 
 
 def cancel_booking(booking_ref, account_id=None):
@@ -267,7 +276,7 @@ def cancel_booking(booking_ref, account_id=None):
 
 MAKE_BOOKING = declare(
     "make_booking",
-    "Makes a new booking for the logged-in caller. Call it only after check_availability, after repeating room type, dates, guests, rate plan and total, and after the caller said yes. The booking is held as Pending until the amount pay_now is paid by payment_url before payment_due_at. If it returns DATE_OF_BIRTH_REQUIRED, ask the caller's date of birth and call it again with it.",
+    "Makes a new booking for the logged-in caller. Call it only after check_availability, after repeating room type, dates, guests, rate plan and total, and after the caller said yes. The booking is held as Pending until the amount pay_now is paid by payment_url before pay_before. If it returns DATE_OF_BIRTH_REQUIRED, ask the caller's date of birth and call it again with it.",
     {
         "room_type": {"type": "STRING", "description": "Single, Double, Twin, Deluxe, Family or Suite"},
         "check_in": DATE,
