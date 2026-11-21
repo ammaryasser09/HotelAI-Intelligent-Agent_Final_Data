@@ -1,0 +1,21 @@
+# Kept out of the API image: secrets, local tools, and the parts of the project the API does not use
+.env
+.env.*
+.git
+.venv
+venv
+.pytest_cache
+**/__pycache__
+**/*.pyc
+logs
+models
+tests
+database
+docs
+evaluation
+knowledge_base
+rag
+my_rag
+app/prototype
+app/rag
+*.ipynb

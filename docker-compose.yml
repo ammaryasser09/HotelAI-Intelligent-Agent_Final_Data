@@ -1,0 +1,59 @@
+# The whole backend: PostgreSQL (with the schema and demo data) + the API.
+#   docker compose up -d --build        then open http://localhost:8000/docs
+#   docker compose logs -f api          the API's log
+#   docker compose down                 stop (the data is kept); add -v to start the database again from scratch
+# On a server with a domain, also start Caddy for HTTPS (docs/DEPLOYMENT.md):
+#   docker compose --profile https up -d --build
+# The API reads its secrets from .env (JWT_SECRET, Paymob keys...); the database address is set here.
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: hotelai
+      POSTGRES_USER: hotelai
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-hotelai}
+      TZ: Africa/Cairo
+    volumes:
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+      - ./database/docker/02_load_seed.sql:/docker-entrypoint-initdb.d/02_load_seed.sql:ro
+      - ./database/seed:/seed:ro
+      - hotelai_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hotelai -d hotelai"]
+      interval: 5s
+      retries: 20
+    restart: unless-stopped
+
+  api:
+    build: .
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://hotelai:${POSTGRES_PASSWORD:-hotelai}@db:5432/hotelai
+    ports:
+      - "127.0.0.1:8000:8000"      # reachable from this machine only; the outside world comes through Caddy
+    volumes:
+      - api_logs:/srv/logs
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2
+    profiles: ["https"]
+    environment:
+      DOMAIN: ${DOMAIN:-localhost}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  hotelai_data:
+  api_logs:
+  caddy_data:
