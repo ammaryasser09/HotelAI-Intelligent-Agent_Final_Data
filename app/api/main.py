@@ -7,6 +7,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.openapi.utils import get_openapi
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from slowapi.errors import RateLimitExceeded
@@ -19,7 +20,7 @@ from app.api.rate_limit import limiter, rate_limit_exceeded
 from app.api.routers import (admin, auth, availability, bookings, calls, cancellations, changes, discounts, health,
                              hotel, my_bookings, payments, requests, staff)
 from app.api.services.expiry import expiry_job
-
+from scalar_fastapi import get_scalar_api_reference, Theme
 setup_logging()
 logger = logging.getLogger("hotel_api")
 
@@ -107,3 +108,27 @@ app.mount("/static", StaticFiles(directory=PROJECT_ROOT / "static"), name="stati
 @app.get("/", tags=["Health"])
 def root():
     return {"message": "Nile Pearl Hotel API is running"}
+
+
+def openapi_schema():
+    """The description /docs is drawn from. With DOCS_ONLY set, only those paths are listed;
+    every endpoint still works, it is only left off the page (e.g. to show a few in a presentation)."""
+    if app.openapi_schema:
+        return app.openapi_schema
+    schema = get_openapi(title=app.title, version=app.version, routes=app.routes)
+    shown = {path.strip() for path in settings.docs_only.split(",") if path.strip()}
+    if shown:
+        schema["paths"] = {path: operations for path, operations in schema["paths"].items() if path in shown}
+    app.openapi_schema = schema
+    return schema
+
+
+app.openapi = openapi_schema
+@app.get("/scalar", include_in_schema=False)
+async def scalar_docs():
+    return get_scalar_api_reference(
+        openapi_url=app.openapi_url,
+        title=app.title,
+        theme=Theme.MOON,
+        dark_mode=True,
+    )

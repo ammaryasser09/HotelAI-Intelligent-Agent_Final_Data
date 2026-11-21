@@ -83,6 +83,7 @@ Children count toward capacity. An extra bed (2,500 EGP/night) does not raise ca
 |---|---|
 | `requirements.txt` | RAG dependencies (the BM25 mode needs only the Python standard library) |
 | `requirements-api.txt` | Backend API and test dependencies |
+| `Dockerfile`, `docker-compose.yml`, `deploy/` | The backend in containers: database + API (+ Caddy for HTTPS on a server) |
 | `.env` | The API's secrets: database URL, `JWT_SECRET`, Paymob keys. Not committed to git |
 | `.env.example` | The same settings with no secrets: copy it to `.env` and fill it in |
 | `pytest.ini` | Test settings |
@@ -121,6 +122,7 @@ uvicorn app.api.main:app --reload
 
 - With the Docker database: `DATABASE_URL=postgresql+psycopg://hotelai:hotelai@localhost:5432/hotelai`
 - Step by step on Windows (in Arabic): [`docs/API_SETUP.md`](docs/API_SETUP.md)
+- Or everything in Docker (database + API, no Python setup): `docker compose up -d --build`. Server and HTTPS: [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) (in Arabic)
 
 Open <http://localhost:8000/docs> to try every endpoint. Details are in [Backend API](#backend-api).
 
@@ -201,9 +203,24 @@ FastAPI + async SQLAlchemy (asyncpg) on the PostgreSQL database. Code is in `app
 | `POST` | `/requests/emergency` | Anyone, logged in or not: a Critical ticket, plus the emergency numbers (ambulance 123, police 122, fire 180, reception) |
 | `GET` | `/me/requests` | 🔒 Guest: their requests and status (an approved discount request shows its code) |
 | `GET` | `/me/loyalty` | 🔒 Guest: Nile Pearl Rewards tier, points and what they are worth, late check-out time |
+| `POST` | `/calls` | A conversation with Nour starts (guest or visitor) → `call_id` |
+| `POST` | `/calls/{call_id}/messages` · `/actions` · `/end` | Log each line said, each tool Nour used, and the end with a summary |
+| `POST` | `/calls/{call_id}/handoff` | The guest asks for a person: a free member of staff online takes it as a live chat (answer has a `chat_token`), otherwise an urgent Staff Callback ticket |
+| `WS` | `/ws/calls/{call_id}?token=<chat_token>` | The guest's side of the live chat: send `{"text": ...}` |
+| `WS` | `/ws/staff?token=<staff token>` | A staff dashboard: receives handoffs and guest messages, sends `{"call_id", "text"}` or `{"call_id", "type": "end"}` |
+| `GET` | `/staff/arrivals` · `/staff/in-house` | 👤 Staff: today's arrivals and the guests in the hotel, with the balance due |
+| `POST` | `/staff/bookings/{id}/check-in` · `/check-out` · `/no-show` | 👤 Staff: arrival; departure with the balance paid (members earn points, may move up a tier); no-show (deposit kept) |
+| `GET` | `/staff/requests` | 👤 Staff: open tickets, emergencies first |
+| `POST` | `/staff/requests/{id}/take` · `/close` · `/decision` | 👤 Staff: take a ticket, close it (Resolved / Closed), approve or reject a Special Request |
+| `GET` | `/staff/chats` · `/staff/calls/{call_id}` | 👤 Staff: my live chats; a call's full transcript and tools |
+| `GET` | `/admin/discount-requests` | 🛡️ Admin: discount requests waiting |
+| `POST` | `/admin/discount-requests/{id}/approve` · `/reject` | 🛡️ Admin: approve (a personal one-time code for 30 days, emailed) or reject |
+| `GET` | `/admin/stats` | 🛡️ Admin: occupancy, revenue, ADR, RevPAR, channels, room types, cancellations, tickets, one row per night |
+| `GET` | `/admin/calls` | 🛡️ Admin: Nour's calls with turns, tools, tickets, answer speed |
+| `GET` `POST` | `/admin/staff` · `/admin/staff/{id}/disable` · `/enable` · `/password` | 🛡️ Admin: staff accounts |
 | `GET` | `/static/...` | Room and hotel images |
 
-🔒 = needs `Authorization: Bearer <token>`. In `/docs`: log in, copy `access_token`, and press **Authorize**.
+🔒 = needs `Authorization: Bearer <token>`; 👤 = staff or admin; 🛡️ = admin only. In `/docs`: log in, copy `access_token`, and press **Authorize**.
 
 **`GET /availability` parameters:** `room_type` (name or ID), `check_in`, `check_out`, `guests` (1–10, default 1), and an optional `discount_code`.
 
@@ -216,7 +233,7 @@ If no room is free, it returns **alternatives**: other room types that fit the g
 
 ### Behavior
 
-- **Errors** return a `reason` code the frontend can act on: `UNKNOWN_ROOM_TYPE`, `CHECK_IN_IN_THE_PAST`, `CAPACITY_EXCEEDED`, `CODE_NOT_FOUND`, `PHOTO_NOT_FOUND`, `TOO_MANY_REQUESTS`, `INVALID_CREDENTIALS`, `NOT_LOGGED_IN`, `INVALID_TOKEN`, `TOKEN_EXPIRED`, `GUESTS_ONLY`, `BOOKING_NOT_FOUND_OR_NOT_VERIFIED`, `NO_ROOM_AVAILABLE`, `ROOM_JUST_TAKEN`, `NOT_WAITING_FOR_PAYMENT`, `PAYMENT_EXPIRED`, `PAYMENT_PROVIDER_ERROR`, `INVALID_SIGNATURE`, `BOOKING_NOT_FOUND`, `NOT_CANCELLABLE`, `TOO_LATE_TO_CANCEL`, `REFUND_FAILED`, `NOT_CHANGEABLE`, `TOO_LATE_TO_CHANGE`, `NON_REFUNDABLE_CANNOT_CHANGE`, `CHANGE_ON_BOOKING_PLATFORM`, `NOTHING_TO_CHANGE`, `CHECK_OUT_NOT_AFTER_CHECK_IN`, `EMAIL_ALREADY_REGISTERED`, `PHONE_ALREADY_REGISTERED`, `EMAIL_NOT_VERIFIED`, `ALREADY_VERIFIED`, `WRONG_CODE` (with `attempts_left`), `CODE_EXPIRED`, `DATE_OF_BIRTH_REQUIRED`, `TOO_YOUNG`, `BOOKING_REQUIRED`, `WRONG_CATEGORY`, `NO_CATEGORY_FOR_THIS_TYPE`, `CALL_NOT_FOUND`.
+- **Errors** return a `reason` code the frontend can act on: `UNKNOWN_ROOM_TYPE`, `CHECK_IN_IN_THE_PAST`, `CAPACITY_EXCEEDED`, `CODE_NOT_FOUND`, `PHOTO_NOT_FOUND`, `TOO_MANY_REQUESTS`, `INVALID_CREDENTIALS`, `NOT_LOGGED_IN`, `INVALID_TOKEN`, `TOKEN_EXPIRED`, `GUESTS_ONLY`, `BOOKING_NOT_FOUND_OR_NOT_VERIFIED`, `NO_ROOM_AVAILABLE`, `ROOM_JUST_TAKEN`, `NOT_WAITING_FOR_PAYMENT`, `PAYMENT_EXPIRED`, `PAYMENT_PROVIDER_ERROR`, `INVALID_SIGNATURE`, `BOOKING_NOT_FOUND`, `NOT_CANCELLABLE`, `TOO_LATE_TO_CANCEL`, `REFUND_FAILED`, `NOT_CHANGEABLE`, `TOO_LATE_TO_CHANGE`, `NON_REFUNDABLE_CANNOT_CHANGE`, `CHANGE_ON_BOOKING_PLATFORM`, `NOTHING_TO_CHANGE`, `CHECK_OUT_NOT_AFTER_CHECK_IN`, `EMAIL_ALREADY_REGISTERED`, `PHONE_ALREADY_REGISTERED`, `EMAIL_NOT_VERIFIED`, `ALREADY_VERIFIED`, `WRONG_CODE` (with `attempts_left`), `CODE_EXPIRED`, `DATE_OF_BIRTH_REQUIRED`, `TOO_YOUNG`, `BOOKING_REQUIRED`, `WRONG_CATEGORY`, `NO_CATEGORY_FOR_THIS_TYPE`, `CALL_NOT_FOUND`, `STAFF_ONLY`, `ADMIN_ONLY`, `NOT_CONFIRMED`, `ALREADY_CHECKED_IN`, `NOT_ARRIVAL_DAY_YET`, `NOT_CHECKED_IN`, `REQUEST_NOT_FOUND`, `ALREADY_TAKEN`, `ALREADY_CLOSED`, `ADMIN_DECIDES`, `NOT_A_SPECIAL_REQUEST`, `ALREADY_DECIDED`, `DISCOUNT_REQUEST_NOT_FOUND`, `DATE_TO_BEFORE_DATE_FROM`, `PERIOD_TOO_LONG`, `STAFF_NOT_FOUND`, `CANNOT_DISABLE_YOURSELF`, `NOT_YOUR_CALL`, `CALL_ENDED`, `ALREADY_HANDED_OVER`.
 - **Rate limit:** 60 requests per minute per IP address; login 5 and booking links 10. Change them with `RATE_LIMIT`, `LOGIN_RATE_LIMIT`, `LINK_RATE_LIMIT` in `.env`.
 - **Booking:** one transaction: the booking, the code use, and the payment row are saved together or not at all. If another guest takes the room in the same moment, the next free room is tried.
 - **Hotel clock:** payment deadlines use the hotel's "today" (`app_settings.system_date`) at the current time, so the demo bookings and new ones follow the same rules.
@@ -225,6 +242,7 @@ If no room is free, it returns **alternatives**: other room types that fit the g
 - **Change:** new dates keep the agreed nightly price, another room type uses its own base price; the discount is worked out again (7+ nights get Long Stay; a code it beats is given back). A stay cheaper than what was paid gets the difference back; a `Pending` booking gets a new payment link. Not for Non-refundable or Booking Platform bookings.
 - **Accounts:** a guest who booked before without an account (phone, agency) and signs up with the same email gets the same guest record, so their bookings appear once the email is confirmed. Email codes: 6 digits, 10 minutes, 5 tries, stored only as a keyed hash (HMAC).
 - **18+:** the first booking asks for `date_of_birth` (or it is given at sign-up); it is kept after that.
+- **Live chat:** who is online is kept in the API's memory, so the API runs as one process (several would need Redis). WebSocket tokens go in the address (`?token=`), because browsers cannot add headers to a WebSocket.
 - **Emails:** confirmed, changed, cancelled, and not-paid-in-time emails go to the guest after the answer is sent; a failed email is only logged. `EMAIL_PROVIDER=log` (default) writes them to `logs/emails/` instead of sending.
 - **Logs:** every request is logged to the console and to `logs/api.log` (rotating: 5 MB × 3 files).
 - **CORS:** allows `http://localhost:5173` and `http://localhost:3000` by default.
@@ -429,7 +447,7 @@ PostgreSQL 16 with **23 tables**. Column details are in [`database/DATA_DICTIONA
 | `database/tests/run_checks.sql` | 39 data integrity checks | `psql -d hotelai -f tests/run_checks.sql` (from `database/`) |
 | `database/tests/constraint_checks.sql` | 16 checks that the database refuses invalid data | `psql -d hotelai -f tests/constraint_checks.sql` (from `database/`) |
 | `scripts/check_data.py` | RAG files, FAQ, and knowledge base vs database | `python scripts/check_data.py` |
-| `tests/` | 73 API tests: availability, pricing, discounts, hotel info, login, sign-up + email codes, my bookings, booking + payment, Paymob (signature, link, refund), expiry, cancel, change, emails, requests, loyalty | `pytest` (the database must be running) |
+| `tests/` | 90 API tests: availability, pricing, discounts, hotel info, login, sign-up + email codes, my bookings, booking + payment, Paymob (signature, link, refund), expiry, cancel, change, emails, requests, loyalty, staff desk and tickets, discount decisions, stats, staff accounts, calls and live chat | `pytest` (the database must be running) |
 | `scripts/check_endpoints.py` | Calls every endpoint of the running API once and prints OK / FAIL | `python scripts/check_endpoints.py` (with uvicorn running) |
 | `app/prototype/test_agent.py` | Agent behavior on the realistic questions and 5 languages, including login/logout | See the prototype README |
 
@@ -457,7 +475,10 @@ Every line must say `PASS`, and `check_data.py` must pass **10/10**.
 - Sign up, email verification and password reset with 6-digit codes; the 18+ rule before the first booking.
 - Guest requests (tickets), emergencies for anyone, my requests, loyalty status.
 - `scripts/check_endpoints.py`: a quick check of every endpoint against the running API.
-- pytest suite (73 tests).
+- Staff dashboard: roles, front desk (check-in, check-out with points, no-show), ticket queue, admin discount decisions, hotel statistics, staff accounts.
+- Calls logged for the dashboard, handoff to staff, live chat over WebSocket.
+- Docker: `Dockerfile`, `docker-compose.yml` (database + API), Caddy for HTTPS (`docs/DEPLOYMENT.md`).
+- pytest suite (90 tests).
 
 ### v8 — Final data
 

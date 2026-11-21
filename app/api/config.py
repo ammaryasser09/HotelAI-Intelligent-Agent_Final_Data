@@ -50,6 +50,10 @@ class Settings(BaseSettings):
     smtp_user: str | None = None
     smtp_password: str | None = None
 
+    # Show only these paths on /docs, comma separated (the others keep working, they are just not listed).
+    # Empty = show everything.
+    docs_only: str = ""
+
     # How often unpaid bookings are checked and cancelled once their hold is over (0 = never)
     expiry_check_seconds: int = 300
 
