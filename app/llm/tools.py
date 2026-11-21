@@ -1,4 +1,12 @@
+import json
+import os
+import urllib.error
+import urllib.request
+from datetime import datetime, timedelta, timezone
+import jwt
+import psycopg
 from google.genai import types
+import app.llm.config
 from app.rag.tools import check_availability, hotel_photos, create_request, escalate_to_human, REQUEST_TYPES, CATEGORIES
 from app.rag.tools import (
     my_bookings, link_booking, find_booking, quote_cancellation, quote_modification,
@@ -187,10 +195,118 @@ ROOM_SERVICE_QUOTE = declare(
     ["items"],
 )
 
+API_URL = os.getenv("API_URL", "http://127.0.0.1:8000")
+
+
+def _token(account_id):
+    url = os.getenv("DATABASE_URL", "").replace("+psycopg", "")
+    with psycopg.connect(url) as db:
+        row = db.execute(
+            "SELECT role, customer_id, email_verified FROM user_accounts WHERE account_id = %s AND is_active",
+            (int(account_id),),
+        ).fetchone()
+    if not row:
+        return None
+    now = datetime.now(timezone.utc)
+    claims = {"sub": str(account_id), "role": row[0], "customer_id": row[1], "email_verified": row[2],
+              "iat": now, "exp": now + timedelta(minutes=10)}
+    return jwt.encode(claims, os.getenv("JWT_SECRET"), algorithm="HS256")
+
+
+def _api(method, path, account_id, body=None):
+    if not account_id:
+        return {"ok": False, "reason": "NOT_LOGGED_IN", "advice": "ask the caller to log in on the website first"}
+    try:
+        token = _token(account_id)
+    except psycopg.Error:
+        return {"ok": False, "reason": "BOOKING_SYSTEM_DOWN", "advice": "ask the caller to call reception"}
+    if not token:
+        return {"ok": False, "reason": "UNKNOWN_ACCOUNT"}
+    data = None if body is None else json.dumps(body).encode()
+    request = urllib.request.Request(API_URL + path, data=data, method=method,
+                                     headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(request, timeout=30) as response:
+            return {"ok": True, **json.loads(response.read())}
+    except urllib.error.HTTPError as e:
+        try:
+            detail = json.loads(e.read()).get("detail")
+        except ValueError:
+            detail = None
+        if isinstance(detail, dict):
+            return {"ok": False, "status": e.code, **detail}
+        return {"ok": False, "status": e.code, "reason": str(detail or e.reason)}
+    except urllib.error.URLError:
+        return {"ok": False, "reason": "BOOKING_SYSTEM_DOWN", "advice": "ask the caller to call reception"}
+
+
+def make_booking(room_type, check_in, check_out, adults, children=0, rate_plan="Flexible",
+                 discount_code=None, date_of_birth=None, account_id=None):
+    body = {"room_type": room_type, "check_in": check_in, "check_out": check_out, "adults": int(adults),
+            "children": int(children or 0), "rate_plan": rate_plan, "channel": "Voice Agent"}
+    if discount_code:
+        body["discount_code"] = discount_code
+    if date_of_birth:
+        body["date_of_birth"] = date_of_birth
+    return _api("POST", "/bookings", account_id, body)
+
+
+def change_booking(booking_ref, new_check_in=None, new_check_out=None, new_room_type=None,
+                   adults=None, children=None, account_id=None):
+    body = {"check_in": new_check_in, "check_out": new_check_out, "room_type": new_room_type,
+            "adults": None if adults is None else int(adults), "children": None if children is None else int(children)}
+    body = {k: v for k, v in body.items() if v is not None}
+    if not body:
+        return {"ok": False, "reason": "NOTHING_TO_CHANGE"}
+    return _api("POST", f"/me/bookings/{booking_ref.strip().upper()}/change", account_id, body)
+
+
+def cancel_booking(booking_ref, account_id=None):
+    return _api("POST", f"/me/bookings/{booking_ref.strip().upper()}/cancel", account_id)
+
+
+MAKE_BOOKING = declare(
+    "make_booking",
+    "Makes a new booking for the logged-in caller. Call it only after check_availability, after repeating room type, dates, guests, rate plan and total, and after the caller said yes. The booking is held as Pending until the amount pay_now is paid by payment_url before payment_due_at. If it returns DATE_OF_BIRTH_REQUIRED, ask the caller's date of birth and call it again with it.",
+    {
+        "room_type": {"type": "STRING", "description": "Single, Double, Twin, Deluxe, Family or Suite"},
+        "check_in": DATE,
+        "check_out": DATE,
+        "adults": {"type": "INTEGER"},
+        "children": {"type": "INTEGER"},
+        "rate_plan": {"type": "STRING", "enum": ["Flexible", "Non-refundable"]},
+        "discount_code": {"type": "STRING", "description": "Only if the caller gave a code that check_discount_code accepted"},
+        "date_of_birth": DATE,
+    },
+    ["room_type", "check_in", "check_out", "adults"],
+)
+
+CHANGE_BOOKING = declare(
+    "change_booking",
+    "Changes dates, room type or guests of a booking in the caller's account. Call it only after quote_modification gave the new total and the caller said yes. Give only what changes.",
+    {
+        "booking_ref": REF,
+        "new_check_in": DATE,
+        "new_check_out": DATE,
+        "new_room_type": {"type": "STRING", "description": "Single, Double, Twin, Deluxe, Family or Suite"},
+        "adults": {"type": "INTEGER"},
+        "children": {"type": "INTEGER"},
+    },
+    ["booking_ref"],
+)
+
+CANCEL_BOOKING = declare(
+    "cancel_booking",
+    "Cancels a booking in the caller's account for good. Call it only after quote_cancellation gave the charge and refund and the caller said yes to cancelling.",
+    {"booking_ref": REF},
+    ["booking_ref"],
+)
+
 DECLARATIONS = [
     CHECK_AVAILABILITY, HOTEL_PHOTOS, SEARCH_HOTEL_INFO, CREATE_REQUEST, ESCALATE_TO_HUMAN,
     MY_BOOKINGS, LINK_BOOKING, FIND_BOOKING, QUOTE_CANCELLATION, QUOTE_MODIFICATION,
     LATE_CHECKOUT_QUOTE, CHECK_DISCOUNT_CODE, LOYALTY_STATUS, MENU, ROOM_SERVICE_QUOTE,
+    MAKE_BOOKING, CHANGE_BOOKING, CANCEL_BOOKING,
 ]
 FUNCTIONS = {
     "check_availability": check_availability,
@@ -208,4 +324,7 @@ FUNCTIONS = {
     "loyalty_status": loyalty_status,
     "menu": menu,
     "room_service_quote": room_service_quote,
+    "make_booking": make_booking,
+    "change_booking": change_booking,
+    "cancel_booking": cancel_booking,
 }
