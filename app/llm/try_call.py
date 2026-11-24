@@ -7,7 +7,7 @@ from google import genai
 from google.genai import types
 from app.llm.config import GEMINI_API_KEY, MODEL, THINKING_LEVEL, ACCOUNT_ID, VOICE
 from app.llm.prompts import LIVE_PROMPT
-from app.llm.tools import DECLARATIONS, FUNCTIONS
+from app.llm.tools import DECLARATIONS, FUNCTIONS, start_call, log_message, log_action, end_call
 from app.rag.tools import _account
 
 VOICE_MODE = len(sys.argv) > 1 and sys.argv[1] == "voice"
@@ -45,7 +45,8 @@ if VOICE_MODE:
 if "extended-thinking" in MODEL:
     CONFIG["thinking_config"] = {"thinking_level": THINKING_LEVEL}
 
-STATE = {"sent": time.time(), "speaking": False, "hearing": False, "played": 0.0, "arrived": 0.0, "primed": False}
+STATE = {"sent": time.time(), "speaking": False, "hearing": False, "played": 0.0, "arrived": 0.0, "primed": False,
+         "guest": [], "agent": []}
 PLAYBACK = bytearray()
 LOCK = threading.Lock()
 
@@ -79,6 +80,25 @@ def play(outdata, frames, time_info, status):
     outdata[:] = chunk + b"\x00" * (need - len(chunk))
 
 
+def background(fn, *args):
+    asyncio.get_running_loop().run_in_executor(None, fn, *args)
+
+
+def log_turn(guest, agent):
+    log_message("guest", guest)
+    log_message("agent", agent)
+
+
+def save_turn(wait=False):
+    guest, agent = "".join(STATE["guest"]), "".join(STATE["agent"])
+    STATE["guest"].clear()
+    STATE["agent"].clear()
+    if wait:
+        log_turn(guest, agent)
+    else:
+        background(log_turn, guest, agent)
+
+
 async def run_tool(session, call):
     print(f"\n[tool {since()}] {call.name} {call.args}")
     fn = FUNCTIONS[call.name]
@@ -91,6 +111,7 @@ async def run_tool(session, call):
         result = {"ok": False, "reason": str(e)}
     if call.name != "search_hotel_info":
         print(f"[result] {result}")
+    background(log_action, call.name, dict(call.args), result)
     await session.send_tool_response(function_responses=[
         types.FunctionResponse(id=call.id, name=call.name, response={"result": result})
     ])
@@ -126,13 +147,16 @@ async def hear(session):
                     print("\nYou: ", end="")
                     STATE["hearing"] = True
                 print(content.input_transcription.text, end="", flush=True)
+                STATE["guest"].append(content.input_transcription.text)
             if content and content.output_transcription and content.output_transcription.text:
                 if not STATE["speaking"]:
                     print("\nNour: ", end="")
                     STATE["speaking"] = True
                     STATE["hearing"] = False
                 print(content.output_transcription.text, end="", flush=True)
+                STATE["agent"].append(content.output_transcription.text)
             if content and content.turn_complete:
+                save_turn()
                 STATE["speaking"] = False
                 STATE["hearing"] = False
                 print("\n" if VOICE_MODE else "\nYou: ", end="", flush=True)
@@ -147,7 +171,12 @@ async def talk(session):
         if text.strip().lower() == "exit":
             return
         STATE["sent"] = time.time()
-        await session.send_realtime_input(text=text)
+        STATE["guest"].append(text)
+        try:
+            await session.send_realtime_input(text=text)
+        except Exception:
+            print("[call closed] run the command again for a new call")
+            return
 
 
 async def speak(session):
@@ -170,14 +199,21 @@ async def speak(session):
 
 async def main():
     print(f"Model: {MODEL}  voice: {VOICE}  mode: {'voice' if VOICE_MODE else 'text'}")
-    async with client.aio.live.connect(model=MODEL, config=CONFIG) as session:
-        listener = asyncio.create_task(listen(session))
-        if VOICE_MODE:
-            await speak(session)
-        else:
-            print("Nour is on the line (type exit to hang up)\nYou: ", end="", flush=True)
-            await talk(session)
-        listener.cancel()
+    call_id = await asyncio.to_thread(start_call, None if ACCOUNT_ID is None else str(ACCOUNT_ID),
+                                      "voice" if VOICE_MODE else "text")
+    print(f"Call log: {call_id or 'off (hotel server not running)'}")
+    try:
+        async with client.aio.live.connect(model=MODEL, config=CONFIG) as session:
+            listener = asyncio.create_task(listen(session))
+            if VOICE_MODE:
+                await speak(session)
+            else:
+                print("Nour is on the line (type exit to hang up)\nYou: ", end="", flush=True)
+                await talk(session)
+            listener.cancel()
+    finally:
+        save_turn(wait=True)
+        end_call()
 
 
 if __name__ == "__main__":

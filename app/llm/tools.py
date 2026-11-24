@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -215,18 +216,20 @@ def _token(account_id):
     return jwt.encode(claims, os.getenv("JWT_SECRET"), algorithm="HS256")
 
 
-def _api(method, path, account_id, body=None):
-    if not account_id:
+def _api(method, path, account_id, body=None, login=True):
+    headers = {"Content-Type": "application/json"}
+    if account_id:
+        try:
+            token = _token(account_id)
+        except psycopg.Error:
+            return {"ok": False, "reason": "BOOKING_SYSTEM_DOWN", "advice": "ask the caller to call reception"}
+        if not token:
+            return {"ok": False, "reason": "UNKNOWN_ACCOUNT"}
+        headers["Authorization"] = f"Bearer {token}"
+    elif login:
         return {"ok": False, "reason": "NOT_LOGGED_IN", "advice": "ask the caller to log in on the website first"}
-    try:
-        token = _token(account_id)
-    except psycopg.Error:
-        return {"ok": False, "reason": "BOOKING_SYSTEM_DOWN", "advice": "ask the caller to call reception"}
-    if not token:
-        return {"ok": False, "reason": "UNKNOWN_ACCOUNT"}
-    data = None if body is None else json.dumps(body).encode()
-    request = urllib.request.Request(API_URL + path, data=data, method=method,
-                                     headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"})
+    data = None if body is None else json.dumps(body, default=str, ensure_ascii=False).encode()
+    request = urllib.request.Request(API_URL + path, data=data, method=method, headers=headers)
     try:
         with urllib.request.urlopen(request, timeout=30) as response:
             answer = json.loads(response.read())
@@ -338,6 +341,58 @@ def quote_modification(booking_ref, new_check_in=None, new_check_out=None, new_r
             "paid_after_change": answer["amount_paid"], "pay_now": answer["pay_now"],
             "balance_at_hotel": answer["pay_at_hotel"], "refund": answer["refund"],
             "rule": "free on the Flexible rate until 48 hours before arrival; nothing changes until the caller says yes"}
+
+
+CALL = {"id": None, "account_id": None, "chat_token": None}
+
+
+def start_call(account_id=None, channel="voice"):
+    answer = _api("POST", "/calls", account_id, {"channel": channel}, login=False)
+    CALL.update(id=answer.get("call_id") if answer["ok"] else None, account_id=account_id, chat_token=None)
+    return CALL["id"]
+
+
+def log_message(role, content):
+    if CALL["id"] and content.strip():
+        _api("POST", f"/calls/{CALL['id']}/messages", CALL["account_id"],
+             {"role": role, "content": content.strip()[:5000]}, login=False)
+
+
+def log_action(tool_name, arguments, result):
+    if not CALL["id"]:
+        return
+    found = result if isinstance(result, dict) else {}
+    ref = arguments.get("booking_ref") or found.get("booking_id") or found.get("booking_ref")
+    body = {"tool_name": tool_name[:40], "arguments": arguments, "result": result, "success": bool(found.get("ok", True))}
+    if ref and re.fullmatch(r"[Bb]\d{6}", str(ref).strip()):
+        body["booking_id"] = str(ref).strip().upper()
+    answer = _api("POST", f"/calls/{CALL['id']}/actions", CALL["account_id"], body, login=False)
+    if answer.get("reason") == "BOOKING_NOT_FOUND":
+        body.pop("booking_id")
+        _api("POST", f"/calls/{CALL['id']}/actions", CALL["account_id"], body, login=False)
+
+
+def end_call(summary=None):
+    if CALL["id"]:
+        _api("POST", f"/calls/{CALL['id']}/end", CALL["account_id"], {"summary": summary}, login=False)
+        CALL["id"] = None
+
+
+def escalate_to_human(reason, booking_ref=None, account_id=None):
+    if not CALL["id"]:
+        return csv_tools.escalate_to_human(reason, booking_ref, account_id=account_id)
+    answer = _api("POST", f"/calls/{CALL['id']}/handoff", CALL["account_id"],
+                  {"reason": (reason or "The guest asked for a person").strip()[:500].ljust(3, ".")}, login=False)
+    if answer.get("reason") == "BOOKING_SYSTEM_DOWN":
+        return csv_tools.escalate_to_human(reason, booking_ref, account_id=account_id)
+    if not answer["ok"]:
+        return answer
+    if answer["mode"] == "live_chat":
+        CALL["chat_token"] = answer["chat_token"]
+        return {"ok": True, "handoff": "live chat with a member of staff", "staff_name": answer["staff_name"],
+                "say": f"{answer['staff_name']} from the hotel team will continue this chat with you now"}
+    return {"ok": True, "handoff": "urgent ticket", "ticket": answer["request_id"],
+            "say": "nobody is free right now; a member of the team will call the guest back as soon as possible"}
 
 
 def make_booking(room_type, check_in, check_out, adults, children=0, rate_plan="Flexible",
