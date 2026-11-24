@@ -1,6 +1,7 @@
 import json
 import os
 import urllib.error
+import urllib.parse
 import urllib.request
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
@@ -10,9 +11,9 @@ from google.genai import types
 import app.llm.config
 from app.rag.tools import check_availability, hotel_photos, create_request, escalate_to_human, REQUEST_TYPES, CATEGORIES
 from app.rag.tools import (
-    my_bookings, link_booking, find_booking, quote_cancellation, quote_modification,
-    late_checkout_quote, check_discount_code, loyalty_status, menu, room_service_quote,
+    link_booking, late_checkout_quote, check_discount_code, loyalty_status, menu, room_service_quote,
 )
+from app.rag import tools as csv_tools
 from app.llm.knowledge import search_hotel_info
 
 CHECK_AVAILABILITY = types.FunctionDeclaration(
@@ -228,7 +229,8 @@ def _api(method, path, account_id, body=None):
                                      headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"})
     try:
         with urllib.request.urlopen(request, timeout=30) as response:
-            return {"ok": True, **json.loads(response.read())}
+            answer = json.loads(response.read())
+            return {"ok": True, "items": answer} if isinstance(answer, list) else {"ok": True, **answer}
     except urllib.error.HTTPError as e:
         try:
             detail = json.loads(e.read()).get("detail")
@@ -241,12 +243,101 @@ def _api(method, path, account_id, body=None):
         return {"ok": False, "reason": "BOOKING_SYSTEM_DOWN", "advice": "ask the caller to call reception"}
 
 
+def _cairo(stamp):
+    if not stamp:
+        return None
+    when = datetime.fromisoformat(stamp.replace("Z", "+00:00"))
+    if when.tzinfo:
+        when = when.astimezone(ZoneInfo("Africa/Cairo"))
+    return when.strftime("%d %B %Y, %H:%M") + " Cairo time"
+
+
 def _cairo_time(result):
     if result.get("payment_due_at"):
-        due = datetime.fromisoformat(result["payment_due_at"].replace("Z", "+00:00")).astimezone(ZoneInfo("Africa/Cairo"))
-        result["pay_before"] = due.strftime("%d %B %Y, %H:%M") + " Cairo time"
-        del result["payment_due_at"]
+        result["pay_before"] = _cairo(result.pop("payment_due_at"))
     return result
+
+
+def _guest(account_id):
+    account = csv_tools._account(account_id)
+    customer = next((c for c in csv_tools._t("customers") if account and c["customer_id"] == account["customer_id"]), None)
+    if not customer:
+        return {"guest": None, "guest_ar": None, "address_as": ""}
+    return {"guest": f"{customer['first_name']} {customer['last_name']}",
+            "guest_ar": f"{customer.get('first_name_ar', '')} {customer.get('last_name_ar', '')}".strip(),
+            "address_as": csv_tools.SALUTE(customer)}
+
+
+def _summary(row, guest):
+    return {"ok": True, "booking_ref": row["booking_id"], **guest, "status": row["booking_status"],
+            "room_type": row["room_type_name"], "room_number": row["room_number"], "view": row["view"],
+            "check_in": row["check_in"], "check_out": row["check_out"], "nights": row["nights"],
+            "adults": row["adults"], "children": row["children"], "rate_plan": row["rate_plan"],
+            "total": row["total_amount"], "discount_source": row["discount_source"],
+            "discount_amount": row["discount_amount"], "amount_due": row["amount_due"],
+            "payment_status": row["payment_status"], "amount_paid": row["amount_paid"],
+            "refund_amount": row["refund_amount"], "pay_before": _cairo(row["payment_due_at"])}
+
+
+def my_bookings(account_id=None):
+    answer = _api("GET", "/me/bookings", account_id)
+    if answer.get("reason") == "BOOKING_SYSTEM_DOWN":
+        return csv_tools.my_bookings(account_id)
+    if not answer["ok"]:
+        return answer
+    guest = _guest(account_id)
+    rows = sorted(answer["items"], key=lambda r: r["check_in"], reverse=True)
+    return {"ok": True, "bookings": [_summary(r, guest) for r in rows]}
+
+
+def _in_account(booking_ref, account_id):
+    if not account_id:
+        return None
+    answer = my_bookings(account_id)
+    ref = str(booking_ref).strip().upper()
+    return next((b for b in answer.get("bookings", []) if isinstance(b, dict) and b.get("booking_ref") == ref and "pay_before" in b), None)
+
+
+def find_booking(booking_ref, last_name=None, phone_last4=None, account_id=None):
+    booking = _in_account(booking_ref, account_id)
+    return booking or csv_tools.find_booking(booking_ref, last_name, phone_last4, account_id)
+
+
+def quote_cancellation(booking_ref, last_name=None, phone_last4=None, account_id=None):
+    booking = _in_account(booking_ref, account_id)
+    if not booking:
+        return csv_tools.quote_cancellation(booking_ref, last_name, phone_last4, account_id=account_id)
+    answer = _api("GET", f"/me/bookings/{booking['booking_ref']}/cancellation", account_id)
+    if not answer["ok"]:
+        return answer
+    return {"ok": True, "booking_ref": answer["booking_id"], "status": answer["booking_status"],
+            "rate_plan": answer["rate_plan"], "is_free": answer["is_free"], "charge": answer["charge"],
+            "refund": answer["refund"], "amount_paid": answer["amount_paid"],
+            "free_until": _cairo(answer["free_cancellation_until"]),
+            "refund_timing": "processed within 3 business days; card refunds appear in 7-14 business days"}
+
+
+def quote_modification(booking_ref, new_check_in=None, new_check_out=None, new_room_type=None, adults=None,
+                       children=None, last_name=None, phone_last4=None, account_id=None):
+    booking = _in_account(booking_ref, account_id)
+    if not booking:
+        return csv_tools.quote_modification(booking_ref, new_check_in, new_check_out, new_room_type, adults, children,
+                                            last_name, phone_last4, account_id=account_id)
+    query = {"check_in": new_check_in, "check_out": new_check_out, "room_type": new_room_type,
+             "adults": adults, "children": children}
+    query = urllib.parse.urlencode({k: (int(v) if k in ("adults", "children") else v) for k, v in query.items() if v is not None})
+    answer = _api("GET", f"/me/bookings/{booking['booking_ref']}/change" + (f"?{query}" if query else ""), account_id)
+    if not answer["ok"]:
+        return answer
+    return {"ok": True, "booking_ref": answer["booking_id"], "room_type": answer["room_type"],
+            "room_number": answer["room_number"], "view": answer["view"], "check_in": answer["check_in"],
+            "check_out": answer["check_out"], "nights": answer["nights"], "adults": answer["adults"],
+            "children": answer["children"], "price_per_night": answer["price_per_night"],
+            "old_total": booking["amount_due"], "new_total": answer["amount_due"],
+            "difference": round(answer["amount_due"] - booking["amount_due"], 2), "discount": answer["discount"],
+            "paid_after_change": answer["amount_paid"], "pay_now": answer["pay_now"],
+            "balance_at_hotel": answer["pay_at_hotel"], "refund": answer["refund"],
+            "rule": "free on the Flexible rate until 48 hours before arrival; nothing changes until the caller says yes"}
 
 
 def make_booking(room_type, check_in, check_out, adults, children=0, rate_plan="Flexible",
