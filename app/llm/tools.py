@@ -343,52 +343,48 @@ def quote_modification(booking_ref, new_check_in=None, new_check_out=None, new_r
             "rule": "free on the Flexible rate until 48 hours before arrival; nothing changes until the caller says yes"}
 
 
-CALL = {"id": None, "account_id": None, "chat_token": None}
-
-
 def start_call(account_id=None, channel="voice"):
     answer = _api("POST", "/calls", account_id, {"channel": channel}, login=False)
-    CALL.update(id=answer.get("call_id") if answer["ok"] else None, account_id=account_id, chat_token=None)
-    return CALL["id"]
+    return {"id": answer.get("call_id") if answer["ok"] else None, "account_id": account_id, "chat_token": None}
 
 
-def log_message(role, content):
-    if CALL["id"] and content.strip():
-        _api("POST", f"/calls/{CALL['id']}/messages", CALL["account_id"],
+def log_message(call, role, content):
+    if call and call["id"] and content.strip():
+        _api("POST", f"/calls/{call['id']}/messages", call["account_id"],
              {"role": role, "content": content.strip()[:5000]}, login=False)
 
 
-def log_action(tool_name, arguments, result):
-    if not CALL["id"]:
+def log_action(call, tool_name, arguments, result):
+    if not call or not call["id"]:
         return
     found = result if isinstance(result, dict) else {}
     ref = arguments.get("booking_ref") or found.get("booking_id") or found.get("booking_ref")
     body = {"tool_name": tool_name[:40], "arguments": arguments, "result": result, "success": bool(found.get("ok", True))}
     if ref and re.fullmatch(r"[Bb]\d{6}", str(ref).strip()):
         body["booking_id"] = str(ref).strip().upper()
-    answer = _api("POST", f"/calls/{CALL['id']}/actions", CALL["account_id"], body, login=False)
+    answer = _api("POST", f"/calls/{call['id']}/actions", call["account_id"], body, login=False)
     if answer.get("reason") == "BOOKING_NOT_FOUND":
         body.pop("booking_id")
-        _api("POST", f"/calls/{CALL['id']}/actions", CALL["account_id"], body, login=False)
+        _api("POST", f"/calls/{call['id']}/actions", call["account_id"], body, login=False)
 
 
-def end_call(summary=None):
-    if CALL["id"]:
-        _api("POST", f"/calls/{CALL['id']}/end", CALL["account_id"], {"summary": summary}, login=False)
-        CALL["id"] = None
+def end_call(call, summary=None):
+    if call and call["id"]:
+        _api("POST", f"/calls/{call['id']}/end", call["account_id"], {"summary": summary}, login=False)
+        call["id"] = None
 
 
-def escalate_to_human(reason, booking_ref=None, account_id=None):
-    if not CALL["id"]:
+def escalate_to_human(reason, booking_ref=None, account_id=None, call=None):
+    if not call or not call["id"]:
         return csv_tools.escalate_to_human(reason, booking_ref, account_id=account_id)
-    answer = _api("POST", f"/calls/{CALL['id']}/handoff", CALL["account_id"],
+    answer = _api("POST", f"/calls/{call['id']}/handoff", call["account_id"],
                   {"reason": (reason or "The guest asked for a person").strip()[:500].ljust(3, ".")}, login=False)
     if answer.get("reason") == "BOOKING_SYSTEM_DOWN":
         return csv_tools.escalate_to_human(reason, booking_ref, account_id=account_id)
     if not answer["ok"]:
         return answer
     if answer["mode"] == "live_chat":
-        CALL["chat_token"] = answer["chat_token"]
+        call["chat_token"] = answer["chat_token"]
         return {"ok": True, "handoff": "live chat with a member of staff", "staff_name": answer["staff_name"],
                 "say": f"{answer['staff_name']} from the hotel team will continue this chat with you now"}
     return {"ok": True, "handoff": "urgent ticket", "ticket": answer["request_id"],

@@ -45,7 +45,7 @@ if VOICE_MODE:
 if "extended-thinking" in MODEL:
     CONFIG["thinking_config"] = {"thinking_level": THINKING_LEVEL}
 
-STATE = {"sent": time.time(), "speaking": False, "hearing": False, "played": 0.0, "arrived": 0.0, "primed": False,
+STATE = {"call": None, "sent": time.time(), "speaking": False, "hearing": False, "played": 0.0, "arrived": 0.0, "primed": False,
          "guest": [], "agent": []}
 PLAYBACK = bytearray()
 LOCK = threading.Lock()
@@ -85,8 +85,8 @@ def background(fn, *args):
 
 
 def log_turn(guest, agent):
-    log_message("guest", guest)
-    log_message("agent", agent)
+    log_message(STATE["call"], "guest", guest)
+    log_message(STATE["call"], "agent", agent)
 
 
 def save_turn(wait=False):
@@ -105,13 +105,15 @@ async def run_tool(session, call):
     args = dict(call.args)
     if "account_id" in inspect.signature(fn).parameters:
         args["account_id"] = None if ACCOUNT_ID is None else str(ACCOUNT_ID)
+    if "call" in inspect.signature(fn).parameters:
+        args["call"] = STATE["call"]
     try:
         result = await asyncio.to_thread(fn, **args)
     except Exception as e:
         result = {"ok": False, "reason": str(e)}
     if call.name != "search_hotel_info":
         print(f"[result] {result}")
-    background(log_action, call.name, dict(call.args), result)
+    background(log_action, STATE["call"], call.name, dict(call.args), result)
     await session.send_tool_response(function_responses=[
         types.FunctionResponse(id=call.id, name=call.name, response={"result": result})
     ])
@@ -199,9 +201,9 @@ async def speak(session):
 
 async def main():
     print(f"Model: {MODEL}  voice: {VOICE}  mode: {'voice' if VOICE_MODE else 'text'}")
-    call_id = await asyncio.to_thread(start_call, None if ACCOUNT_ID is None else str(ACCOUNT_ID),
-                                      "voice" if VOICE_MODE else "text")
-    print(f"Call log: {call_id or 'off (hotel server not running)'}")
+    STATE["call"] = await asyncio.to_thread(start_call, None if ACCOUNT_ID is None else str(ACCOUNT_ID),
+                                            "voice" if VOICE_MODE else "text")
+    print(f"Call log: {STATE['call']['id'] or 'off (hotel server not running)'}")
     try:
         async with client.aio.live.connect(model=MODEL, config=CONFIG) as session:
             listener = asyncio.create_task(listen(session))
@@ -213,7 +215,7 @@ async def main():
             listener.cancel()
     finally:
         save_turn(wait=True)
-        end_call()
+        end_call(STATE["call"])
 
 
 if __name__ == "__main__":
