@@ -10,7 +10,7 @@ import jwt
 import psycopg
 from google.genai import types
 import app.llm.config
-from app.rag.tools import check_availability, hotel_photos, create_request, escalate_to_human, REQUEST_TYPES, CATEGORIES
+from app.rag.tools import check_availability, hotel_photos, create_request, REQUEST_TYPES, CATEGORIES
 from app.rag.tools import (
     link_booking, late_checkout_quote, check_discount_code, loyalty_status, menu, room_service_quote,
 )
@@ -196,6 +196,43 @@ ROOM_SERVICE_QUOTE = declare(
         },
     },
     ["items"],
+)
+
+MAKE_BOOKING = declare(
+    "make_booking",
+    "Makes a new booking for the logged-in caller. Call it only after check_availability, after repeating room type, dates, guests, rate plan and total, and after the caller said yes. The booking is held as Pending until the amount pay_now is paid by payment_url before pay_before. If it returns DATE_OF_BIRTH_REQUIRED, ask the caller's date of birth and call it again with it.",
+    {
+        "room_type": {"type": "STRING", "description": "Single, Double, Twin, Deluxe, Family or Suite"},
+        "check_in": DATE,
+        "check_out": DATE,
+        "adults": {"type": "INTEGER"},
+        "children": {"type": "INTEGER"},
+        "rate_plan": {"type": "STRING", "enum": ["Flexible", "Non-refundable"]},
+        "discount_code": {"type": "STRING", "description": "Only if the caller gave a code that check_discount_code accepted"},
+        "date_of_birth": DATE,
+    },
+    ["room_type", "check_in", "check_out", "adults"],
+)
+
+CHANGE_BOOKING = declare(
+    "change_booking",
+    "Changes dates, room type or guests of a booking in the caller's account. Call it only after quote_modification gave the new total and the caller said yes. Give only what changes.",
+    {
+        "booking_ref": REF,
+        "new_check_in": DATE,
+        "new_check_out": DATE,
+        "new_room_type": {"type": "STRING", "description": "Single, Double, Twin, Deluxe, Family or Suite"},
+        "adults": {"type": "INTEGER"},
+        "children": {"type": "INTEGER"},
+    },
+    ["booking_ref"],
+)
+
+CANCEL_BOOKING = declare(
+    "cancel_booking",
+    "Cancels a booking in the caller's account for good. Call it only after quote_cancellation gave the charge and refund and the caller said yes to cancelling.",
+    {"booking_ref": REF},
+    ["booking_ref"],
 )
 
 API_URL = os.getenv("API_URL", "http://127.0.0.1:8000")
@@ -415,43 +452,6 @@ def change_booking(booking_ref, new_check_in=None, new_check_out=None, new_room_
 def cancel_booking(booking_ref, account_id=None):
     return _api("POST", f"/me/bookings/{booking_ref.strip().upper()}/cancel", account_id)
 
-
-MAKE_BOOKING = declare(
-    "make_booking",
-    "Makes a new booking for the logged-in caller. Call it only after check_availability, after repeating room type, dates, guests, rate plan and total, and after the caller said yes. The booking is held as Pending until the amount pay_now is paid by payment_url before pay_before. If it returns DATE_OF_BIRTH_REQUIRED, ask the caller's date of birth and call it again with it.",
-    {
-        "room_type": {"type": "STRING", "description": "Single, Double, Twin, Deluxe, Family or Suite"},
-        "check_in": DATE,
-        "check_out": DATE,
-        "adults": {"type": "INTEGER"},
-        "children": {"type": "INTEGER"},
-        "rate_plan": {"type": "STRING", "enum": ["Flexible", "Non-refundable"]},
-        "discount_code": {"type": "STRING", "description": "Only if the caller gave a code that check_discount_code accepted"},
-        "date_of_birth": DATE,
-    },
-    ["room_type", "check_in", "check_out", "adults"],
-)
-
-CHANGE_BOOKING = declare(
-    "change_booking",
-    "Changes dates, room type or guests of a booking in the caller's account. Call it only after quote_modification gave the new total and the caller said yes. Give only what changes.",
-    {
-        "booking_ref": REF,
-        "new_check_in": DATE,
-        "new_check_out": DATE,
-        "new_room_type": {"type": "STRING", "description": "Single, Double, Twin, Deluxe, Family or Suite"},
-        "adults": {"type": "INTEGER"},
-        "children": {"type": "INTEGER"},
-    },
-    ["booking_ref"],
-)
-
-CANCEL_BOOKING = declare(
-    "cancel_booking",
-    "Cancels a booking in the caller's account for good. Call it only after quote_cancellation gave the charge and refund and the caller said yes to cancelling.",
-    {"booking_ref": REF},
-    ["booking_ref"],
-)
 
 DECLARATIONS = [
     CHECK_AVAILABILITY, HOTEL_PHOTOS, SEARCH_HOTEL_INFO, CREATE_REQUEST, ESCALATE_TO_HUMAN,

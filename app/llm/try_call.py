@@ -12,7 +12,6 @@ from app.rag.tools import _account
 
 VOICE_MODE = len(sys.argv) > 1 and sys.argv[1] == "voice"
 MUTE_WHILE_SPEAKING = "speaker" in sys.argv[2:]
-QUIET = ("session_resumption_update", "voice_activity", "generation_complete", "interrupted", "turn_complete", "tool_call")
 MIC_RATE = 16000
 SPEAKER_RATE = 24000
 CHUNK = 1600
@@ -56,14 +55,6 @@ LOCK = threading.Lock()
 
 def since():
     return f"{time.time() - STATE['sent']:.1f}s"
-
-
-def describe(msg):
-    d = msg.model_dump(exclude_none=True)
-    sc = d.get("server_content", {})
-    extra = [k for k in d if k not in ("server_content", "data", "usage_metadata") + QUIET]
-    extra += [k for k in sc if k not in ("model_turn", "output_transcription", "input_transcription") + QUIET]
-    return f"{extra} status={sc.get('interaction_status')}" if extra else None
 
 
 def play(outdata, frames, time_info, status):
@@ -132,9 +123,6 @@ async def listen(session):
 async def hear(session):
     while True:
         async for response in session.receive():
-            info = describe(response)
-            if info:
-                print(f"\n[debug {since()}] {info}")
             content = response.server_content
             if content and content.interrupted:
                 with LOCK:
