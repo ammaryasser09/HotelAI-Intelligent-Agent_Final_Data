@@ -1,5 +1,6 @@
 // Demo data taken from database/seed (hotel "today" = 2026-09-19). Same shapes as the FastAPI responses.
 import { ApiError } from './client.js'
+import { callActions, callMessages } from './mockCalls.js'
 
 const TODAY = '2026-09-19'
 const PASSWORD = 'NilePearl@2026'
@@ -21,7 +22,8 @@ const roomTypes = [
   room_type_id, room_type_name, description, capacity, base_price, size_sqm,
   image_nile: `/static/rooms/${img}.webp`, image_city: img === 'suite' ? null : `/static/rooms/${img}_city.webp`
 }))
-const freeRooms = { Single: 6, Double: 3, Twin: 4, Deluxe: 0, Family: 0, Suite: 0 }
+const freeNov12 = { Single: 6, Double: 3, Twin: 4, Deluxe: 0, Family: 0, Suite: 0 }
+const freeOther = { Single: 4, Double: 5, Twin: 3, Deluxe: 2, Family: 2, Suite: 1 }
 
 const nightsBetween = (a, b) => Math.round((new Date(b) - new Date(a)) / 86400000)
 const r2 = (n) => Math.round(n * 100) / 100
@@ -213,6 +215,18 @@ export async function mockRequest(method, fullPath, body, token) {
     if (!acc || body?.password !== PASSWORD) fail(401, 'INVALID_CREDENTIALS')
     return { access_token: `mock-${acc.account_id}`, token_type: 'bearer', expires_in: 86400, account: acc }
   }
+  if (route === 'POST /auth/signup') {
+    if (accounts.find((a) => a.email.toLowerCase() === String(body.email).toLowerCase())) fail(409, 'EMAIL_ALREADY_REGISTERED')
+    const acc = { account_id: 9000 + accounts.length, role: 'Guest', full_name: `${body.first_name} ${body.last_name}`, email: body.email, customer_id: null, email_verified: false }
+    accounts.push(acc)
+    return { access_token: `mock-${acc.account_id}`, token_type: 'bearer', expires_in: 86400, account: acc }
+  }
+  if (route === 'POST /auth/forgot-password') return { sent: true, expires_in_minutes: 10 }
+  if (route === 'POST /auth/reset-password') {
+    if (body.code !== '123456') fail(400, 'WRONG_CODE', { attempts_left: 4 })
+    const acc = accounts.find((a) => a.email.toLowerCase() === String(body.email).toLowerCase() && a.role === 'Guest') || fail(400, 'CODE_EXPIRED')
+    return { access_token: `mock-${acc.account_id}`, token_type: 'bearer', expires_in: 86400, account: acc }
+  }
   if (route === 'GET /health') return { status: 'ok', database: 'demo data', hotel_today: TODAY, rooms: 150 }
   if (route === 'GET /room-types') return clone(roomTypes)
   if (route === 'GET /availability') {
@@ -221,7 +235,7 @@ export async function mockRequest(method, fullPath, body, token) {
     if (Number(q.guests || 1) > rt.capacity) fail(400, 'CAPACITY_EXCEEDED', { capacity: rt.capacity })
     const nights = nightsBetween(q.check_in, q.check_out)
     const total = rt.base_price * nights
-    const free = freeRooms[rt.room_type_name]
+    const free = (q.check_in < '2026-11-15' && q.check_out > '2026-11-12' ? freeNov12 : freeOther)[rt.room_type_name]
     return {
       room_type: rt.room_type_name, check_in: q.check_in, check_out: q.check_out, nights, guests: Number(q.guests || 1), rooms_free: free,
       nile_view_free: Math.min(free, 2), free_room_numbers: [], images: { nile: rt.image_nile, city: rt.image_city },
@@ -232,7 +246,20 @@ export async function mockRequest(method, fullPath, body, token) {
 
   const me = whoAmI(token)
   if (route === 'GET /auth/me') return clone(me)
+  if (route === 'POST /auth/verify-email') {
+    if (body.code !== '123456') fail(400, 'WRONG_CODE', { attempts_left: 4 })
+    me.email_verified = true
+    return { access_token: token, token_type: 'bearer', expires_in: 86400, account: clone(me) }
+  }
+  if (route === 'POST /auth/verify-email/resend') return { sent: true, expires_in_minutes: 10 }
+  if (me.role === 'Guest' && !me.email_verified && path.startsWith('/me')) fail(403, 'EMAIL_NOT_VERIFIED')
 
+  if ((m = path.match(/^\/payments\/mock\/(B\d{6})\/pay$/))) {
+    const b = db.bookings.find((x) => x.booking_id === m[1]) || fail(404, 'BOOKING_NOT_FOUND')
+    const amount = b.rate_plan === 'Flexible' ? b.price_per_night : b.amount_due
+    Object.assign(b, { booking_status: 'Confirmed', payment_status: 'Paid', amount_paid: amount, payment_due_at: null })
+    return { booking_id: b.booking_id, booking_status: 'Confirmed', payment_status: 'Paid', amount_paid: amount }
+  }
   if (path.startsWith('/me') || path === '/requests' || path === '/bookings' || path === '/requests/emergency') {
     if (me.role !== 'Guest') fail(403, 'GUESTS_ONLY')
     if (route === 'GET /me/bookings') return clone(db.bookings)
@@ -248,6 +275,33 @@ export async function mockRequest(method, fullPath, body, token) {
       b.payment_status = quote.refund ? 'Refunded' : 'Paid'
       b.refund_amount = quote.refund
       return { booking_id: b.booking_id, booking_status: 'Cancelled', payment_status: b.payment_status, charge: quote.charge, refund: quote.refund }
+    }
+    if ((m = path.match(/^\/me\/bookings\/(B\d{6})\/change$/))) {
+      const b = db.bookings.find((x) => x.booking_id === m[1]) || fail(404, 'BOOKING_NOT_FOUND')
+      if (db.channel[b.booking_id] === 'Booking Platform') fail(409, 'CHANGE_ON_BOOKING_PLATFORM')
+      if (b.rate_plan !== 'Flexible') fail(409, 'NON_REFUNDABLE_CANNOT_CHANGE')
+      const c = method === 'GET' ? q : body
+      const ci = c.check_in || b.check_in
+      const co = c.check_out || b.check_out
+      if (co <= ci) fail(400, 'CHECK_OUT_NOT_AFTER_CHECK_IN')
+      const type = c.room_type || b.room_type_name
+      const rt = roomTypes.find((r) => r.room_type_name === type) || fail(404, 'UNKNOWN_ROOM_TYPE')
+      const adults = Number(c.adults ?? b.adults)
+      const children = Number(c.children ?? b.children)
+      if (adults + children > rt.capacity) fail(400, 'CAPACITY_EXCEEDED', { capacity: rt.capacity })
+      const rate = type === b.room_type_name ? b.price_per_night : rt.base_price
+      const nights = nightsBetween(ci, co)
+      const total = r2(rate * nights)
+      const held = b.booking_status === 'Pending' ? 0 : b.amount_paid
+      const deposit = rate
+      const quote = {
+        booking_id: b.booking_id, booking_status: b.booking_status, room_type: type, room_number: type === b.room_type_name ? b.room_number : 1500 + nights,
+        view: b.view, check_in: ci, check_out: co, nights, adults, children, price_per_night: rate, total_amount: total, discount: null, amount_due: total,
+        amount_paid: Math.min(held, deposit), pay_now: b.booking_status === 'Pending' ? deposit : 0, pay_at_hotel: r2(total - Math.max(Math.min(held, deposit), b.booking_status === 'Pending' ? deposit : 0)),
+        refund: r2(Math.max(held - deposit, 0)), payment_url: b.booking_status === 'Pending' ? '#' : null
+      }
+      if (method === 'POST') Object.assign(b, { check_in: ci, check_out: co, nights, room_type_name: type, room_number: quote.room_number, adults, children, price_per_night: rate, total_amount: total, amount_due: total, amount_paid: quote.amount_paid })
+      return quote
     }
     if (route === 'POST /me/bookings/link') fail(404, 'BOOKING_NOT_FOUND_OR_NO_MATCH')
     if (route === 'POST /requests' || route === 'POST /requests/emergency') {
@@ -311,7 +365,7 @@ export async function mockRequest(method, fullPath, body, token) {
     if (route === 'GET /staff/chats') return clone(db.calls.filter((c) => c.assigned_to === me.full_name && c.status === 'escalated'))
     if ((m = path.match(/^\/staff\/calls\/(.+)$/))) {
       const c = db.calls.find((x) => x.call_id === m[1]) || fail(404, 'CALL_NOT_FOUND')
-      return { ...clone(c), messages: c.call_id.startsWith('f5b77b93') ? clone(chatMessages) : [], call_actions: [] }
+      return { ...clone(c), messages: clone(callMessages[c.call_id] || []), call_actions: clone(callActions[c.call_id] || []) }
     }
   }
 

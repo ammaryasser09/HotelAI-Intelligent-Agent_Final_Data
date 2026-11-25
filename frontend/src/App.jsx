@@ -1,6 +1,8 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { homeFor, useAuth } from './auth/AuthContext.jsx'
 import Login from './pages/Login.jsx'
+import Signup from './pages/Signup.jsx'
+import ForgotPassword from './pages/ForgotPassword.jsx'
 import { t } from './i18n.jsx'
 import Layout from './components/Layout.jsx'
 import GuestHome from './pages/guest/GuestHome.jsx'
@@ -29,6 +31,8 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/signup" element={<Signup />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/guest" element={<Protected roles={['Guest']}><Layout area="guest" /></Protected>}>
         <Route index element={<GuestHome />} />
         <Route path="bookings" element={<MyBookings />} />

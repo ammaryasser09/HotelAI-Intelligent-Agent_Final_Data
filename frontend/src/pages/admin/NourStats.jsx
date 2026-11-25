@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { errorText, niceDate, useApi, useHotelToday } from '../../hooks.js'
 import { t } from '../../i18n.jsx'
+import CallDetail from '../../components/CallDetail.jsx'
 
 const LANG = { 'Arabic-Egyptian': 'Arabic (Egyptian)' }
 const STATUS = { completed: ['Solved', 'b-green'], escalated: ['Handed to staff', 'b-amber'], abandoned: ['Hung up', 'b-grey'], active: ['Live now', 'b-blue'] }
@@ -19,6 +20,7 @@ function Bars({ rows, color }) {
 export default function NourStats() {
   const today = useHotelToday()
   const [status, setStatus] = useState('')
+  const [open, setOpen] = useState(null)
   const { data, error } = useApi('/admin/calls')
   if (error) return <div className="error-box">{errorText(error)}</div>
   if (!data) return <div className="loading">{t('Loading…')}</div>
@@ -53,21 +55,23 @@ export default function NourStats() {
       </div>
       <section className="card table-box">
         <div className="row between" style={{ padding: '16px 20px 8px' }}>
-          <h2 className="h2">{t('Conversations')}</h2>
+          <div><h2 className="h2">{t('Conversations')}</h2><div className="small muted">{t('Click a conversation to read it and see what Nour did.')}</div></div>
           <div className="row">
             {[['', 'All'], ['escalated', 'Handed to staff'], ['abandoned', 'Hung up']].map(([id, label]) => <button key={id} className={`chip ${status === id ? 'on' : ''}`} onClick={() => setStatus(id)}>{t(label)}</button>)}
           </div>
         </div>
         {data.filter((c) => !status || c.status === status).map((c) => (
-          <div key={c.call_id} className="row" style={{ gap: '6px 16px', padding: '12px 20px', borderTop: '1px solid var(--line-2)', fontSize: 14 }}>
+          <button key={c.call_id} className="row" onClick={() => setOpen(c.call_id)} style={{ width: '100%', gap: '6px 16px', padding: '12px 20px', border: 0, borderTop: '1px solid var(--line-2)', background: 'transparent', color: 'var(--ink)', fontSize: 14, textAlign: 'start' }}>
             <span className="muted" style={{ flex: '0 0 120px' }}>{when(c.started_at)}</span>
             <span style={{ flex: '0 0 130px' }}>{t(LANG[c.language] || c.language || 'Unknown')}</span>
             <span style={{ flex: '0 0 140px' }}>{c.guest_name || t('Visitor')}</span>
             <span style={{ flex: '1 1 300px' }} dir="ltr" className="ltr">{c.summary || c.escalation_reason || t('{n} turns', { n: c.turns })}</span>
             <span className={`badge ${STATUS[c.status]?.[1] || 'b-grey'}`}>{t(STATUS[c.status]?.[0] || c.status)}</span>
-          </div>
+            <span className="small" style={{ color: 'var(--teal)', fontWeight: 600 }}>{t('View')} ›</span>
+          </button>
         ))}
       </section>
+      {open && <CallDetail callId={open} onClose={() => setOpen(null)} />}
     </>
   )
 }

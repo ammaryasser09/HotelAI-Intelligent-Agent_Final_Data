@@ -4,6 +4,7 @@ import { useAuth } from '../auth/AuthContext.jsx'
 import { USE_MOCK } from '../api/client.js'
 import { initials } from '../hooks.js'
 import NourPanel from './NourPanel.jsx'
+import VerifyEmailBanner from './VerifyEmailBanner.jsx'
 import { LangToggle, t } from '../i18n.jsx'
 
 export function Logo({ size = 32 }) {
@@ -63,6 +64,7 @@ export default function Layout({ area }) {
           </div>
         </nav>
         <main className="main">
+          {area === 'guest' && <VerifyEmailBanner />}
           <Outlet context={{ openNour: () => setNourOpen(true) }} />
         </main>
       </div>

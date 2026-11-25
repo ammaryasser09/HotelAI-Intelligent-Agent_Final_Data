@@ -1,5 +1,7 @@
 import { useState } from 'react'
-import { api, API_URL, USE_MOCK } from '../../api/client.js'
+import { api } from '../../api/client.js'
+import ChangeBooking from '../../components/ChangeBooking.jsx'
+import PayButton from '../../components/PayButton.jsx'
 import { egp, errorText, niceDate, stayRange, useApi, useHotelToday } from '../../hooks.js'
 import { money, t } from '../../i18n.jsx'
 import { freeCancelUntil, roomImage } from './GuestHome.jsx'
@@ -11,6 +13,7 @@ export default function MyBookings() {
   const { data, error, loading, reload } = useApi('/me/bookings')
   const [tab, setTab] = useState('up')
   const [quote, setQuote] = useState(null)
+  const [changing, setChanging] = useState(null)
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState(null)
   const [showLink, setShowLink] = useState(false)
@@ -110,7 +113,8 @@ export default function MyBookings() {
                 <>
                   <div className="note-box">{policy(b)}</div>
                   <div className="row">
-                    {b.booking_status === 'Pending' && <a className="btn gold" href={USE_MOCK ? '#' : `${API_URL}/payments/mock/${b.booking_id}`} target="_blank" rel="noreferrer" style={{ display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}>{t('Pay the deposit')}</a>}
+                    {b.booking_status === 'Pending' && <PayButton bookingId={b.booking_id} onPaid={reload} label={b.rate_plan === 'Flexible' ? 'Pay the deposit' : 'Pay now'} />}
+                    {b.rate_plan === 'Flexible' && b.access !== 'linked' && freeCancelUntil(b) >= today && <button className="btn" onClick={() => setChanging(b)}>{t('Change dates or room')}</button>}
                     <button className="btn danger" onClick={() => askCancel(b)}>{t('Cancel booking')}</button>
                   </div>
                 </>
@@ -120,6 +124,8 @@ export default function MyBookings() {
         ))}
         {!loading && list.length === 0 && <div className="card pad muted" style={{ textAlign: 'center' }}>{t('Nothing here yet.')}</div>}
       </div>
+
+      {changing && <ChangeBooking booking={changing} onClose={() => setChanging(null)} onChanged={reload} />}
 
       {quote && (
         <div className="modal-back" role="dialog" aria-label={t('Cancel booking')}>

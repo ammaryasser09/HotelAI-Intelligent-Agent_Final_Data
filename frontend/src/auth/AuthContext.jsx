@@ -24,12 +24,18 @@ export function AuthProvider({ children }) {
     return res.account
   }
 
+  function startSession(res) {
+    setToken(res.access_token)
+    setAccount(res.account)
+    return res.account
+  }
+
   function logout() {
     setToken(null)
     setAccount(null)
   }
 
-  return <AuthContext.Provider value={{ account, ready, login, logout }}>{children}</AuthContext.Provider>
+  return <AuthContext.Provider value={{ account, ready, login, logout, startSession }}>{children}</AuthContext.Provider>
 }
 
 export const useAuth = () => useContext(AuthContext)

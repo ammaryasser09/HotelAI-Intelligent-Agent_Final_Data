@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api, imageUrl } from '../../api/client.js'
+import PayButton from '../../components/PayButton.jsx'
 import { egp, errorText, niceDate, useApi, useHotelToday } from '../../hooks.js'
 import { money, t } from '../../i18n.jsx'
 
@@ -9,7 +10,8 @@ const addDays = (iso, n) => new Date(Date.parse(iso) + n * 86400000).toISOString
 export default function BookRoom() {
   const today = useHotelToday()
   const types = useApi('/room-types')
-  const [form, setForm] = useState({ check_in: '', check_out: '', adults: 1, children: 0, discount_code: '' })
+  const [form, setForm] = useState({ check_in: '', check_out: '', adults: 1, children: 0, discount_code: '', date_of_birth: '' })
+  const [needDob, setNeedDob] = useState(false)
   const [results, setResults] = useState(null)
   const [searching, setSearching] = useState(false)
   const [error, setError] = useState(null)
@@ -47,10 +49,10 @@ export default function BookRoom() {
     setBusy(roomType + ratePlan)
     setError(null)
     try {
-      const r = await api('/bookings', { method: 'POST', body: { room_type: roomType, check_in: form.check_in, check_out: form.check_out, adults: Number(form.adults), children: Number(form.children), rate_plan: ratePlan, discount_code: form.discount_code || null } })
+      const r = await api('/bookings', { method: 'POST', body: { room_type: roomType, check_in: form.check_in, check_out: form.check_out, adults: Number(form.adults), children: Number(form.children), rate_plan: ratePlan, discount_code: form.discount_code || null, date_of_birth: form.date_of_birth || null } })
       setBooked(r)
       window.scrollTo({ top: 0, behavior: 'smooth' })
-    } catch (e) { setError(e) } finally { setBusy('') }
+    } catch (e) { if (e.message === 'DATE_OF_BIRTH_REQUIRED') setNeedDob(true); setError(e) } finally { setBusy('') }
   }
 
   const free = results ? results.reduce((n, r) => n + (r.a?.rooms_free || 0), 0) : 0
@@ -63,14 +65,16 @@ export default function BookRoom() {
 
       {booked && (
         <section className="card pad stack" style={{ borderColor: 'var(--teal)', borderWidth: 2 }}>
-          <div className="row between"><b style={{ fontSize: 17 }}>{t('Booking {id} is held for you', { id: booked.booking_id })}</b><span className="badge b-amber">{t(booked.booking_status)}</span></div>
+          <div className="row between"><b style={{ fontSize: 17 }}>{t('Booking {id} is held for you', { id: booked.booking_id })}</b><span className={`badge ${booked.booking_status === 'Pending' ? 'b-amber' : 'b-green'}`}>{t(booked.booking_status)}</span></div>
           <div className="small" style={{ color: 'var(--text-2)', fontSize: 14 }}>
             {t('{type} Room · {room}', { type: t(booked.room_type), room: booked.room_number })} · {niceDate(booked.check_in)} – {niceDate(booked.check_out)} · {t(booked.rate_plan)}.{' '}
             {t('Pay {now} now', { now: money(egp(booked.pay_now)) })}{booked.pay_at_hotel ? t(' and {rest} at the hotel', { rest: money(egp(booked.pay_at_hotel)) }) : ''}.{' '}
             {t('The room is held until {date}.', { date: `${niceDate(booked.payment_due_at)} ${booked.payment_due_at?.slice(11, 16) || ''}` })}
           </div>
           <div className="row">
-            <a className="btn gold" href={booked.payment_url} target="_blank" rel="noreferrer" style={{ display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}>{t('Pay now')}</a>
+            {booked.booking_status === 'Pending'
+              ? <PayButton bookingId={booked.booking_id} url={booked.payment_url} label="Pay now" onPaid={() => api('/me/bookings').then((all) => { const b = all.find((x) => x.booking_id === booked.booking_id); if (b) setBooked({ ...booked, booking_status: b.booking_status }) })} />
+              : <span className="badge b-green">{t('Paid — your booking is confirmed')}</span>}
             <Link className="btn" to="/guest/bookings" style={{ display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}>{t('See my bookings')}</Link>
           </div>
         </section>
@@ -82,6 +86,7 @@ export default function BookRoom() {
         <label className="field" style={{ flex: '0 1 100px' }}>{t('Adults')}<input type="number" min="1" max="4" value={form.adults} onChange={set('adults')} /></label>
         <label className="field" style={{ flex: '0 1 100px' }}>{t('Children')}<input type="number" min="0" max="3" value={form.children} onChange={set('children')} /></label>
         <label className="field" style={{ flex: '1 1 140px' }}>{t('Discount code')}<input dir="ltr" placeholder={t('Optional')} value={form.discount_code} onChange={set('discount_code')} /></label>
+        {needDob && <label className="field" style={{ flex: '1 1 170px' }}>{t('Date of birth')}<input type="date" required value={form.date_of_birth} onChange={set('date_of_birth')} /></label>}
         <button className="btn primary" disabled={searching}>{t(searching ? 'Checking…' : 'Check availability')}</button>
       </form>
 
