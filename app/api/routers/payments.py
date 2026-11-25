@@ -10,7 +10,7 @@ from app.api.db import get_db
 from app.api.schemas.bookings import PaymentResult
 from app.api.services.bookings import amount_to_pay_now, confirm_payment, payment_state
 from app.api.services.email import notify
-from app.api.services.payments import booking_of, paymob_reference, paymob_signature_is_valid
+from app.api.services.payments import booking_of, is_refund_callback, paymob_reference, paymob_signature_is_valid
 from app.api.services.pricing import money
 
 logger = logging.getLogger("hotel_api")
@@ -89,8 +89,8 @@ async def paymob_webhook(request: Request, background: BackgroundTasks, hmac: st
         raise HTTPException(status_code=403, detail={"reason": "INVALID_SIGNATURE"})
 
     booking_ref = booking_of(obj)
-    if obj.get("has_parent_transaction") or obj.get("is_refund") or obj.get("is_void"):
-        # the callback of a refund we asked for (it points to the original payment): nothing more to do
+    if is_refund_callback(obj):
+        # the callbacks of a refund we asked for: nothing more to do
         logger.info("Paymob: refund for %s went through", booking_ref)
         return {"received": True}
     if obj.get("success") is not True or obj.get("pending") is True:

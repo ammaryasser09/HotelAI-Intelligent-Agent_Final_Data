@@ -128,7 +128,23 @@ async def refund_payment(booking_id: str, amount: Decimal, reference) -> None:
     except (httpx.HTTPError, KeyError, ValueError) as error:
         logger.error("Paymob refund for %s failed: %s", booking_id, error)
         raise PaymentProviderError("refund failed") from error
-    if str(response.json().get("obj", {}).get("success")).lower() != "true":
+    if not refund_went_through(response.json()):
         logger.error("Paymob refused the refund for %s: %s", booking_id, response.text[:500])
         raise PaymentProviderError("refund refused")
     logger.info("Paymob refunded %s EGP for %s", amount, booking_id)
+
+
+def refund_went_through(answer) -> bool:
+    """The refund API answers with the new refund transaction itself ({"id": ..., "success": true, ...}),
+    not wrapped in "obj" like the callbacks."""
+    if not isinstance(answer, dict):
+        return False
+    result = answer.get("obj") if isinstance(answer.get("obj"), dict) else answer
+    return str(result.get("success")).lower() == "true" and str(result.get("pending")).lower() != "true"
+
+
+def is_refund_callback(obj: dict) -> bool:
+    """After a refund Paymob calls back twice: once about the refund transaction (has_parent_transaction)
+    and once about the original payment, now marked is_refunded. Neither is a new payment."""
+    flags = ("has_parent_transaction", "is_refund", "is_void", "is_refunded", "is_voided")
+    return any(str(obj.get(flag)).lower() == "true" for flag in flags) or bool(obj.get("refunded_amount_cents"))
