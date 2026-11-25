@@ -5,9 +5,9 @@ import threading
 import time
 from google import genai
 from google.genai import types
-from app.llm.config import GEMINI_API_KEY, MODEL, THINKING_LEVEL, ACCOUNT_ID, VOICE
+from app.llm.config import GEMINI_API_KEY, MODELS, THINKING_LEVEL, ACCOUNT_ID, VOICE, connect
 from app.llm.prompts import LIVE_PROMPT
-from app.llm.tools import DECLARATIONS, FUNCTIONS, start_call, log_message, log_action, end_call
+from app.llm.tools import FUNCTIONS, declarations, start_call, log_message, log_action, end_call
 from app.rag.tools import _account
 
 VOICE_MODE = len(sys.argv) > 1 and sys.argv[1] == "voice"
@@ -30,20 +30,23 @@ def session_note():
     return f"SESSION: the caller is logged in as {name}."
 
 
-CONFIG = {
-    "response_modalities": ["AUDIO"],
-    "output_audio_transcription": {},
-    "speech_config": {"voice_config": {"prebuilt_voice_config": {"voice_name": VOICE}}},
-    "system_instruction": LIVE_PROMPT + "\n\n" + session_note(),
-    "tools": [{"function_declarations": DECLARATIONS}],
-}
-if VOICE_MODE:
-    CONFIG["input_audio_transcription"] = {}
-    CONFIG["realtime_input_config"] = {
-        "automatic_activity_detection": {"start_of_speech_sensitivity": types.StartSensitivity.START_SENSITIVITY_LOW}
+def make_config(model):
+    config = {
+        "response_modalities": ["AUDIO"],
+        "output_audio_transcription": {},
+        "speech_config": {"voice_config": {"prebuilt_voice_config": {"voice_name": VOICE}}},
+        "system_instruction": LIVE_PROMPT + "\n\n" + session_note(),
+        "tools": [{"function_declarations": declarations(model)}],
     }
-if "extended-thinking" in MODEL:
-    CONFIG["thinking_config"] = {"thinking_level": THINKING_LEVEL}
+    if VOICE_MODE:
+        config["input_audio_transcription"] = {}
+        config["realtime_input_config"] = {
+            "automatic_activity_detection": {"start_of_speech_sensitivity": types.StartSensitivity.START_SENSITIVITY_LOW}
+        }
+    if "extended-thinking" in model:
+        config["thinking_config"] = {"thinking_level": THINKING_LEVEL}
+    return config
+
 
 STATE = {"call": None, "sent": time.time(), "speaking": False, "hearing": False, "played": 0.0, "arrived": 0.0, "primed": False,
          "guest": [], "agent": []}
@@ -200,12 +203,13 @@ async def speak(session):
 
 
 async def main():
-    print(f"Model: {MODEL}  voice: {VOICE}  mode: {'voice' if VOICE_MODE else 'text'}")
+    print(f"Models: {' -> '.join(MODELS)}  voice: {VOICE}  mode: {'voice' if VOICE_MODE else 'text'}")
     STATE["call"] = await asyncio.to_thread(start_call, None if ACCOUNT_ID is None else str(ACCOUNT_ID),
                                             "voice" if VOICE_MODE else "text")
     print(f"Call log: {STATE['call']['id'] or 'off (hotel server not running)'}")
     try:
-        async with client.aio.live.connect(model=MODEL, config=CONFIG) as session:
+        async with connect(client, make_config) as (session, model):
+            print(f"Connected to {model}")
             listener = asyncio.create_task(listen(session))
             if VOICE_MODE:
                 await speak(session)

@@ -40,7 +40,7 @@ def session_note(nour, account_id):
     return f"SESSION: the caller is logged in as {found['full_name'] if found else 'unknown'}."
 
 
-def make_config(nour, account_id):
+def make_config(nour, account_id, model):
     types = nour["types"]
     return {
         "response_modalities": ["AUDIO"],
@@ -51,7 +51,7 @@ def make_config(nour, account_id):
             "automatic_activity_detection": {"start_of_speech_sensitivity": types.StartSensitivity.START_SENSITIVITY_LOW}
         },
         "system_instruction": nour["prompt"] + "\n\n" + session_note(nour, account_id),
-        "tools": [{"function_declarations": nour["tools"].DECLARATIONS}],
+        "tools": [{"function_declarations": nour["tools"].declarations(model)}],
     }
 
 
@@ -176,10 +176,10 @@ async def call_nour(websocket, account_id):
         await websocket.close(code=1011)
         return
     line = await asyncio.to_thread(nour["tools"].start_call, account_id, "voice")
-    await websocket.send_json({"type": "ready", "call_id": line["id"], "logged_in": bool(account_id)})
     turn = {"guest": [], "agent": []}
     try:
-        async with nour["client"].aio.live.connect(model=nour["config"].MODEL, config=make_config(nour, account_id)) as session:
+        async with nour["config"].connect(nour["client"], lambda model: make_config(nour, account_id, model)) as (session, model):
+            await websocket.send_json({"type": "ready", "call_id": line["id"], "logged_in": bool(account_id), "model": model})
             tasks = [asyncio.create_task(from_browser(nour, websocket, session, turn)),
                      asyncio.create_task(to_browser(nour, websocket, session, turn, account_id, line))]
             done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
@@ -275,7 +275,7 @@ function silence() {
 function onMessage(event) {
   if (typeof event.data !== "string") { play(event.data); return; }
   const m = JSON.parse(event.data);
-  if (m.type === "ready") note((m.logged_in ? "مسجّل دخول. " : "زائر. ") + (m.call_id ? "Call log: " + m.call_id : "Call log: off"));
+  if (m.type === "ready") note((m.logged_in ? "مسجّل دخول. " : "زائر. ") + (m.call_id ? "Call log: " + m.call_id : "Call log: off") + " | " + m.model);
   else if (m.type === "guest" || m.type === "agent") say(m.type, m.text);
   else if (m.type === "interrupted") { silence(); note("[interrupted]"); }
   else if (m.type === "turn") who = null;

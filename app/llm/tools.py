@@ -459,6 +459,12 @@ DECLARATIONS = [
     LATE_CHECKOUT_QUOTE, CHECK_DISCOUNT_CODE, LOYALTY_STATUS, MENU, ROOM_SERVICE_QUOTE,
     MAKE_BOOKING, CHANGE_BOOKING, CANCEL_BOOKING,
 ]
+def declarations(model):
+    if "flash-live" in model:
+        return [d.model_copy(update={"behavior": None}) for d in DECLARATIONS]
+    return DECLARATIONS
+
+
 FUNCTIONS = {
     "check_availability": check_availability,
     "hotel_photos": hotel_photos,
