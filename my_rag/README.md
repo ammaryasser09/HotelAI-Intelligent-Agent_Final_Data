@@ -63,8 +63,8 @@ question → BGE-M3 vector → outside the hotel? → yes: []
                                               → no: top 20 closest chunks → remove duplicates → top 5
 ```
 
-1. **Index** (`chunking.py`): 44 knowledge-base files split by numbered sections (230 chunks) + 2,631 training FAQ answers = **2,861 chunks**, each turned into a 1024-number vector by BGE-M3 and saved in `index/`.
-2. **Out-of-scope check** (`search.py`): the question is compared with example off-topic questions (anchors). If it is closer to them than to any hotel chunk by more than `OOS_MARGIN` (0.07), we return `[]`.
+1. **Index** (`chunking.py`): 44 knowledge-base files split by numbered sections (230 chunks) + 2,638 training FAQ answers = **2,868 chunks**, each turned into a 1024-number vector by BGE-M3 and saved in `index/`.
+2. **Out-of-scope check** (`search.py`): the question is compared with example off-topic questions (anchors: the training off-topic FAQ questions minus `DROPPED_OOS_ANCHORS`, plus `EXTRA_OOS_ANCHORS`). If it is closer to them than to any hotel chunk by more than `OOS_MARGIN` (0.07), we return `[]`.
 3. **Retrieval** (`search.py`): cosine similarity between the question vector and all chunk vectors.
 4. **Dedup**: chunks with the same `fact_id` or the same answer text are kept once.
 5. **Warm-up**: at load, the model encodes sentences of 1 to 64 words, so the first guest question is not slow.
@@ -73,7 +73,7 @@ question → BGE-M3 vector → outside the hotel? → yes: []
 
 | file | role |
 |---|---|
-| `config.py` | all settings (paths, model, weights, margins) |
+| `config.py` | all settings (paths, model, weights, margins, anchors) |
 | `bm25_search.py` | keyword search (BM25), first experiment |
 | `dense_search.py` | meaning search (BGE-M3), first experiment |
 | `chunking.py` | builds the index (`index/chunks.jsonl`, `index/vectors.npy`) |
@@ -112,8 +112,8 @@ Measured on `evaluation/realistic_test_egyptian.csv` (105 real questions with a 
 | correct file in top 5 (Recall@5) | **90%** |
 | correct file in top 20 (Recall@20) | **98%** |
 | average / slowest time (RTX 3060 laptop) | **0.016s** / 0.022s |
-| average / slowest time (MacBook Air, 8GB) | **0.024s** / 0.09s |
-| off-topic questions blocked | **27 / 27** |
+| average / slowest time (MacBook Air, 8GB) | **0.026s** / 0.105s |
+| off-topic questions blocked | **26 / 27** |
 
 ## Results by language
 
@@ -155,13 +155,17 @@ Kept 0.07. The anchors catch about 2/3 of new off-topic questions, so `[]` is a 
 | Warm-up with 1 short sentence vs sentences of 1–64 words | Mac slowest question 0.804s → 0.114s | warm-up 1–64 words |
 | Old answers asking for booking reference + last name to cancel or change a booking (19 answers in 5 languages + `cancellation_process.txt`) | replaced with "log in and choose the booking from your account"; Recall unchanged (90%) | fixed (linking an outside booking still uses reference + last name) |
 | English/French queries about the distance to the pyramids were blocked (the anchor "Which pyramids should I visit and how much are the tickets?" won) | added 6 rewordings (3 English, 2 French, 1 Russian) with the existing "What is near the hotel?" answers; the LLM team's query now passes, all other numbers unchanged | fixed |
+| RT160: transport to the pyramids and its cost. The FAQ had no answer about taxis, so the "Getting Around" section lost to the distance answers | added 7 FAQ questions (4 English, 1 MSA, 1 French, 1 Russian) with one new answer taken word for word from `location_and_surroundings.txt` (17 km, reception calls a taxi, tours through outside operators, no fixed hotel price) | 6 / 6 transport phrasings now return the taxi answer, except the ones with a price that the anchor still blocked |
+| The pyramid tickets anchor (English + Russian) still blocked "transport ... and their costs" (0.086) | kept as anchors / dropped / replaced with 3 narrower anchors (pyramids entry fee, tourist sites to visit): LLM query blocked / passes, old off-topic 24 of 27 / passes at 0.027, old off-topic 26 of 27 | replaced (`DROPPED_OOS_ANCHORS` + 3 new `EXTRA_OOS_ANCHORS`); Recall, wrongly blocked (8) and new off-topic caught (10 of 15) unchanged |
+| RT158: Suite size (85 m²) | 6 phrasings in English and Arabic, including "Does the Suite have a Nile view and how big is it?", all return the 85 m² text | no change needed in the RAG |
 
 ## Known limits
 
 - Very short slang questions with no topic (e.g. `أوصل للجولد إزاي؟`) are not understood. The LLM should write a clear query (see the tip above).
 - One sentence with several questions returns results for only part of it. The LLM should split it.
 - About 1 in 3 new off-topic questions is not blocked; the LLM prompt must refuse them too.
-- Some in-scope questions are close to the off-topic margin (e.g. the English pyramids distance question passes at 0.062 vs 0.07). If `search()` returns `[]` for a hotel question, the LLM should offer staff, not refuse.
+- `أزور أنهي أهرامات والتذاكر بكام؟` (tourist advice + ticket prices) is no longer blocked. It returns the distance and taxi answer, which has no ticket price; the LLM must decline the ticket part.
+- Some in-scope questions are close to the off-topic margin. If `search()` returns `[]` for a hotel question, the LLM should offer staff, not refuse.
 
 ## Team
 

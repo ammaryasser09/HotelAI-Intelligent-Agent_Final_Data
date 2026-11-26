@@ -5,7 +5,7 @@ import numpy as np
 from rank_bm25 import BM25Okapi
 from my_rag.config import (
     CHUNKS_FILE, VECTORS_FILE, FAQ_FILE, BM25_K1, BM25_B, SEARCH_TOP_K, RETRIEVE_N, RRF_K, BM25_WEIGHT,
-    OOS_MARGIN, EXTRA_OOS_ANCHORS,
+    OOS_MARGIN, EXTRA_OOS_ANCHORS, DROPPED_OOS_ANCHORS,
 )
 from my_rag.chunking import load_model
 
@@ -46,7 +46,7 @@ def _load_anchors():
     anchors = []
     with open(FAQ_FILE, encoding="utf-8") as f:
         for row in csv.DictReader(f):
-            if row["source_doc"] == "out_of_scope_policy" and row["split"] == "train":
+            if row["source_doc"] == "out_of_scope_policy" and row["split"] == "train" and row["question"] not in DROPPED_OOS_ANCHORS:
                 anchors.append(row["question"])
     return anchors + EXTRA_OOS_ANCHORS
 

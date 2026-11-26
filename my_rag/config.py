@@ -1,17 +1,17 @@
-from pathlib import Path                                   
+from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent           
-KB_DIR = ROOT / "knowledge_base"                         
+ROOT = Path(__file__).resolve().parent.parent
+KB_DIR = ROOT / "knowledge_base"
 
-BM25_K1 = 1.5                                            
-BM25_B = 0.75                                              
-TOP_K = 3                                                
+BM25_K1 = 1.5
+BM25_B = 0.75
+TOP_K = 3
 
 
-MODELS_DIR = ROOT / "models"                              
-DENSE_MODEL = "BAAI/bge-m3"                              
-DENSE_BATCH_SIZE = 4                                      
-DENSE_MAX_LENGTH = 512       
+MODELS_DIR = ROOT / "models"
+DENSE_MODEL = "BAAI/bge-m3"
+DENSE_BATCH_SIZE = 4
+DENSE_MAX_LENGTH = 512
 
 FAQ_FILE = ROOT / "rag" / "hotel_faq_gold.csv"
 INDEX_DIR = ROOT / "my_rag" / "index"
@@ -47,4 +47,11 @@ EXTRA_OOS_ANCHORS = [
     "Recommend a good restaurant outside the hotel",
     "Help me with my programming homework",
     "What do you think about politics?",
+    "What is the entry fee for the Giza Pyramids site?",
+    "Which tourist attractions in Cairo are worth visiting?",
+    "Сколько стоит вход на территорию пирамид?",
+]
+DROPPED_OOS_ANCHORS = [
+    "Which pyramids should I visit and how much are the tickets?",
+    "Какие пирамиды стоит посетить и сколько стоят билеты?",
 ]
