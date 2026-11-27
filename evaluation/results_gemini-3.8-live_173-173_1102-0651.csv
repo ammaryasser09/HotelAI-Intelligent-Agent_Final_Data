@@ -1,0 +1,2 @@
+﻿test_id,category,route,lang,question,answer,tools_called,expected_tool,tool_ok,lang_ok,expected_facts,facts_numbers,first_words_s,trace,correct,invented,notes
+RT173,rules_limits,RAG,,ينفع أطبخ في الأوضة؟,هتأكدلك من الزملاء بخصوص الموضوع ده. تحب أحولك لحد من زمايلي يوضح لحضرتك؟,search_hotel_info {'question': 'Can guests cook in their rooms?'},,-,-,not in the KB: say so and refer to reception,-,2.1,msg session_resumption_update > tool 0.7s search_hotel_info > turn 0.9s NONE > turn 7.9s NONE,,,

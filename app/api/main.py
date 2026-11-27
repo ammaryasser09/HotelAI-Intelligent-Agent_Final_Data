@@ -18,7 +18,7 @@ from app.api.db import engine
 from app.api.logging_config import setup_logging
 from app.api.rate_limit import limiter, rate_limit_exceeded
 from app.api.routers import (admin, auth, availability, bookings, calls, cancellations, changes, discounts, health,
-                             hotel, my_bookings, payments, requests, staff)
+                             hotel, my_bookings, nour, payments, requests, staff)
 from app.api.services.expiry import expiry_job
 from scalar_fastapi import get_scalar_api_reference, Theme
 setup_logging()
@@ -101,6 +101,7 @@ app.include_router(admin.router)
 app.include_router(calls.router)
 app.include_router(bookings.router)
 app.include_router(payments.router)
+app.include_router(nour.router)
 mimetypes.add_type("image/webp", ".webp")
 app.mount("/static", StaticFiles(directory=PROJECT_ROOT / "static"), name="static")
 

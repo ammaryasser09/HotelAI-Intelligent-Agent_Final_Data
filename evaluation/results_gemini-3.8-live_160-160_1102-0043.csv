@@ -1,0 +1,2 @@
+﻿test_id,category,route,lang,question,answer,tools_called,expected_tool,tool_ok,lang_ok,expected_facts,facts_numbers,first_words_s,correct,invented,notes
+RT160,multi_intent,RAG,,في مواصلات للأهرامات؟ وبكام؟,هتأكد لحضرتك من الزملاء، تحب أحولك لحد من زمايلي يساعدك في ترتيب المواصلات؟,search_hotel_info {'question': 'What are the transportation options from the hotel to the pyramids and their costs?'},,-,-,about 17 km; reception calls a taxi; tours through outside operators; no hotel price for this,0/1,1.9,,,

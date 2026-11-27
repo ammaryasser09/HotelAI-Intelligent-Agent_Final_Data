@@ -1,0 +1,41 @@
+test_id,lang,category,question,account_id,route,expected_tool,expected_facts,must_not
+LG-EG-002,eg,information,انتوا بعيد عن المطار قد ايه؟,,RAG,,about 25 km; 35-60 minutes by car,
+LG-EG-008,eg,information,البيسين بيفتح امتى وبيقفل امتى؟,,RAG,,7:00 AM - 9:00 PM,
+LG-EG-012,eg,information,الفطار بوفيه ولا بتطلب من منيو؟,,RAG,,"buffet 7:00-10:30; 1,200 EGP per adult",
+LG-EG-018,eg,information,السبا فيه مساج ساعة ونص؟ بكام؟,,RAG,,"90-minute massage 4,800 EGP",
+LG-EG-031,eg,policy,لو لغيت قبل ميعادي بأسبوع هدفع حاجة؟,,RAG,,Flexible: free until 48 h before arrival; Non-refundable: nothing refunded,state one universal fee
+LG-EG-161,eg,rules_limits,ينفع أجيب الكلب بتاعي؟,,RAG,,no pets; service animals welcome,
+LG-EG-111,eg,complaint,التكييف في أوضتي مش شغال من امبارح,3606,ACTION,create_request,apologise; send maintenance now; offer a room change; open a ticket for the staff (create_request),blame the guest
+LG-EG-177,eg,urgent,في حريقة في الدور! أعمل إيه؟,,EMERGENCY,create_request,"leave by the emergency exits, stairs not lifts; call reception +20 2 2794 5500; give the emergency numbers (ambulance 123, police 122, fire 180) and reception +20 2 2794 5500; open an Emergency ticket (Critical)",give a long answer first
+LG-MSA-002,msa,information,كم تبعد المسافة بين الفندق والمطار؟,,RAG,,about 25 km; 35-60 minutes by car,
+LG-MSA-008,msa,information,متى يفتح المسبح ومتى يغلق؟,,RAG,,7:00 AM - 9:00 PM,
+LG-MSA-012,msa,information,هل الإفطار بوفيه مفتوح أم من قائمة الطعام؟,,RAG,,"buffet 7:00-10:30; 1,200 EGP per adult",
+LG-MSA-018,msa,information,هل يوجد في المنتجع الصحي تدليك لمدة ساعة ونصف؟ وكم سعره؟,,RAG,,"90-minute massage 4,800 EGP",
+LG-MSA-031,msa,policy,إذا ألغيت الحجز قبل موعد وصولي بأسبوع، هل سأدفع شيئًا؟,,RAG,,Flexible: free until 48 h before arrival; Non-refundable: nothing refunded,state one universal fee
+LG-MSA-161,msa,rules_limits,هل يمكنني إحضار كلبي؟,,RAG,,no pets; service animals welcome,
+LG-MSA-111,msa,complaint,المكيف في غرفتي لا يعمل منذ الأمس.,3606,ACTION,create_request,apologise; send maintenance now; offer a room change; open a ticket for the staff (create_request),blame the guest
+LG-MSA-177,msa,urgent,يوجد حريق في الطابق! ماذا أفعل؟,,EMERGENCY,create_request,"leave by the emergency exits, stairs not lifts; call reception +20 2 2794 5500; give the emergency numbers (ambulance 123, police 122, fire 180) and reception +20 2 2794 5500; open an Emergency ticket (Critical)",give a long answer first
+LG-EN-002,en,information,How far is the hotel from the airport?,,RAG,,about 25 km; 35-60 minutes by car,
+LG-EN-008,en,information,What time does the pool open and close?,,RAG,,7:00 AM - 9:00 PM,
+LG-EN-012,en,information,Is breakfast a buffet or à la carte?,,RAG,,"buffet 7:00-10:30; 1,200 EGP per adult",
+LG-EN-018,en,information,Does the spa have a 90-minute massage? How much is it?,,RAG,,"90-minute massage 4,800 EGP",
+LG-EN-031,en,policy,"If I cancel a week before my arrival, do I pay anything?",,RAG,,Flexible: free until 48 h before arrival; Non-refundable: nothing refunded,state one universal fee
+LG-EN-161,en,rules_limits,Can I bring my dog?,,RAG,,no pets; service animals welcome,
+LG-EN-111,en,complaint,The air conditioning in my room hasn't worked since yesterday.,3606,ACTION,create_request,apologise; send maintenance now; offer a room change; open a ticket for the staff (create_request),blame the guest
+LG-EN-177,en,urgent,There's a fire on my floor! What should I do?,,EMERGENCY,create_request,"leave by the emergency exits, stairs not lifts; call reception +20 2 2794 5500; give the emergency numbers (ambulance 123, police 122, fire 180) and reception +20 2 2794 5500; open an Emergency ticket (Critical)",give a long answer first
+LG-FR-002,fr,information,L'hôtel est à quelle distance de l'aéroport ?,,RAG,,about 25 km; 35-60 minutes by car,
+LG-FR-008,fr,information,À quelle heure la piscine ouvre-t-elle et ferme-t-elle ?,,RAG,,7:00 AM - 9:00 PM,
+LG-FR-012,fr,information,Le petit-déjeuner est-il un buffet ou à la carte ?,,RAG,,"buffet 7:00-10:30; 1,200 EGP per adult",
+LG-FR-018,fr,information,Le spa propose-t-il un massage de 90 minutes ? Combien coûte-t-il ?,,RAG,,"90-minute massage 4,800 EGP",
+LG-FR-031,fr,policy,"Si j'annule une semaine avant mon arrivée, est-ce que je paie quelque chose ?",,RAG,,Flexible: free until 48 h before arrival; Non-refundable: nothing refunded,state one universal fee
+LG-FR-161,fr,rules_limits,Puis-je venir avec mon chien ?,,RAG,,no pets; service animals welcome,
+LG-FR-111,fr,complaint,La climatisation de ma chambre ne marche pas depuis hier.,3606,ACTION,create_request,apologise; send maintenance now; offer a room change; open a ticket for the staff (create_request),blame the guest
+LG-FR-177,fr,urgent,Il y a un incendie à mon étage ! Qu'est-ce que je dois faire ?,,EMERGENCY,create_request,"leave by the emergency exits, stairs not lifts; call reception +20 2 2794 5500; give the emergency numbers (ambulance 123, police 122, fire 180) and reception +20 2 2794 5500; open an Emergency ticket (Critical)",give a long answer first
+LG-RU-002,ru,information,Как далеко отель от аэропорта?,,RAG,,about 25 km; 35-60 minutes by car,
+LG-RU-008,ru,information,Во сколько открывается и закрывается бассейн?,,RAG,,7:00 AM - 9:00 PM,
+LG-RU-012,ru,information,Завтрак — это шведский стол или по меню?,,RAG,,"buffet 7:00-10:30; 1,200 EGP per adult",
+LG-RU-018,ru,information,Есть ли в спа массаж на 90 минут? Сколько он стоит?,,RAG,,"90-minute massage 4,800 EGP",
+LG-RU-031,ru,policy,"Если я отменю бронь за неделю до приезда, мне нужно что-то платить?",,RAG,,Flexible: free until 48 h before arrival; Non-refundable: nothing refunded,state one universal fee
+LG-RU-161,ru,rules_limits,Можно приехать с собакой?,,RAG,,no pets; service animals welcome,
+LG-RU-111,ru,complaint,Кондиционер в моём номере не работает со вчерашнего дня.,3606,ACTION,create_request,apologise; send maintenance now; offer a room change; open a ticket for the staff (create_request),blame the guest
+LG-RU-177,ru,urgent,На моём этаже пожар! Что мне делать?,,EMERGENCY,create_request,"leave by the emergency exits, stairs not lifts; call reception +20 2 2794 5500; give the emergency numbers (ambulance 123, police 122, fire 180) and reception +20 2 2794 5500; open an Emergency ticket (Critical)",give a long answer first

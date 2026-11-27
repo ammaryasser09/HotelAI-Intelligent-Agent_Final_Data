@@ -1,0 +1,487 @@
+import json
+import os
+import re
+import urllib.error
+import urllib.parse
+import urllib.request
+from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
+import jwt
+import psycopg
+from google.genai import types
+import app.llm.config
+from app.rag.tools import check_availability, hotel_photos, create_request, REQUEST_TYPES, CATEGORIES
+from app.rag.tools import (
+    link_booking, late_checkout_quote, check_discount_code, loyalty_status, menu, room_service_quote,
+)
+from app.rag import tools as csv_tools
+from app.llm.knowledge import search_hotel_info
+
+CHECK_AVAILABILITY = types.FunctionDeclaration(
+    name="check_availability",
+    description="Free rooms and prices for a room type and dates.",
+    behavior="NON_BLOCKING",
+    parameters={
+        "type": "OBJECT",
+        "properties": {
+            "room_type": {"type": "STRING", "description": "Single, Double, Twin, Deluxe, Family or Suite"},
+            "check_in": {"type": "STRING", "description": "YYYY-MM-DD"},
+            "check_out": {"type": "STRING", "description": "YYYY-MM-DD"},
+            "guests": {"type": "INTEGER", "description": "number of guests"},
+        },
+        "required": ["room_type", "check_in", "check_out", "guests"],
+    },
+)
+
+HOTEL_PHOTOS = types.FunctionDeclaration(
+    name="hotel_photos",
+    description="Photos of the hotel areas to show on the call screen.",
+    behavior="NON_BLOCKING",
+    parameters={
+        "type": "OBJECT",
+        "properties": {
+            "area": {"type": "STRING", "description": "pool, spa, gym, restaurant, lobby or hotel"},
+        },
+    },
+)
+
+SEARCH_HOTEL_INFO = types.FunctionDeclaration(
+    name="search_hotel_info",
+    description="Search the hotel's information: policies, prices, opening hours, services, facilities, rooms and location, including distances to the airport and landmarks and what is near the hotel. Only for questions about Nile Pearl Hotel and a stay there; never search for unrelated topics such as sports, weather or politics, decline those yourself. Write the query yourself in English with the topic in it, never the guest's words as they are. If the guest asks several things, call it once for each question.",    behavior="NON_BLOCKING",
+    parameters={
+        "type": "OBJECT",
+        "properties": {
+            "question": {"type": "STRING", "description": "One clear English question with its topic, e.g. 'How to reach Gold level in the loyalty program?'"},
+        },
+        "required": ["question"],
+    },
+)
+
+CREATE_REQUEST = types.FunctionDeclaration(
+    name="create_request",
+    description="Open a ticket for the hotel team: in-stay requests (housekeeping, room service, extra bed...), Maintenance for anything broken, Complaint, Special Request for a coming stay (needs a booking and a category), Discount Request, and Emergency for medical, fire or security (top priority, works without login). In an emergency, call this tool at once in the same turn, before or while you give the emergency numbers; never say the team was alerted unless this tool returned ok.",
+    behavior="NON_BLOCKING",
+    parameters={
+        "type": "OBJECT",
+        "properties": {
+            "request_type": {"type": "STRING", "enum": list(REQUEST_TYPES)},
+            "request_text": {"type": "STRING", "description": "What the guest needs, in one short English sentence."},
+            "booking_ref": {"type": "STRING", "description": "B followed by six digits, only if the request is about a booking."},
+            "category": {"type": "STRING", "enum": sorted({c for v in CATEGORIES.values() for c in v}), "description": "Only for a Complaint or a Special Request."},
+        },
+        "required": ["request_type", "request_text"],
+    },
+)
+
+ESCALATE_TO_HUMAN = types.FunctionDeclaration(
+    name="escalate_to_human",
+    description="The guest has a problem and asked to talk to a person: hand the chat to a member of staff, or open an urgent callback ticket if no one is free.",
+    behavior="NON_BLOCKING",
+    parameters={
+        "type": "OBJECT",
+        "properties": {
+            "reason": {"type": "STRING", "description": "The guest's problem in one short English sentence."},
+            "booking_ref": {"type": "STRING", "description": "B followed by six digits, only if it is about a booking."},
+        },
+        "required": ["reason"],
+    },
+)
+
+REF = {"type": "STRING", "description": "Booking reference: B followed by six digits, e.g. B013193"}
+LAST_NAME = {"type": "STRING", "description": "Last name on the booking, only for a booking that is not in the caller's account"}
+PHONE4 = {"type": "STRING", "description": "Last four digits of the phone on the booking, only for a booking that is not in the caller's account"}
+DATE = {"type": "STRING", "description": "YYYY-MM-DD"}
+
+
+def declare(name, description, properties=None, required=None):
+    if not properties:
+        return types.FunctionDeclaration(name=name, description=description, behavior="NON_BLOCKING")
+    parameters = {"type": "OBJECT", "properties": properties}
+    if required:
+        parameters["required"] = required
+    return types.FunctionDeclaration(name=name, description=description, behavior="NON_BLOCKING", parameters=parameters)
+
+
+MY_BOOKINGS = declare(
+    "my_bookings",
+    "The logged-in caller's bookings (own and linked), newest first. Use it first when a logged-in caller talks about their booking; no further questions are needed for these.",
+)
+
+LINK_BOOKING = declare(
+    "link_booking",
+    "Add a booking made by phone, agency or a booking platform to the logged-in caller's account: the reference plus the last name or the last four phone digits.",
+    {"booking_ref": REF, "last_name": LAST_NAME, "phone_last4": PHONE4},
+    ["booking_ref"],
+)
+
+FIND_BOOKING = declare(
+    "find_booking",
+    "Details and payment status of one booking: free for a booking in the caller's account, otherwise only after the reference check (last name or last four phone digits).",
+    {"booking_ref": REF, "last_name": LAST_NAME, "phone_last4": PHONE4},
+    ["booking_ref"],
+)
+
+QUOTE_CANCELLATION = declare(
+    "quote_cancellation",
+    "What cancelling a booking would cost and refund now, by its rate plan. It does not cancel; tell the caller the cost before any cancellation.",
+    {"booking_ref": REF, "last_name": LAST_NAME, "phone_last4": PHONE4},
+    ["booking_ref"],
+)
+
+QUOTE_MODIFICATION = declare(
+    "quote_modification",
+    "New dates, room type or guests for a booking: availability, room and new total. It does not change the booking.",
+    {
+        "booking_ref": REF,
+        "new_check_in": DATE,
+        "new_check_out": DATE,
+        "new_room_type": {"type": "STRING", "description": "Single, Double, Twin, Deluxe, Family or Suite"},
+        "adults": {"type": "INTEGER"},
+        "children": {"type": "INTEGER"},
+        "last_name": LAST_NAME,
+        "phone_last4": PHONE4,
+    },
+    ["booking_ref"],
+)
+
+LATE_CHECKOUT_QUOTE = declare(
+    "late_checkout_quote",
+    "Price of a late check-out for a booking until a given time, including the member benefit.",
+    {
+        "booking_ref": REF,
+        "until": {"type": "STRING", "description": "HH:MM, e.g. 16:00"},
+        "last_name": LAST_NAME,
+        "phone_last4": PHONE4,
+    },
+    ["booking_ref", "until"],
+)
+
+CHECK_DISCOUNT_CODE = declare(
+    "check_discount_code",
+    "Whether a discount code is valid today and what it gives. A personal code works only for its own guest. Never say a code works without this tool.",
+    {"code": {"type": "STRING", "description": "The code as the guest said it, e.g. PEARL100"}},
+    ["code"],
+)
+
+LOYALTY_STATUS = declare(
+    "loyalty_status",
+    "Nile Pearl Rewards tier and points of the guest of a booking.",
+    {"booking_ref": REF, "last_name": LAST_NAME, "phone_last4": PHONE4},
+    ["booking_ref"],
+)
+
+MENU = declare(
+    "menu",
+    "The room-service menu with exact dish names, Arabic names, prices and dietary codes. Call it before room_service_quote to get the exact names.",
+    {
+        "night": {"type": "BOOLEAN", "description": "true for the night menu (11 PM to 6 AM)"},
+        "category": {"type": "STRING", "enum": ["Starters", "Sandwiches", "Main courses", "Desserts", "Drinks", "Children"]},
+    },
+)
+
+ROOM_SERVICE_QUOTE = declare(
+    "room_service_quote",
+    "Total of a room-service order including the 300 EGP delivery charge. It only prices the order; to place it, call create_request with request_type 'Room Service'.",
+    {
+        "items": {
+            "type": "ARRAY",
+            "items": {
+                "type": "OBJECT",
+                "properties": {
+                    "item": {"type": "STRING", "description": "Exact dish name from the menu tool, e.g. Beef burger, Koshary, Mineral water, large"},
+                    "qty": {"type": "INTEGER"},
+                },
+                "required": ["item", "qty"],
+            },
+        },
+    },
+    ["items"],
+)
+
+MAKE_BOOKING = declare(
+    "make_booking",
+    "Makes a new booking for the logged-in caller. Call it only after check_availability, after repeating room type, dates, guests, rate plan and total, and after the caller said yes. The booking is held as Pending until the amount pay_now is paid by payment_url before pay_before. If it returns DATE_OF_BIRTH_REQUIRED, ask the caller's date of birth and call it again with it.",
+    {
+        "room_type": {"type": "STRING", "description": "Single, Double, Twin, Deluxe, Family or Suite"},
+        "check_in": DATE,
+        "check_out": DATE,
+        "adults": {"type": "INTEGER"},
+        "children": {"type": "INTEGER"},
+        "rate_plan": {"type": "STRING", "enum": ["Flexible", "Non-refundable"]},
+        "discount_code": {"type": "STRING", "description": "Only if the caller gave a code that check_discount_code accepted"},
+        "date_of_birth": DATE,
+    },
+    ["room_type", "check_in", "check_out", "adults"],
+)
+
+CHANGE_BOOKING = declare(
+    "change_booking",
+    "Changes dates, room type or guests of a booking in the caller's account. Call it only after quote_modification gave the new total and the caller said yes. Give only what changes.",
+    {
+        "booking_ref": REF,
+        "new_check_in": DATE,
+        "new_check_out": DATE,
+        "new_room_type": {"type": "STRING", "description": "Single, Double, Twin, Deluxe, Family or Suite"},
+        "adults": {"type": "INTEGER"},
+        "children": {"type": "INTEGER"},
+    },
+    ["booking_ref"],
+)
+
+CANCEL_BOOKING = declare(
+    "cancel_booking",
+    "Cancels a booking in the caller's account for good. Call it only after quote_cancellation gave the charge and refund and the caller said yes to cancelling.",
+    {"booking_ref": REF},
+    ["booking_ref"],
+)
+
+API_URL = os.getenv("API_URL", "http://127.0.0.1:8000")
+
+
+def _token(account_id):
+    url = os.getenv("DATABASE_URL", "").replace("+psycopg", "")
+    with psycopg.connect(url) as db:
+        row = db.execute(
+            "SELECT role, customer_id, email_verified FROM user_accounts WHERE account_id = %s AND is_active",
+            (int(account_id),),
+        ).fetchone()
+    if not row:
+        return None
+    now = datetime.now(timezone.utc)
+    claims = {"sub": str(account_id), "role": row[0], "customer_id": row[1], "email_verified": row[2],
+              "iat": now, "exp": now + timedelta(minutes=10)}
+    return jwt.encode(claims, os.getenv("JWT_SECRET"), algorithm="HS256")
+
+
+def _api(method, path, account_id, body=None, login=True):
+    headers = {"Content-Type": "application/json"}
+    if account_id:
+        try:
+            token = _token(account_id)
+        except psycopg.Error:
+            return {"ok": False, "reason": "BOOKING_SYSTEM_DOWN", "advice": "ask the caller to call reception"}
+        if not token:
+            return {"ok": False, "reason": "UNKNOWN_ACCOUNT"}
+        headers["Authorization"] = f"Bearer {token}"
+    elif login:
+        return {"ok": False, "reason": "NOT_LOGGED_IN", "advice": "ask the caller to log in on the website first"}
+    data = None if body is None else json.dumps(body, default=str, ensure_ascii=False).encode()
+    request = urllib.request.Request(API_URL + path, data=data, method=method, headers=headers)
+    try:
+        with urllib.request.urlopen(request, timeout=30) as response:
+            answer = json.loads(response.read())
+            return {"ok": True, "items": answer} if isinstance(answer, list) else {"ok": True, **answer}
+    except urllib.error.HTTPError as e:
+        try:
+            detail = json.loads(e.read()).get("detail")
+        except ValueError:
+            detail = None
+        if isinstance(detail, dict):
+            return {"ok": False, "status": e.code, **detail}
+        return {"ok": False, "status": e.code, "reason": str(detail or e.reason)}
+    except urllib.error.URLError:
+        return {"ok": False, "reason": "BOOKING_SYSTEM_DOWN", "advice": "ask the caller to call reception"}
+
+
+def _cairo(stamp):
+    if not stamp:
+        return None
+    when = datetime.fromisoformat(stamp.replace("Z", "+00:00"))
+    if when.tzinfo:
+        when = when.astimezone(ZoneInfo("Africa/Cairo"))
+    return when.strftime("%d %B %Y, %H:%M") + " Cairo time"
+
+
+def _cairo_time(result):
+    if result.get("payment_due_at"):
+        result["pay_before"] = _cairo(result.pop("payment_due_at"))
+    return result
+
+
+def _guest(account_id):
+    account = csv_tools._account(account_id)
+    customer = next((c for c in csv_tools._t("customers") if account and c["customer_id"] == account["customer_id"]), None)
+    if not customer:
+        return {"guest": None, "guest_ar": None, "address_as": ""}
+    return {"guest": f"{customer['first_name']} {customer['last_name']}",
+            "guest_ar": f"{customer.get('first_name_ar', '')} {customer.get('last_name_ar', '')}".strip(),
+            "address_as": csv_tools.SALUTE(customer)}
+
+
+def _summary(row, guest):
+    return {"ok": True, "booking_ref": row["booking_id"], **guest, "status": row["booking_status"],
+            "room_type": row["room_type_name"], "room_number": row["room_number"], "view": row["view"],
+            "check_in": row["check_in"], "check_out": row["check_out"], "nights": row["nights"],
+            "adults": row["adults"], "children": row["children"], "rate_plan": row["rate_plan"],
+            "total": row["total_amount"], "discount_source": row["discount_source"],
+            "discount_amount": row["discount_amount"], "amount_due": row["amount_due"],
+            "payment_status": row["payment_status"], "amount_paid": row["amount_paid"],
+            "refund_amount": row["refund_amount"], "pay_before": _cairo(row["payment_due_at"])}
+
+
+def my_bookings(account_id=None):
+    answer = _api("GET", "/me/bookings", account_id)
+    if answer.get("reason") == "BOOKING_SYSTEM_DOWN":
+        return csv_tools.my_bookings(account_id)
+    if not answer["ok"]:
+        return answer
+    guest = _guest(account_id)
+    rows = sorted(answer["items"], key=lambda r: r["check_in"], reverse=True)
+    return {"ok": True, "bookings": [_summary(r, guest) for r in rows]}
+
+
+def _in_account(booking_ref, account_id):
+    if not account_id:
+        return None
+    answer = my_bookings(account_id)
+    ref = str(booking_ref).strip().upper()
+    return next((b for b in answer.get("bookings", []) if isinstance(b, dict) and b.get("booking_ref") == ref and "pay_before" in b), None)
+
+
+def find_booking(booking_ref, last_name=None, phone_last4=None, account_id=None):
+    booking = _in_account(booking_ref, account_id)
+    return booking or csv_tools.find_booking(booking_ref, last_name, phone_last4, account_id)
+
+
+def quote_cancellation(booking_ref, last_name=None, phone_last4=None, account_id=None):
+    booking = _in_account(booking_ref, account_id)
+    if not booking:
+        return csv_tools.quote_cancellation(booking_ref, last_name, phone_last4, account_id=account_id)
+    answer = _api("GET", f"/me/bookings/{booking['booking_ref']}/cancellation", account_id)
+    if not answer["ok"]:
+        return answer
+    return {"ok": True, "booking_ref": answer["booking_id"], "status": answer["booking_status"],
+            "rate_plan": answer["rate_plan"], "is_free": answer["is_free"], "charge": answer["charge"],
+            "refund": answer["refund"], "amount_paid": answer["amount_paid"],
+            "free_until": _cairo(answer["free_cancellation_until"]),
+            "refund_timing": "processed within 3 business days; card refunds appear in 7-14 business days"}
+
+
+def quote_modification(booking_ref, new_check_in=None, new_check_out=None, new_room_type=None, adults=None,
+                       children=None, last_name=None, phone_last4=None, account_id=None):
+    booking = _in_account(booking_ref, account_id)
+    if not booking:
+        return csv_tools.quote_modification(booking_ref, new_check_in, new_check_out, new_room_type, adults, children,
+                                            last_name, phone_last4, account_id=account_id)
+    query = {"check_in": new_check_in, "check_out": new_check_out, "room_type": new_room_type,
+             "adults": adults, "children": children}
+    query = urllib.parse.urlencode({k: (int(v) if k in ("adults", "children") else v) for k, v in query.items() if v is not None})
+    answer = _api("GET", f"/me/bookings/{booking['booking_ref']}/change" + (f"?{query}" if query else ""), account_id)
+    if not answer["ok"]:
+        return answer
+    return {"ok": True, "booking_ref": answer["booking_id"], "room_type": answer["room_type"],
+            "room_number": answer["room_number"], "view": answer["view"], "check_in": answer["check_in"],
+            "check_out": answer["check_out"], "nights": answer["nights"], "adults": answer["adults"],
+            "children": answer["children"], "price_per_night": answer["price_per_night"],
+            "old_total": booking["amount_due"], "new_total": answer["amount_due"],
+            "difference": round(answer["amount_due"] - booking["amount_due"], 2), "discount": answer["discount"],
+            "paid_after_change": answer["amount_paid"], "pay_now": answer["pay_now"],
+            "balance_at_hotel": answer["pay_at_hotel"], "refund": answer["refund"],
+            "rule": "free on the Flexible rate until 48 hours before arrival; nothing changes until the caller says yes"}
+
+
+def start_call(account_id=None, channel="voice"):
+    answer = _api("POST", "/calls", account_id, {"channel": channel}, login=False)
+    return {"id": answer.get("call_id") if answer["ok"] else None, "account_id": account_id, "chat_token": None}
+
+
+def log_message(call, role, content):
+    if call and call["id"] and content.strip():
+        _api("POST", f"/calls/{call['id']}/messages", call["account_id"],
+             {"role": role, "content": content.strip()[:5000]}, login=False)
+
+
+def log_action(call, tool_name, arguments, result):
+    if not call or not call["id"]:
+        return
+    found = result if isinstance(result, dict) else {}
+    ref = arguments.get("booking_ref") or found.get("booking_id") or found.get("booking_ref")
+    body = {"tool_name": tool_name[:40], "arguments": arguments, "result": result, "success": bool(found.get("ok", True))}
+    if ref and re.fullmatch(r"[Bb]\d{6}", str(ref).strip()):
+        body["booking_id"] = str(ref).strip().upper()
+    answer = _api("POST", f"/calls/{call['id']}/actions", call["account_id"], body, login=False)
+    if answer.get("reason") == "BOOKING_NOT_FOUND":
+        body.pop("booking_id")
+        _api("POST", f"/calls/{call['id']}/actions", call["account_id"], body, login=False)
+
+
+def end_call(call, summary=None):
+    if call and call["id"]:
+        _api("POST", f"/calls/{call['id']}/end", call["account_id"], {"summary": summary}, login=False)
+        call["id"] = None
+
+
+def escalate_to_human(reason, booking_ref=None, account_id=None, call=None):
+    if not call or not call["id"]:
+        return csv_tools.escalate_to_human(reason, booking_ref, account_id=account_id)
+    answer = _api("POST", f"/calls/{call['id']}/handoff", call["account_id"],
+                  {"reason": (reason or "The guest asked for a person").strip()[:500].ljust(3, ".")}, login=False)
+    if answer.get("reason") == "BOOKING_SYSTEM_DOWN":
+        return csv_tools.escalate_to_human(reason, booking_ref, account_id=account_id)
+    if not answer["ok"]:
+        return answer
+    if answer["mode"] == "live_chat":
+        call["chat_token"] = answer["chat_token"]
+        return {"ok": True, "handoff": "live chat with a member of staff", "staff_name": answer["staff_name"],
+                "say": f"{answer['staff_name']} from the hotel team will continue this chat with you now"}
+    return {"ok": True, "handoff": "urgent ticket", "ticket": answer["request_id"],
+            "say": "nobody is free right now; a member of the team will call the guest back as soon as possible"}
+
+
+def make_booking(room_type, check_in, check_out, adults, children=0, rate_plan="Flexible",
+                 discount_code=None, date_of_birth=None, account_id=None):
+    body = {"room_type": room_type, "check_in": check_in, "check_out": check_out, "adults": int(adults),
+            "children": int(children or 0), "rate_plan": rate_plan, "channel": "Voice Agent"}
+    if discount_code:
+        body["discount_code"] = discount_code
+    if date_of_birth:
+        body["date_of_birth"] = date_of_birth
+    return _cairo_time(_api("POST", "/bookings", account_id, body))
+
+
+def change_booking(booking_ref, new_check_in=None, new_check_out=None, new_room_type=None,
+                   adults=None, children=None, account_id=None):
+    body = {"check_in": new_check_in, "check_out": new_check_out, "room_type": new_room_type,
+            "adults": None if adults is None else int(adults), "children": None if children is None else int(children)}
+    body = {k: v for k, v in body.items() if v is not None}
+    if not body:
+        return {"ok": False, "reason": "NOTHING_TO_CHANGE"}
+    return _cairo_time(_api("POST", f"/me/bookings/{booking_ref.strip().upper()}/change", account_id, body))
+
+
+def cancel_booking(booking_ref, account_id=None):
+    return _api("POST", f"/me/bookings/{booking_ref.strip().upper()}/cancel", account_id)
+
+
+DECLARATIONS = [
+    CHECK_AVAILABILITY, HOTEL_PHOTOS, SEARCH_HOTEL_INFO, CREATE_REQUEST, ESCALATE_TO_HUMAN,
+    MY_BOOKINGS, LINK_BOOKING, FIND_BOOKING, QUOTE_CANCELLATION, QUOTE_MODIFICATION,
+    LATE_CHECKOUT_QUOTE, CHECK_DISCOUNT_CODE, LOYALTY_STATUS, MENU, ROOM_SERVICE_QUOTE,
+    MAKE_BOOKING, CHANGE_BOOKING, CANCEL_BOOKING,
+]
+def declarations(model):
+    if "flash-live" in model:
+        return [d.model_copy(update={"behavior": None}) for d in DECLARATIONS]
+    return DECLARATIONS
+
+
+FUNCTIONS = {
+    "check_availability": check_availability,
+    "hotel_photos": hotel_photos,
+    "search_hotel_info": search_hotel_info,
+    "create_request": create_request,
+    "escalate_to_human": escalate_to_human,
+    "my_bookings": my_bookings,
+    "link_booking": link_booking,
+    "find_booking": find_booking,
+    "quote_cancellation": quote_cancellation,
+    "quote_modification": quote_modification,
+    "late_checkout_quote": late_checkout_quote,
+    "check_discount_code": check_discount_code,
+    "loyalty_status": loyalty_status,
+    "menu": menu,
+    "room_service_quote": room_service_quote,
+    "make_booking": make_booking,
+    "change_booking": change_booking,
+    "cancel_booking": cancel_booking,
+}

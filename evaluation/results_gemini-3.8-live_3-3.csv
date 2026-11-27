@@ -1,0 +1,2 @@
+﻿test_id,category,question,answer,tools_called,expected_tool,tool_ok,expected_facts,facts_numbers,first_words_s,correct,invented,notes
+RT003,information,من عندكم للأهرامات بتاخد وقت قد إيه بالعربية؟,هتأكدلك من الزملاء في الاستقبال لو تحب، وممكن أحولك بيهم حالاً.,search_hotel_info {'question': 'How long does it take to travel from the hotel to the pyramids?'},,-,about 17 km; 40-60 minutes,0/3,1.4,,,

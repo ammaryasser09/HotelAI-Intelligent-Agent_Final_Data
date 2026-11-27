@@ -1,0 +1,2 @@
+﻿test_id,category,route,lang,question,answer,tools_called,expected_tool,tool_ok,lang_ok,expected_facts,facts_numbers,first_words_s,trace,correct,invented,notes
+RT183,urgent,ESCALATE,,عايز أكلم المدير حالاً,حاضر يا فندم، حد من الزملاء هيكمل مع حضرتك حالاً.,escalate_to_human {'reason': 'Guest requested to speak with the manager.'},escalate_to_human,yes,-,"transfer to a person; live chat with a member of staff; if no one is free, an urgent Staff Callback ticket",-,1.5,msg session_resumption_update > tool 0.8s escalate_to_human > turn 0.8s NONE > turn 5.4s NONE,,,
