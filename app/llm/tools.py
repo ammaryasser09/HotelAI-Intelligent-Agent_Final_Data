@@ -4,12 +4,13 @@ import re
 import urllib.error
 import urllib.parse
 import urllib.request
-from datetime import datetime, timedelta, timezone
+from datetime import datetime
 from zoneinfo import ZoneInfo
-import jwt
 import psycopg
 from google.genai import types
 import app.llm.config
+from app.api.schemas.auth import AccountInfo
+from app.api.security import create_access_token
 from app.rag.tools import check_availability, hotel_photos, create_request, REQUEST_TYPES, CATEGORIES
 from app.rag.tools import (
     link_booking, late_checkout_quote, check_discount_code, loyalty_status, menu, room_service_quote,
@@ -235,22 +236,22 @@ CANCEL_BOOKING = declare(
     ["booking_ref"],
 )
 
-API_URL = os.getenv("API_URL", "http://127.0.0.1:8000")
+API_URL = os.getenv("API_URL") or "http://127.0.0.1:8000"
 
 
 def _token(account_id):
     url = os.getenv("DATABASE_URL", "").replace("+psycopg", "")
     with psycopg.connect(url) as db:
         row = db.execute(
-            "SELECT role, customer_id, email_verified FROM user_accounts WHERE account_id = %s AND is_active",
+            "SELECT account_id, role, full_name, email, customer_id, email_verified FROM user_accounts "
+            "WHERE account_id = %s AND is_active",
             (int(account_id),),
         ).fetchone()
     if not row:
         return None
-    now = datetime.now(timezone.utc)
-    claims = {"sub": str(account_id), "role": row[0], "customer_id": row[1], "email_verified": row[2],
-              "iat": now, "exp": now + timedelta(minutes=10)}
-    return jwt.encode(claims, os.getenv("JWT_SECRET"), algorithm="HS256")
+    account = AccountInfo(account_id=row[0], role=row[1], full_name=row[2], email=row[3],
+                          customer_id=row[4], email_verified=row[5])
+    return create_access_token(account)[0]
 
 
 def _api(method, path, account_id, body=None, login=True):
