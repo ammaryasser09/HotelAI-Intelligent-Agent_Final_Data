@@ -12,6 +12,7 @@ from app.api.security import read_access_token
 router = APIRouter(tags=["Nour voice agent"])
 logger = logging.getLogger("hotel_api")
 NOUR = {}
+VISITORS = {"now": 0}
 
 
 def load_nour():
@@ -27,6 +28,10 @@ def load_nour():
 
 def dev_mode():
     return os.getenv("NOUR_DEV") == "1"
+
+
+def visitor_limits():
+    return int(os.getenv("NOUR_VISITOR_CALLS", "3")), float(os.getenv("NOUR_VISITOR_MINUTES", "5"))
 
 
 if dev_mode() or os.getenv("NOUR_PRELOAD") == "1":
@@ -154,10 +159,28 @@ async def nour_socket(websocket: WebSocket, token: str = "", account: str = ""):
     elif account and dev_mode():
         account_id = str(account)
     await websocket.accept()
+    most_calls, minutes = visitor_limits()
+    if not account_id and VISITORS["now"] >= most_calls:
+        await websocket.send_json({"type": "closed", "reason": "TOO_MANY_VISITOR_CALLS",
+                                   "advice": "try again in a few minutes or log in"})
+        await websocket.close(code=1013)
+        return
+    if not account_id:
+        VISITORS["now"] += 1
     try:
-        await call_nour(websocket, account_id)
+        if account_id:
+            await call_nour(websocket, account_id)
+        else:
+            await asyncio.wait_for(call_nour(websocket, account_id), timeout=minutes * 60)
     except WebSocketDisconnect:
         pass
+    except asyncio.TimeoutError:
+        try:
+            await websocket.send_json({"type": "closed", "reason": "VISITOR_TIME_LIMIT",
+                                       "advice": f"visitor calls last up to {minutes:g} minutes; log in for a longer call"})
+            await websocket.close(code=1000)
+        except Exception:
+            pass
     except Exception as e:
         logger.exception("Nour call failed")
         try:
@@ -165,6 +188,9 @@ async def nour_socket(websocket: WebSocket, token: str = "", account: str = ""):
             await websocket.close(code=1011)
         except Exception:
             pass
+    finally:
+        if not account_id:
+            VISITORS["now"] -= 1
 
 
 async def call_nour(websocket, account_id):
